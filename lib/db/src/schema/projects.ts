@@ -16,7 +16,7 @@ export const projectsTable = pgTable("projects", {
   language: text("language").notNull().default("en"),
   type: text("type").notNull().default("furniture"),
   isScalable: boolean("is_scalable").notNull().default(false),
-  enableMaterials: boolean("enable_materials").notNull().default(false),
+  enableMaterials: boolean("enable_materials").notNull().default(true),
   enableVariants: boolean("enable_variants").notNull().default(false),
   defaultModelName: text("default_model_name").notNull().default("Original"),
   defaultColorName: text("default_color_name").notNull().default("Original Color"),

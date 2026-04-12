@@ -75,8 +75,7 @@ function VariationSidebar({
 }) {
   const hasVariants = project.enableVariants && project.variants && project.variants.length > 0;
   const baseMaterials = project.materials ?? [];
-  const hasBaseMaterials = baseMaterials.length > 0;
-  const showBaseColors = project.enableMaterials;
+  const showBaseColors = true;
 
   const hasAnything = hasVariants || showBaseColors;
   const [isOpen, setIsOpen] = useState(true);

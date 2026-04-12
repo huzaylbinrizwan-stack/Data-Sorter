@@ -127,7 +127,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       language: parsed.data.language ?? "en",
       type: parsed.data.type ?? "furniture",
       isScalable: parsed.data.isScalable ?? false,
-      enableMaterials: parsed.data.enableMaterials ?? false,
+      enableMaterials: parsed.data.enableMaterials ?? true,
       enableVariants: parsed.data.enableVariants ?? false,
       isLive: false,
       publicSlug,
