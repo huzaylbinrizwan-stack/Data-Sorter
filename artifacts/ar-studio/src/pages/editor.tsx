@@ -382,6 +382,142 @@ function VariantWithMaterials({
   );
 }
 
+function BaseMaterialsPanel({
+  projectId,
+  onRequestUpload,
+}: {
+  projectId: number;
+  onRequestUpload: (file: File, accept: "image" | "model") => Promise<string>;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [matUploadProgress, setMatUploadProgress] = useState<number | null>(null);
+  const matFileInputRef = useRef<HTMLInputElement>(null);
+  const [matUploadTarget, setMatUploadTarget] = useState<{ materialId: number; kind: "model" | "thumb" } | null>(null);
+
+  const matQueryKey = getListMaterialsQueryKey(projectId);
+  const createMaterial = useCreateMaterial();
+  const updateMaterial = useUpdateMaterial();
+  const deleteMaterial = useDeleteMaterial();
+
+  const { data: allMaterials = [] } = useListMaterials(projectId, undefined, {
+    query: { enabled: !!projectId, queryKey: matQueryKey },
+  });
+
+  const baseMaterials = allMaterials.filter((m) => m.variantId === null || m.variantId === undefined);
+
+  const handleAddMaterial = async () => {
+    const maxOrder = baseMaterials.length > 0 ? Math.max(...baseMaterials.map(m => m.sortOrder)) : -1;
+    await createMaterial.mutateAsync({
+      projectId,
+      data: { name: `Color ${baseMaterials.length + 1}`, variantId: null, sortOrder: maxOrder + 1 },
+    });
+    queryClient.invalidateQueries({ queryKey: matQueryKey });
+  };
+
+  const handleDeleteMaterial = async (id: number) => {
+    await deleteMaterial.mutateAsync({ projectId, id });
+    queryClient.invalidateQueries({ queryKey: matQueryKey });
+  };
+
+  const handleRenameMaterial = async (id: number, name: string) => {
+    await updateMaterial.mutateAsync({ projectId, id, data: { name } });
+    queryClient.invalidateQueries({ queryKey: matQueryKey });
+  };
+
+  const handleReorderMaterial = async (index: number, direction: "up" | "down") => {
+    const items = [...baseMaterials];
+    const swapIdx = direction === "up" ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= items.length) return;
+    const [a, b] = [items[index], items[swapIdx]];
+    await Promise.all([
+      updateMaterial.mutateAsync({ projectId, id: a.id, data: { sortOrder: b.sortOrder } }),
+      updateMaterial.mutateAsync({ projectId, id: b.id, data: { sortOrder: a.sortOrder } }),
+    ]);
+    queryClient.invalidateQueries({ queryKey: matQueryKey });
+  };
+
+  const triggerMatUpload = (materialId: number, kind: "model" | "thumb") => {
+    setMatUploadTarget({ materialId, kind });
+    if (matFileInputRef.current) {
+      matFileInputRef.current.accept = kind === "thumb" ? "image/png,image/jpeg,image/webp" : ".glb,.gltf";
+      matFileInputRef.current.click();
+    }
+  };
+
+  const handleMatFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !matUploadTarget) return;
+    setMatUploadProgress(0);
+    try {
+      if (matUploadTarget.kind === "model") {
+        const objectPath = await onRequestUpload(file, "model");
+        await updateMaterial.mutateAsync({ projectId, id: matUploadTarget.materialId, data: { modelUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: matQueryKey });
+        toast({ title: "Material model uploaded" });
+      } else {
+        const objectPath = await onRequestUpload(file, "image");
+        await updateMaterial.mutateAsync({ projectId, id: matUploadTarget.materialId, data: { thumbnailUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: matQueryKey });
+        toast({ title: "Material thumbnail uploaded" });
+      }
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setMatUploadProgress(null);
+      if (matFileInputRef.current) matFileInputRef.current.value = "";
+    }
+  };
+
+  const matOnUpload = (target: UploadTarget) => {
+    if (target.kind === "materialModel") triggerMatUpload(target.materialId, "model");
+    else if (target.kind === "materialThumb") triggerMatUpload(target.materialId, "thumb");
+  };
+
+  return (
+    <div className="p-5 border-b border-border">
+      <input
+        ref={matFileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleMatFileChange}
+      />
+      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-3">
+        Base Model Colors
+      </h3>
+      {matUploadProgress !== null && (
+        <p className="text-xs text-muted-foreground mb-2">Uploading {matUploadProgress}%...</p>
+      )}
+      <div className="flex flex-col gap-2">
+        {baseMaterials.map((mat, idx) => (
+          <VariationItem
+            key={mat.id}
+            item={mat}
+            kind="material"
+            isFirst={idx === 0}
+            isLast={idx === baseMaterials.length - 1}
+            onUpload={matOnUpload}
+            onDelete={() => handleDeleteMaterial(mat.id)}
+            onRename={(name) => handleRenameMaterial(mat.id, name)}
+            onMoveUp={() => handleReorderMaterial(idx, "up")}
+            onMoveDown={() => handleReorderMaterial(idx, "down")}
+          />
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1.5 border-dashed text-xs mt-1"
+          onClick={handleAddMaterial}
+          data-testid="button-add-base-material"
+        >
+          <Plus className="w-3 h-3" />
+          Add Color
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function Editor() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id ?? "", 10);
@@ -943,8 +1079,14 @@ export default function Editor() {
 
           {showVariations && (
             <>
+              {/* Base Model Colors section */}
+              <BaseMaterialsPanel
+                projectId={projectId}
+                onRequestUpload={uploadFile}
+              />
+
               {/* Variants Toggle */}
-              <div className="p-5">
+              <div className="p-5 border-t border-border">
                 <div className="flex items-center justify-between mb-4">
                   <Label className="text-xs font-medium">Different Models</Label>
                   <Switch

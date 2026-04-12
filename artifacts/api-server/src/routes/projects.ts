@@ -43,13 +43,11 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     return;
   }
 
-  const materials = project.enableMaterials
-    ? await db
-        .select()
-        .from(projectMaterialsTable)
-        .where(eq(projectMaterialsTable.projectId, project.id))
-        .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt)
-    : [];
+  const materials = await db
+    .select()
+    .from(projectMaterialsTable)
+    .where(eq(projectMaterialsTable.projectId, project.id))
+    .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
 
   const variants = project.enableVariants
     ? await db

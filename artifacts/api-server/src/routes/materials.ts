@@ -3,7 +3,6 @@ import { eq, and, max, isNull } from "drizzle-orm";
 import { db, projectMaterialsTable } from "@workspace/db";
 import {
   ListMaterialsParams,
-  ListMaterialsQueryParams,
   CreateMaterialParams,
   CreateMaterialBody,
   UpdateMaterialParams,
@@ -12,6 +11,16 @@ import {
   DeleteMaterialParams,
   ListMaterialsResponse,
 } from "@workspace/api-zod";
+
+type ParsedVariantId = number | null | undefined;
+
+function parseVariantIdQuery(raw: unknown): { ok: true; value: ParsedVariantId } | { ok: false } {
+  if (raw === undefined) return { ok: true, value: undefined };
+  if (raw === "null" || raw === null) return { ok: true, value: null };
+  const n = Number(raw);
+  if (!Number.isNaN(n) && Number.isFinite(n)) return { ok: true, value: Math.floor(n) };
+  return { ok: false };
+}
 
 const router: IRouter = Router();
 
@@ -23,17 +32,17 @@ router.get("/projects/:projectId/materials", async (req, res): Promise<void> => 
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const query = ListMaterialsQueryParams.safeParse(req.query);
-  if (!query.success) {
-    res.status(400).json({ error: query.error.message });
+  const parsedVariantId = parseVariantIdQuery(req.query.variantId);
+  if (!parsedVariantId.ok) {
+    res.status(400).json({ error: "Invalid variantId query parameter" });
     return;
   }
 
   const baseWhere = eq(projectMaterialsTable.projectId, params.data.projectId);
 
   let materials;
-  if (query.data.variantId !== undefined) {
-    if (query.data.variantId === null) {
+  if (parsedVariantId.value !== undefined) {
+    if (parsedVariantId.value === null) {
       materials = await db
         .select()
         .from(projectMaterialsTable)
@@ -43,7 +52,7 @@ router.get("/projects/:projectId/materials", async (req, res): Promise<void> => 
       materials = await db
         .select()
         .from(projectMaterialsTable)
-        .where(and(baseWhere, eq(projectMaterialsTable.variantId, query.data.variantId)))
+        .where(and(baseWhere, eq(projectMaterialsTable.variantId, parsedVariantId.value)))
         .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
     }
   } else {
