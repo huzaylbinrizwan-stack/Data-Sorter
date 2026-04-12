@@ -1,0 +1,16 @@
+Refined Project Description
+"Replit, today we are building an AR Studio. It is a complete studio where, on the user side, it is a premium experience. They can change materials, change models, or just view the object—whether it is a sofa, clothing, etc. This means they have all the options for customization; you got it? Then, with one click, if the item is wearable, they can 'Try on Me.' If it is a placeable object, a 'View in Reality' button will show that object through the Google Model Viewer.
+
+Now, let's see how it works on the Admin side. When the admin logs in, there should be a great dashboard with a casual greeting. It should show stats like: how many ARs are working, how many projects are active, and the average loading speed of the AR Studio.
+
+Next is a desktop-style 'Explore' area where the admin can create folders, name them, or rename them. In the folders or the main area, they can create a project and name it. Everything acts like a file, but each file shows enough detail to be recognized easily—like the name, company name, a picture, and whether the AR is currently working on it or not. You can go deep and add other features to it.
+
+When any AR Studio file is double-clicked, it opens in a complete new tab. What should be shown in that tab? The center part shows the live working preview of the AR Studio. On the left side, there is an option to 'Add File' (GLB, GLTF, and other 3D files) to showcase in the studio, followed by settings. You can toggle if the AR is scalable and set the language of the AR. You can select between clothing, furniture, or objects—but right now, we are only focusing on furniture and objects as they work similarly (we will build the clothing 'try-on' feature later).
+
+The AR Studio should look luxurious. The admin can choose between a simple black or white background, or a Real Life Environment. This means there should be built-in luxury backgrounds: a luxury home, classic luxury, or simple walls with luxury plant pots and carpets. Everything must feel luxury and classic.
+
+Once the user selects an environment, you should showcase the product in the perfect place. For example, most furniture looks good in the middle, but if an environment has a carpet off-center, the best place to put the product is in the center of that carpet. To make this easy, there should be a button named 'Hotspot.' When clicked, the model disappears and shows a dot or circle where the model is set by default. The admin can move that dot to different places, and the 3D model will be shown there. You got it?
+
+We will integrate the different models or material features later; that is very simple. For now, we will show the 3D model and a 'View in Reality' button at the bottom to see it through the camera. Keep in mind: the 3D model should not be scalable, and everything must work perfectly on the user end.
+
+For the User Side, we want a permanent link. When opened, it shows the studio to the user, but there should be no way to access the Admin Panel from there. The link should remain the same even after updates."
