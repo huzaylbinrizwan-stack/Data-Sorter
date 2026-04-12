@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
 import type { StudioProject, ProjectMaterial, ProjectVariant } from "@workspace/api-client-react";
@@ -172,6 +172,7 @@ export default function Studio() {
   const { slug } = useParams<{ slug: string }>();
   const projectSlug = slug ?? "";
   const [activeVariantModel, setActiveVariantModel] = useState<string | null>(null);
+  const arButtonRef = useRef<HTMLButtonElement>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
     query: {
@@ -247,43 +248,18 @@ export default function Studio() {
             interaction-prompt="none"
             data-testid="studio-model-viewer"
           >
-            {/* Native model-viewer AR button — shown only on AR-capable devices */}
+            {/*
+              Native model-viewer AR button — required inside <model-viewer> to enable
+              WebXR / Scene Viewer / Quick Look. Hidden visually; the footer button
+              delegates clicks to this element so there is only one visible "View in AR" action.
+            */}
             <button
+              ref={arButtonRef}
               slot="ar-button"
               data-testid="button-view-in-ar"
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                width: "100%",
-                padding: "0 24px",
-                height: "90px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 20px",
-                  borderRadius: "9999px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  letterSpacing: "0.05em",
-                  background: isLightBg ? "#111827" : "hsl(44,54%,54%)",
-                  color: isLightBg ? "#fff" : "#000",
-                }}
-              >
-                View in AR
-              </span>
-            </button>
+              aria-hidden="true"
+              style={{ display: "none" }}
+            />
           </model-viewer>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -330,6 +306,18 @@ export default function Studio() {
             {project.name}
           </h1>
         </div>
+        {/* Single visible "View in AR" footer action — delegates to the native slot button */}
+        <button
+          data-testid="footer-view-in-ar"
+          onClick={() => arButtonRef.current?.click()}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
+            isLightBg
+              ? "bg-gray-900 text-white hover:bg-gray-700"
+              : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+          }`}
+        >
+          View in AR
+        </button>
       </footer>
 
       {/* AR Studio Watermark */}
