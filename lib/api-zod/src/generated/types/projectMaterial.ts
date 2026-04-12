@@ -9,6 +9,8 @@
 export interface ProjectMaterial {
   id: number;
   projectId: number;
+  /** @nullable */
+  variantId: number | null;
   name: string;
   /** @nullable */
   thumbnailUrl: string | null;

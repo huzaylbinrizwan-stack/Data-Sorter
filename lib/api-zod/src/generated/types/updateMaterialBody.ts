@@ -9,6 +9,8 @@
 export interface UpdateMaterialBody {
   name?: string;
   /** @nullable */
+  variantId?: number | null;
+  /** @nullable */
   thumbnailUrl?: string | null;
   /** @nullable */
   modelUrl?: string | null;

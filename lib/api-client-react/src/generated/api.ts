@@ -24,6 +24,7 @@ import type {
   DashboardStats,
   Folder,
   HealthStatus,
+  ListMaterialsParams,
   ListProjectsParams,
   Project,
   ProjectMaterial,
@@ -1398,22 +1399,47 @@ export function useGetStorageObject<
 /**
  * @summary List materials for a project
  */
-export const getListMaterialsUrl = (projectId: number) => {
-  return `/api/projects/${projectId}/materials`;
+export const getListMaterialsUrl = (
+  projectId: number,
+  params?: ListMaterialsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/projects/${projectId}/materials?${stringifiedParams}`
+    : `/api/projects/${projectId}/materials`;
 };
 
 export const listMaterials = async (
   projectId: number,
+  params?: ListMaterialsParams,
   options?: RequestInit,
 ): Promise<ProjectMaterial[]> => {
-  return customFetch<ProjectMaterial[]>(getListMaterialsUrl(projectId), {
-    ...options,
-    method: "GET",
-  });
+  return customFetch<ProjectMaterial[]>(
+    getListMaterialsUrl(projectId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
-export const getListMaterialsQueryKey = (projectId: number) => {
-  return [`/api/projects/${projectId}/materials`] as const;
+export const getListMaterialsQueryKey = (
+  projectId: number,
+  params?: ListMaterialsParams,
+) => {
+  return [
+    `/api/projects/${projectId}/materials`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getListMaterialsQueryOptions = <
@@ -1421,6 +1447,7 @@ export const getListMaterialsQueryOptions = <
   TError = ErrorType<unknown>,
 >(
   projectId: number,
+  params?: ListMaterialsParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof listMaterials>>,
@@ -1433,11 +1460,11 @@ export const getListMaterialsQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getListMaterialsQueryKey(projectId);
+    queryOptions?.queryKey ?? getListMaterialsQueryKey(projectId, params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterials>>> = ({
     signal,
-  }) => listMaterials(projectId, { signal, ...requestOptions });
+  }) => listMaterials(projectId, params, { signal, ...requestOptions });
 
   return {
     queryKey,
@@ -1465,6 +1492,7 @@ export function useListMaterials<
   TError = ErrorType<unknown>,
 >(
   projectId: number,
+  params?: ListMaterialsParams,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof listMaterials>>,
@@ -1474,7 +1502,7 @@ export function useListMaterials<
     request?: SecondParameter<typeof customFetch>;
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListMaterialsQueryOptions(projectId, options);
+  const queryOptions = getListMaterialsQueryOptions(projectId, params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

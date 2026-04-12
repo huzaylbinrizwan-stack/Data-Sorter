@@ -25,6 +25,8 @@ export interface StudioProject {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  defaultModelName: string;
+  defaultColorName: string;
   publicSlug: string;
   materials: ProjectMaterial[];
   variants: ProjectVariant[];

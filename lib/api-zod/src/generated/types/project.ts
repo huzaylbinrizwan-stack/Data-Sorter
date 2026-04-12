@@ -26,6 +26,8 @@ export interface Project {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  defaultModelName: string;
+  defaultColorName: string;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;

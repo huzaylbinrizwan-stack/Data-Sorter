@@ -36,8 +36,8 @@ A premium AR experience platform with:
 
 ### DB Schema (lib/db/src/schema)
 - `folders` — id, name, parentId (nullable), createdAt
-- `projects` — id, name, companyName, thumbnail, modelUrl, isLive, environment, hotspotX/Y/Z, language, type, isScalable, enableMaterials, enableVariants, folderId (nullable), publicSlug, createdAt, updatedAt
-- `project_materials` — id, projectId, name, thumbnailUrl, modelUrl, sortOrder, createdAt
+- `projects` — id, name, companyName, thumbnail, modelUrl, isLive, environment, hotspotX/Y/Z, language, type, isScalable, enableMaterials, enableVariants, **defaultModelName** (default "Original"), **defaultColorName** (default "Original Color"), folderId (nullable), publicSlug, createdAt, updatedAt
+- `project_materials` — id, projectId, **variantId** (nullable FK to project_variants), name, thumbnailUrl, modelUrl, sortOrder, createdAt
 - `project_variants` — id, projectId, name, thumbnailUrl, modelUrl, sortOrder, createdAt
 
 ### API Endpoints

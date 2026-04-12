@@ -64,6 +64,8 @@ export interface Project {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  defaultModelName: string;
+  defaultColorName: string;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;
@@ -106,6 +108,8 @@ export interface CreateProjectBody {
   isScalable?: boolean;
   enableMaterials?: boolean;
   enableVariants?: boolean;
+  defaultModelName?: string;
+  defaultColorName?: string;
   /** @nullable */
   folderId?: number | null;
 }
@@ -145,6 +149,8 @@ export interface UpdateProjectBody {
   isScalable?: boolean;
   enableMaterials?: boolean;
   enableVariants?: boolean;
+  defaultModelName?: string;
+  defaultColorName?: string;
   /** @nullable */
   folderId?: number | null;
 }
@@ -171,6 +177,8 @@ export const StudioProjectType = {
 export interface ProjectMaterial {
   id: number;
   projectId: number;
+  /** @nullable */
+  variantId: number | null;
   name: string;
   /** @nullable */
   thumbnailUrl: string | null;
@@ -207,6 +215,8 @@ export interface StudioProject {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  defaultModelName: string;
+  defaultColorName: string;
   publicSlug: string;
   materials: ProjectMaterial[];
   variants: ProjectVariant[];
@@ -239,6 +249,8 @@ export interface RequestUploadUrlResponse {
 export interface CreateMaterialBody {
   name: string;
   /** @nullable */
+  variantId?: number | null;
+  /** @nullable */
   thumbnailUrl?: string | null;
   /** @nullable */
   modelUrl?: string | null;
@@ -247,6 +259,8 @@ export interface CreateMaterialBody {
 
 export interface UpdateMaterialBody {
   name?: string;
+  /** @nullable */
+  variantId?: number | null;
   /** @nullable */
   thumbnailUrl?: string | null;
   /** @nullable */
@@ -277,4 +291,12 @@ export type ListProjectsParams = {
    * @nullable
    */
   folderId?: number | null;
+};
+
+export type ListMaterialsParams = {
+  /**
+   * Filter materials by variant ID. Pass null to list base-model materials.
+   * @nullable
+   */
+  variantId?: number | null;
 };

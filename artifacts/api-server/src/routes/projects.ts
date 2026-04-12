@@ -73,6 +73,8 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     isScalable: project.isScalable,
     enableMaterials: project.enableMaterials,
     enableVariants: project.enableVariants,
+    defaultModelName: project.defaultModelName,
+    defaultColorName: project.defaultColorName,
     publicSlug: project.publicSlug,
     materials,
     variants,

@@ -90,6 +90,8 @@ export const ListProjectsResponseItem = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -116,6 +118,8 @@ export const CreateProjectBody = zod.object({
   isScalable: zod.boolean().optional(),
   enableMaterials: zod.boolean().optional(),
   enableVariants: zod.boolean().optional(),
+  defaultModelName: zod.string().optional(),
+  defaultColorName: zod.string().optional(),
   folderId: zod.number().nullish(),
 });
 
@@ -148,6 +152,8 @@ export const GetProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -177,6 +183,8 @@ export const UpdateProjectBody = zod.object({
   isScalable: zod.boolean().optional(),
   enableMaterials: zod.boolean().optional(),
   enableVariants: zod.boolean().optional(),
+  defaultModelName: zod.string().optional(),
+  defaultColorName: zod.string().optional(),
   folderId: zod.number().nullish(),
 });
 
@@ -202,6 +210,8 @@ export const UpdateProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -244,6 +254,8 @@ export const PublishProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -279,6 +291,8 @@ export const UnpublishProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -312,11 +326,14 @@ export const GetStudioProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  defaultModelName: zod.string(),
+  defaultColorName: zod.string(),
   publicSlug: zod.string(),
   materials: zod.array(
     zod.object({
       id: zod.number(),
       projectId: zod.number(),
+      variantId: zod.number().nullable(),
       name: zod.string(),
       thumbnailUrl: zod.string().nullable(),
       modelUrl: zod.string().nullable(),
@@ -367,6 +384,8 @@ export const GetDashboardStatsResponse = zod.object({
       isScalable: zod.boolean(),
       enableMaterials: zod.boolean(),
       enableVariants: zod.boolean(),
+      defaultModelName: zod.string(),
+      defaultColorName: zod.string(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),
@@ -409,9 +428,19 @@ export const ListMaterialsParams = zod.object({
   projectId: zod.coerce.number(),
 });
 
+export const ListMaterialsQueryParams = zod.object({
+  variantId: zod.coerce
+    .number()
+    .nullish()
+    .describe(
+      "Filter materials by variant ID. Pass null to list base-model materials.",
+    ),
+});
+
 export const ListMaterialsResponseItem = zod.object({
   id: zod.number(),
   projectId: zod.number(),
+  variantId: zod.number().nullable(),
   name: zod.string(),
   thumbnailUrl: zod.string().nullable(),
   modelUrl: zod.string().nullable(),
@@ -429,6 +458,7 @@ export const CreateMaterialParams = zod.object({
 
 export const CreateMaterialBody = zod.object({
   name: zod.string(),
+  variantId: zod.number().nullish(),
   thumbnailUrl: zod.string().nullish(),
   modelUrl: zod.string().nullish(),
   sortOrder: zod.number().optional(),
@@ -444,6 +474,7 @@ export const UpdateMaterialParams = zod.object({
 
 export const UpdateMaterialBody = zod.object({
   name: zod.string().optional(),
+  variantId: zod.number().nullish(),
   thumbnailUrl: zod.string().nullish(),
   modelUrl: zod.string().nullish(),
   sortOrder: zod.number().optional(),
@@ -452,6 +483,7 @@ export const UpdateMaterialBody = zod.object({
 export const UpdateMaterialResponse = zod.object({
   id: zod.number(),
   projectId: zod.number(),
+  variantId: zod.number().nullable(),
   name: zod.string(),
   thumbnailUrl: zod.string().nullable(),
   modelUrl: zod.string().nullable(),

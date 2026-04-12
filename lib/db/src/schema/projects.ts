@@ -18,6 +18,8 @@ export const projectsTable = pgTable("projects", {
   isScalable: boolean("is_scalable").notNull().default(false),
   enableMaterials: boolean("enable_materials").notNull().default(false),
   enableVariants: boolean("enable_variants").notNull().default(false),
+  defaultModelName: text("default_model_name").notNull().default("Original"),
+  defaultColorName: text("default_color_name").notNull().default("Original Color"),
   folderId: integer("folder_id"),
   publicSlug: text("public_slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -27,6 +29,7 @@ export const projectsTable = pgTable("projects", {
 export const projectMaterialsTable = pgTable("project_materials", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(),
+  variantId: integer("variant_id"),
   name: text("name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   modelUrl: text("model_url"),

@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { eq, and, max } from "drizzle-orm";
+import { eq, and, max, isNull } from "drizzle-orm";
 import { db, projectMaterialsTable } from "@workspace/db";
 import {
   ListMaterialsParams,
+  ListMaterialsQueryParams,
   CreateMaterialParams,
   CreateMaterialBody,
   UpdateMaterialParams,
@@ -22,11 +23,37 @@ router.get("/projects/:projectId/materials", async (req, res): Promise<void> => 
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const materials = await db
-    .select()
-    .from(projectMaterialsTable)
-    .where(eq(projectMaterialsTable.projectId, params.data.projectId))
-    .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
+  const query = ListMaterialsQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+
+  const baseWhere = eq(projectMaterialsTable.projectId, params.data.projectId);
+
+  let materials;
+  if (query.data.variantId !== undefined) {
+    if (query.data.variantId === null) {
+      materials = await db
+        .select()
+        .from(projectMaterialsTable)
+        .where(and(baseWhere, isNull(projectMaterialsTable.variantId)))
+        .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
+    } else {
+      materials = await db
+        .select()
+        .from(projectMaterialsTable)
+        .where(and(baseWhere, eq(projectMaterialsTable.variantId, query.data.variantId)))
+        .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
+    }
+  } else {
+    materials = await db
+      .select()
+      .from(projectMaterialsTable)
+      .where(baseWhere)
+      .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
+  }
+
   res.json(ListMaterialsResponse.parse(materials));
 });
 
@@ -50,6 +77,7 @@ router.post("/projects/:projectId/materials", async (req, res): Promise<void> =>
     .insert(projectMaterialsTable)
     .values({
       projectId: params.data.projectId,
+      variantId: parsed.data.variantId ?? null,
       name: parsed.data.name,
       thumbnailUrl: parsed.data.thumbnailUrl ?? null,
       modelUrl: parsed.data.modelUrl ?? null,

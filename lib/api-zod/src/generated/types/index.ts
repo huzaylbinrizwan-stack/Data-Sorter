@@ -16,6 +16,7 @@ export * from "./dashboardStats";
 export * from "./environmentCount";
 export * from "./folder";
 export * from "./healthStatus";
+export * from "./listMaterialsParams";
 export * from "./listProjectsParams";
 export * from "./project";
 export * from "./projectEnvironment";
