@@ -14,6 +14,7 @@ declare module "react" {
           "shadow-intensity"?: string;
           style?: React.CSSProperties;
           "camera-orbit"?: string;
+          "camera-target"?: string;
           loading?: string;
           "disable-zoom"?: boolean;
           "interaction-prompt"?: string;

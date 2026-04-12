@@ -7,6 +7,7 @@ import {
   useUpdateFolder, 
   useDeleteFolder, 
   useCreateProject,
+  useUpdateProject,
   useDeleteProject,
   getGetDashboardStatsQueryKey
 } from "@workspace/api-client-react";
@@ -55,6 +56,7 @@ export default function Explore() {
   const updateFolder = useUpdateFolder();
   const deleteFolder = useDeleteFolder();
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
 
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
@@ -63,6 +65,10 @@ export default function Explore() {
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectCompany, setNewProjectCompany] = useState("");
+
+  const [isRenameProjectDialogOpen, setIsRenameProjectDialogOpen] = useState(false);
+  const [renamingProject, setRenamingProject] = useState<{ id: number; name: string } | null>(null);
+  const [renameProjectName, setRenameProjectName] = useState("");
 
   const currentFolder = useMemo(() => folders.find(f => f.id === currentFolderId), [folders, currentFolderId]);
   const visibleFolders = useMemo(() => folders.filter(f => f.parentId === currentFolderId && f.name.toLowerCase().includes(search.toLowerCase())), [folders, currentFolderId, search]);
@@ -105,6 +111,21 @@ export default function Explore() {
       queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey(projectsParams) });
       queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
     }
+  };
+
+  const handleOpenRenameProject = (project: { id: number; name: string }) => {
+    setRenamingProject(project);
+    setRenameProjectName(project.name);
+    setIsRenameProjectDialogOpen(true);
+  };
+
+  const handleRenameProject = async () => {
+    if (!renamingProject || !renameProjectName.trim()) return;
+    await updateProject.mutateAsync({ id: renamingProject.id, data: { name: renameProjectName.trim() } });
+    setIsRenameProjectDialogOpen(false);
+    setRenamingProject(null);
+    setRenameProjectName("");
+    queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey(projectsParams) });
   };
 
   // Build breadcrumbs
@@ -292,6 +313,9 @@ export default function Explore() {
                           <DropdownMenuItem onClick={() => window.open(`/editor/${project.id}`, '_blank')}>
                             <Pencil className="w-4 h-4 mr-2" /> Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenRenameProject({ id: project.id, name: project.name })}>
+                            <Pencil className="w-4 h-4 mr-2" /> Rename
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive focus:text-destructive">
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                           </DropdownMenuItem>
@@ -309,6 +333,31 @@ export default function Explore() {
           )}
         </div>
       </div>
+
+      {/* Rename Project Dialog */}
+      <Dialog open={isRenameProjectDialogOpen} onOpenChange={setIsRenameProjectDialogOpen}>
+        <DialogContent className="bg-card border-border rounded-sm">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Rename Project</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="Project name"
+              value={renameProjectName}
+              onChange={e => setRenameProjectName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleRenameProject()}
+              className="rounded-sm"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsRenameProjectDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameProject} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm">
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

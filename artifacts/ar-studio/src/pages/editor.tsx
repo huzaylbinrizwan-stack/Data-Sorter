@@ -391,6 +391,7 @@ export default function Editor() {
                 ar-modes="webxr scene-viewer quick-look"
                 shadow-intensity="1"
                 disable-zoom={!project.isScalable || undefined}
+                camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
                 style={{ width: "100%", height: "100%" }}
                 interaction-prompt="none"
                 data-testid="model-viewer"
