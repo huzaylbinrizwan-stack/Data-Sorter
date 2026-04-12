@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, max, isNull } from "drizzle-orm";
-import { db, projectMaterialsTable } from "@workspace/db";
+import { db, projectMaterialsTable, projectVariantsTable } from "@workspace/db";
 import {
   ListMaterialsParams,
   CreateMaterialParams,
@@ -20,6 +20,25 @@ function parseVariantIdQuery(raw: unknown): { ok: true; value: ParsedVariantId }
   const n = Number(raw);
   if (!Number.isNaN(n) && Number.isFinite(n)) return { ok: true, value: Math.floor(n) };
   return { ok: false };
+}
+
+async function validateVariantOwnership(projectId: number, variantId: number): Promise<boolean> {
+  const [variant] = await db
+    .select({ id: projectVariantsTable.id })
+    .from(projectVariantsTable)
+    .where(and(eq(projectVariantsTable.id, variantId), eq(projectVariantsTable.projectId, projectId)));
+  return !!variant;
+}
+
+async function getNextSortOrder(projectId: number, variantId: number | null): Promise<number> {
+  const whereClause = variantId === null
+    ? and(eq(projectMaterialsTable.projectId, projectId), isNull(projectMaterialsTable.variantId))
+    : and(eq(projectMaterialsTable.projectId, projectId), eq(projectMaterialsTable.variantId, variantId));
+  const [{ maxOrder }] = await db
+    .select({ maxOrder: max(projectMaterialsTable.sortOrder) })
+    .from(projectMaterialsTable)
+    .where(whereClause);
+  return maxOrder != null ? maxOrder + 1 : 0;
 }
 
 const router: IRouter = Router();
@@ -77,16 +96,24 @@ router.post("/projects/:projectId/materials", async (req, res): Promise<void> =>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [{ maxOrder }] = await db
-    .select({ maxOrder: max(projectMaterialsTable.sortOrder) })
-    .from(projectMaterialsTable)
-    .where(eq(projectMaterialsTable.projectId, params.data.projectId));
-  const nextSortOrder = parsed.data.sortOrder ?? (maxOrder != null ? maxOrder + 1 : 0);
+
+  const resolvedVariantId = parsed.data.variantId ?? null;
+
+  if (resolvedVariantId !== null) {
+    const owned = await validateVariantOwnership(params.data.projectId, resolvedVariantId);
+    if (!owned) {
+      res.status(400).json({ error: "variantId does not belong to this project" });
+      return;
+    }
+  }
+
+  const nextSortOrder = parsed.data.sortOrder ?? (await getNextSortOrder(params.data.projectId, resolvedVariantId));
+
   const [material] = await db
     .insert(projectMaterialsTable)
     .values({
       projectId: params.data.projectId,
-      variantId: parsed.data.variantId ?? null,
+      variantId: resolvedVariantId,
       name: parsed.data.name,
       thumbnailUrl: parsed.data.thumbnailUrl ?? null,
       modelUrl: parsed.data.modelUrl ?? null,
@@ -107,6 +134,15 @@ router.patch("/projects/:projectId/materials/:id", async (req, res): Promise<voi
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+
+  if (parsed.data.variantId != null) {
+    const owned = await validateVariantOwnership(params.data.projectId, parsed.data.variantId);
+    if (!owned) {
+      res.status(400).json({ error: "variantId does not belong to this project" });
+      return;
+    }
+  }
+
   const [material] = await db
     .update(projectMaterialsTable)
     .set(parsed.data)
