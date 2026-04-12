@@ -251,29 +251,7 @@ export default function Studio() {
             style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 90px)" }}
             interaction-prompt="none"
             data-testid="studio-model-viewer"
-          >
-            {/*
-              Use model-viewer's built-in AR button slot.
-              This is the standard way to trigger AR with model-viewer —
-              the element activates AR natively when clicked on compatible devices.
-            */}
-            <button
-              slot="ar-button"
-              data-testid="button-view-in-ar"
-              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full transition-all ${
-                isLightBg
-                  ? "bg-gray-900 text-white hover:bg-gray-700"
-                  : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-              }`}
-              style={{
-                position: "absolute",
-                bottom: "16px",
-                right: "16px",
-              }}
-            >
-              View in AR
-            </button>
-          </model-viewer>
+          />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center ${isLightBg ? "border-gray-300" : "border-white/20"}`}>

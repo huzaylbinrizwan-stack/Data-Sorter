@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, max } from "drizzle-orm";
 import { db, projectMaterialsTable } from "@workspace/db";
 import {
   ListMaterialsParams,
@@ -41,6 +41,11 @@ router.post("/projects/:projectId/materials", async (req, res): Promise<void> =>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [{ maxOrder }] = await db
+    .select({ maxOrder: max(projectMaterialsTable.sortOrder) })
+    .from(projectMaterialsTable)
+    .where(eq(projectMaterialsTable.projectId, params.data.projectId));
+  const nextSortOrder = parsed.data.sortOrder ?? (maxOrder != null ? maxOrder + 1 : 0);
   const [material] = await db
     .insert(projectMaterialsTable)
     .values({
@@ -48,7 +53,7 @@ router.post("/projects/:projectId/materials", async (req, res): Promise<void> =>
       name: parsed.data.name,
       thumbnailUrl: parsed.data.thumbnailUrl ?? null,
       modelUrl: parsed.data.modelUrl ?? null,
-      sortOrder: parsed.data.sortOrder ?? 0,
+      sortOrder: nextSortOrder,
     })
     .returning();
   res.status(201).json(MaterialResponse.parse(material));
