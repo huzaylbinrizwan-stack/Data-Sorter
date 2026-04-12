@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
 import type { StudioProject, ProjectMaterial, ProjectVariant } from "@workspace/api-client-react";
-import { Smartphone, Box, ZoomIn, ChevronDown, ChevronUp } from "lucide-react";
+import { Box, ZoomIn, ChevronDown, ChevronUp } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
   black: { background: "#0a0a0a" },
@@ -19,11 +19,6 @@ const ENV_TEXT: Record<string, string> = {
   "classic-luxury": "text-white",
   "walls-plants": "text-gray-800",
 };
-
-interface ModelViewerElement extends HTMLElement {
-  activateAR(): void;
-  src: string;
-}
 
 type ActiveTab = "materials" | "variants";
 
@@ -92,7 +87,8 @@ function VariationSidebar({
         )}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`${subColor} transition-colors hover:${labelColor}`}
+          className={`${subColor} transition-colors`}
+          aria-label={isOpen ? "Collapse" : "Expand"}
         >
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
         </button>
@@ -165,23 +161,27 @@ function VariationSidebar({
 export default function Studio() {
   const { slug } = useParams<{ slug: string }>();
   const projectSlug = slug ?? "";
-  const modelViewerRef = useRef<ModelViewerElement>(null);
   const [activeVariantModel, setActiveVariantModel] = useState<string | null>(null);
+  const [modelSrc, setModelSrc] = useState<string | null>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
-    query: { enabled: !!projectSlug, queryKey: getGetStudioProjectQueryKey(projectSlug), retry: false },
+    query: {
+      enabled: !!projectSlug,
+      queryKey: getGetStudioProjectQueryKey(projectSlug),
+      retry: false,
+    },
   });
 
-  const handleViewInAR = () => {
-    if (modelViewerRef.current) {
-      modelViewerRef.current.activateAR();
-    }
-  };
+  // Sync base model src when project loads
+  const baseModelUrl = project?.modelUrl ?? null;
+  const activeSrc = activeVariantModel !== null ? activeVariantModel : baseModelUrl;
 
   const handleSelectModel = (url: string | null) => {
     setActiveVariantModel(url);
-    if (modelViewerRef.current) {
-      modelViewerRef.current.src = url ?? project?.modelUrl ?? "";
+    // Update model-viewer src via DOM attribute (model-viewer attribute API)
+    const mv = document.querySelector("[data-testid='studio-model-viewer']");
+    if (mv) {
+      mv.setAttribute("src", url ?? baseModelUrl ?? "");
     }
   };
 
@@ -223,16 +223,14 @@ export default function Studio() {
   const envStyle = ENV_STYLES[project.environment] ?? ENV_STYLES.black;
   const textClass = ENV_TEXT[project.environment] ?? "text-white";
   const isLightBg = project.environment === "white" || project.environment === "walls-plants";
-  const activeModelSrc = activeVariantModel ?? project.modelUrl;
 
   return (
     <div className="min-h-screen flex flex-col" style={envStyle} data-testid="studio-page">
-      {/* Viewer */}
+      {/* Viewer — full height minus footer */}
       <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 90px)" }}>
-        {activeModelSrc ? (
+        {activeSrc ? (
           <model-viewer
-            ref={modelViewerRef as React.RefObject<HTMLElement>}
-            src={activeModelSrc}
+            src={activeSrc}
             alt={project.name}
             camera-controls
             auto-rotate
@@ -244,7 +242,29 @@ export default function Studio() {
             style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 90px)" }}
             interaction-prompt="none"
             data-testid="studio-model-viewer"
-          />
+          >
+            {/*
+              Use model-viewer's built-in AR button slot.
+              This is the standard way to trigger AR with model-viewer —
+              the element activates AR natively when clicked on compatible devices.
+            */}
+            <button
+              slot="ar-button"
+              data-testid="button-view-in-ar"
+              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full transition-all ${
+                isLightBg
+                  ? "bg-gray-900 text-white hover:bg-gray-700"
+                  : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+              }`}
+              style={{
+                position: "absolute",
+                bottom: "16px",
+                right: "16px",
+              }}
+            >
+              View in AR
+            </button>
+          </model-viewer>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center ${isLightBg ? "border-gray-300" : "border-white/20"}`}>
@@ -289,24 +309,6 @@ export default function Studio() {
           >
             {project.name}
           </h1>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          {activeModelSrc && (
-            <button
-              type="button"
-              onClick={handleViewInAR}
-              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full transition-all ${
-                isLightBg
-                  ? "bg-gray-900 text-white hover:bg-gray-700"
-                  : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-              }`}
-              data-testid="button-view-in-ar"
-            >
-              <Smartphone className="w-3 h-3" />
-              <span>View in AR</span>
-            </button>
-          )}
         </div>
       </footer>
 

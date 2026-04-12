@@ -6,8 +6,8 @@ import {
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
-import { db, projectsTable } from "@workspace/db";
-import { requireClerkAuth } from "../middlewares/requireClerkAuth";
+import { db, projectsTable, projectMaterialsTable, projectVariantsTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
 
 const objectStorageService = new ObjectStorageService();
 
@@ -86,10 +86,10 @@ storagePublicRouter.get("/storage/public-objects/*filePath", async (req: Request
 /**
  * GET /storage/objects/*  (CONDITIONALLY PUBLIC)
  *
- * - If the request is authenticated (Clerk session), serve the object freely
- *   (admin preview of draft models).
- * - If not authenticated, only serve objects referenced by a live project
- *   (public AR experience).
+ * - If the request is authenticated (valid Clerk session via clerkMiddleware), serve freely.
+ *   This allows admin users to preview draft/unpublished models.
+ * - If not authenticated, only serve objects referenced by a live project (directly or via
+ *   materials/variants), so variation assets also load on the public studio page.
  */
 storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
@@ -98,26 +98,72 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
     const objectPath = `/objects/${wildcardPath}`;
     const apiObjectUrl = `/api/storage${objectPath}`;
 
-    // Check if request comes from an authenticated admin user
-    let isAuthenticated = false;
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      isAuthenticated = true;
-    }
-    // Also check for Clerk session cookie (set by Clerk middleware)
-    if ((req as Request & { auth?: { userId?: string } }).auth?.userId) {
-      isAuthenticated = true;
-    }
+    // Use Clerk's getAuth which reads the validated session set by clerkMiddleware().
+    // Never trust raw headers here — the middleware validates the token signature.
+    const { userId } = getAuth(req);
 
-    if (!isAuthenticated) {
-      // Public access: only serve objects from live projects
-      const [liveProject] = await db
+    if (!userId) {
+      // Public access: serve only when the URL is referenced by a live project
+      // (directly on the project, or via an enabled material/variant).
+      const urlPattern = `%${apiObjectUrl}%`;
+
+      const [allowed] = await db
         .select({ id: projectsTable.id })
         .from(projectsTable)
-        .where(and(eq(projectsTable.isLive, true), like(projectsTable.modelUrl, `%${apiObjectUrl}%`)))
+        .where(
+          and(
+            eq(projectsTable.isLive, true),
+            or(
+              // Base model URL
+              like(projectsTable.modelUrl, urlPattern),
+            ),
+          ),
+        )
         .limit(1);
 
-      if (!liveProject) {
+      // Also check material/variant tables for live projects
+      let allowedViaVariation = false;
+      if (!allowed) {
+        const [mat] = await db
+          .select({ id: projectMaterialsTable.id })
+          .from(projectMaterialsTable)
+          .innerJoin(projectsTable, eq(projectMaterialsTable.projectId, projectsTable.id))
+          .where(
+            and(
+              eq(projectsTable.isLive, true),
+              eq(projectsTable.enableMaterials, true),
+              or(
+                like(projectMaterialsTable.modelUrl, urlPattern),
+                like(projectMaterialsTable.thumbnailUrl, urlPattern),
+              ),
+            ),
+          )
+          .limit(1);
+
+        if (mat) {
+          allowedViaVariation = true;
+        } else {
+          const [variant] = await db
+            .select({ id: projectVariantsTable.id })
+            .from(projectVariantsTable)
+            .innerJoin(projectsTable, eq(projectVariantsTable.projectId, projectsTable.id))
+            .where(
+              and(
+                eq(projectsTable.isLive, true),
+                eq(projectsTable.enableVariants, true),
+                or(
+                  like(projectVariantsTable.modelUrl, urlPattern),
+                  like(projectVariantsTable.thumbnailUrl, urlPattern),
+                ),
+              ),
+            )
+            .limit(1);
+
+          if (variant) allowedViaVariation = true;
+        }
+      }
+
+      if (!allowed && !allowedViaVariation) {
         res.status(404).json({ error: "Object not found" });
         return;
       }

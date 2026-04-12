@@ -48,7 +48,8 @@ import {
   Plus,
   Trash2,
   Layers,
-  X,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -81,12 +82,16 @@ interface VariationItemProps {
   item: ProjectMaterial | ProjectVariant;
   kind: "material" | "variant";
   projectId: number;
+  isFirst: boolean;
+  isLast: boolean;
   onUpload: (target: UploadTarget) => void;
   onDelete: () => void;
   onRename: (name: string) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
-function VariationItem({ item, kind, projectId, onUpload, onDelete, onRename }: VariationItemProps) {
+function VariationItem({ item, kind, isFirst, isLast, onUpload, onDelete, onRename, onMoveUp, onMoveDown }: VariationItemProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(item.name);
 
@@ -100,6 +105,26 @@ function VariationItem({ item, kind, projectId, onUpload, onDelete, onRename }: 
   return (
     <div className="flex flex-col gap-2 p-3 rounded-sm border border-border bg-background/40">
       <div className="flex items-center gap-2">
+        {/* Reorder controls */}
+        <div className="flex flex-col gap-0.5 shrink-0">
+          <button
+            onClick={onMoveUp}
+            disabled={isFirst}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
+            aria-label="Move up"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+          <button
+            onClick={onMoveDown}
+            disabled={isLast}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
+            aria-label="Move down"
+          >
+            <ChevronDown className="w-3 h-3" />
+          </button>
+        </div>
+
         {editingName ? (
           <Input
             value={nameVal}
@@ -121,6 +146,7 @@ function VariationItem({ item, kind, projectId, onUpload, onDelete, onRename }: 
         <button
           onClick={onDelete}
           className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+          aria-label="Delete"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -384,6 +410,30 @@ export default function Editor() {
 
   const handleRenameVariant = async (id: number, name: string) => {
     await updateVariant.mutateAsync({ projectId, id, data: { name } });
+    queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
+  };
+
+  const handleReorderMaterial = async (index: number, direction: "up" | "down") => {
+    const items = [...materials];
+    const swapIdx = direction === "up" ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= items.length) return;
+    const [a, b] = [items[index], items[swapIdx]];
+    await Promise.all([
+      updateMaterial.mutateAsync({ projectId, id: a.id, data: { sortOrder: b.sortOrder } }),
+      updateMaterial.mutateAsync({ projectId, id: b.id, data: { sortOrder: a.sortOrder } }),
+    ]);
+    queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+  };
+
+  const handleReorderVariant = async (index: number, direction: "up" | "down") => {
+    const items = [...variants];
+    const swapIdx = direction === "up" ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= items.length) return;
+    const [a, b] = [items[index], items[swapIdx]];
+    await Promise.all([
+      updateVariant.mutateAsync({ projectId, id: a.id, data: { sortOrder: b.sortOrder } }),
+      updateVariant.mutateAsync({ projectId, id: b.id, data: { sortOrder: a.sortOrder } }),
+    ]);
     queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
   };
 
@@ -700,15 +750,19 @@ export default function Editor() {
 
             {project.enableMaterials && (
               <div className="flex flex-col gap-2">
-                {materials.map((mat) => (
+                {materials.map((mat, idx) => (
                   <VariationItem
                     key={mat.id}
                     item={mat}
                     kind="material"
                     projectId={projectId}
+                    isFirst={idx === 0}
+                    isLast={idx === materials.length - 1}
                     onUpload={triggerUpload}
                     onDelete={() => handleDeleteMaterial(mat.id)}
                     onRename={(name) => handleRenameMaterial(mat.id, name)}
+                    onMoveUp={() => handleReorderMaterial(idx, "up")}
+                    onMoveDown={() => handleReorderMaterial(idx, "down")}
                   />
                 ))}
                 <Button
@@ -741,15 +795,19 @@ export default function Editor() {
 
             {project.enableVariants && (
               <div className="flex flex-col gap-2">
-                {variants.map((variant) => (
+                {variants.map((variant, idx) => (
                   <VariationItem
                     key={variant.id}
                     item={variant}
                     kind="variant"
                     projectId={projectId}
+                    isFirst={idx === 0}
+                    isLast={idx === variants.length - 1}
                     onUpload={triggerUpload}
                     onDelete={() => handleDeleteVariant(variant.id)}
                     onRename={(name) => handleRenameVariant(variant.id, name)}
+                    onMoveUp={() => handleReorderVariant(idx, "up")}
+                    onMoveDown={() => handleReorderVariant(idx, "down")}
                   />
                 ))}
                 <Button
