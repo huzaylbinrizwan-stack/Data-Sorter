@@ -187,11 +187,6 @@ export default function Studio() {
 
   const handleSelectModel = (url: string | null) => {
     setActiveVariantModel(url);
-    // Update model-viewer src via DOM attribute (model-viewer attribute API)
-    const mv = document.querySelector("[data-testid='studio-model-viewer']");
-    if (mv) {
-      mv.setAttribute("src", url ?? baseModelUrl ?? "");
-    }
   };
 
   if (isLoading) {
@@ -251,7 +246,45 @@ export default function Studio() {
             style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 90px)" }}
             interaction-prompt="none"
             data-testid="studio-model-viewer"
-          />
+          >
+            {/* Native model-viewer AR button — shown only on AR-capable devices */}
+            <button
+              slot="ar-button"
+              data-testid="button-view-in-ar"
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                width: "100%",
+                padding: "0 24px",
+                height: "90px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 20px",
+                  borderRadius: "9999px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  letterSpacing: "0.05em",
+                  background: isLightBg ? "#111827" : "hsl(44,54%,54%)",
+                  color: isLightBg ? "#fff" : "#000",
+                }}
+              >
+                View in AR
+              </span>
+            </button>
+          </model-viewer>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center ${isLightBg ? "border-gray-300" : "border-white/20"}`}>
@@ -297,21 +330,6 @@ export default function Studio() {
             {project.name}
           </h1>
         </div>
-        {/* "View in AR" footer action — triggers model-viewer AR slot */}
-        <button
-          data-testid="footer-view-in-ar"
-          onClick={() => {
-            const mv = document.querySelector("[data-testid='studio-model-viewer']") as HTMLElement & { activateAR?: () => void };
-            if (mv && typeof mv.activateAR === "function") mv.activateAR();
-          }}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
-            isLightBg
-              ? "bg-gray-900 text-white hover:bg-gray-700"
-              : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-          }`}
-        >
-          View in AR
-        </button>
       </footer>
 
       {/* AR Studio Watermark */}
