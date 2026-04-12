@@ -32,6 +32,7 @@ import type {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
   StudioProject,
+  StudioProjectMeta,
   UpdateFolderBody,
   UpdateMaterialBody,
   UpdateProjectBody,
@@ -1060,7 +1061,95 @@ export const useUnpublishProject = <
 };
 
 /**
- * @summary Get public studio data for a project (no auth required)
+ * @summary Get minimal public studio metadata for a project (phase 1 load — no auth required)
+ */
+export const getGetStudioProjectMetaUrl = (slug: string) => {
+  return `/api/studio/${slug}/meta`;
+};
+
+export const getStudioProjectMeta = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<StudioProjectMeta> => {
+  return customFetch<StudioProjectMeta>(getGetStudioProjectMetaUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStudioProjectMetaQueryKey = (slug: string) => {
+  return [`/api/studio/${slug}/meta`] as const;
+};
+
+export const getGetStudioProjectMetaQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStudioProjectMeta>>,
+  TError = ErrorType<void>,
+>(
+  slug: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStudioProjectMeta>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetStudioProjectMetaQueryKey(slug);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStudioProjectMeta>>
+  > = ({ signal }) => getStudioProjectMeta(slug, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!slug,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStudioProjectMeta>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStudioProjectMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStudioProjectMeta>>
+>;
+export type GetStudioProjectMetaQueryError = ErrorType<void>;
+
+/**
+ * @summary Get minimal public studio metadata for a project (phase 1 load — no auth required)
+ */
+
+export function useGetStudioProjectMeta<
+  TData = Awaited<ReturnType<typeof getStudioProjectMeta>>,
+  TError = ErrorType<void>,
+>(
+  slug: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStudioProjectMeta>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStudioProjectMetaQueryOptions(slug, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get full public studio data for a project — includes materials and variants (no auth required)
  */
 export const getGetStudioProjectUrl = (slug: string) => {
   return `/api/studio/${slug}`;
@@ -1120,7 +1209,7 @@ export type GetStudioProjectQueryResult = NonNullable<
 export type GetStudioProjectQueryError = ErrorType<void>;
 
 /**
- * @summary Get public studio data for a project (no auth required)
+ * @summary Get full public studio data for a project — includes materials and variants (no auth required)
  */
 
 export function useGetStudioProject<

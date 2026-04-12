@@ -155,6 +155,48 @@ export interface UpdateProjectBody {
   folderId?: number | null;
 }
 
+export type StudioProjectMetaEnvironment =
+  (typeof StudioProjectMetaEnvironment)[keyof typeof StudioProjectMetaEnvironment];
+
+export const StudioProjectMetaEnvironment = {
+  black: "black",
+  white: "white",
+  "luxury-home": "luxury-home",
+  "classic-luxury": "classic-luxury",
+  "walls-plants": "walls-plants",
+} as const;
+
+export type StudioProjectMetaType =
+  (typeof StudioProjectMetaType)[keyof typeof StudioProjectMetaType];
+
+export const StudioProjectMetaType = {
+  furniture: "furniture",
+  object: "object",
+} as const;
+
+/**
+ * Minimal studio project data for initial page render (no materials or variants)
+ */
+export interface StudioProjectMeta {
+  id: number;
+  name: string;
+  companyName: string;
+  /** @nullable */
+  modelUrl: string | null;
+  environment: StudioProjectMetaEnvironment;
+  hotspotX: number;
+  hotspotY: number;
+  hotspotZ: number;
+  language: string;
+  type: StudioProjectMetaType;
+  isScalable: boolean;
+  enableMaterials: boolean;
+  enableVariants: boolean;
+  defaultModelName: string;
+  defaultColorName: string;
+  publicSlug: string;
+}
+
 export interface ProjectMaterial {
   id: number;
   projectId: number;

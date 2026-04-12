@@ -1,7 +1,12 @@
-import { useState, useRef, useEffect, useCallback, useDeferredValue } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "wouter";
-import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
-import type { StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
+import {
+  useGetStudioProjectMeta,
+  useGetStudioProject,
+  getGetStudioProjectMetaQueryKey,
+  getGetStudioProjectQueryKey,
+} from "@workspace/api-client-react";
+import type { StudioProjectMeta, StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
 import { Box, ZoomIn, ChevronLeft, ChevronRight, Palette } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
@@ -337,15 +342,28 @@ export default function Studio() {
   const arButtonRef = useRef<HTMLButtonElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
 
-  const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
+  const {
+    data: meta,
+    isLoading: isMetaLoading,
+    isError: isMetaError,
+  } = useGetStudioProjectMeta(projectSlug, {
     query: {
       enabled: !!projectSlug,
-      queryKey: getGetStudioProjectQueryKey(projectSlug),
+      queryKey: getGetStudioProjectMetaQueryKey(projectSlug),
       retry: false,
     },
   });
 
-  const deferredProject = useDeferredValue(project);
+  const {
+    data: fullProject,
+    isLoading: isFullLoading,
+  } = useGetStudioProject(projectSlug, {
+    query: {
+      enabled: !!meta,
+      queryKey: getGetStudioProjectQueryKey(projectSlug),
+      retry: false,
+    },
+  });
 
   const dismissOverlay = useCallback(() => {
     setOverlayOpacity(0);
@@ -353,17 +371,17 @@ export default function Studio() {
   }, []);
 
   useEffect(() => {
-    if (isError && !isLoading) {
+    if (isMetaError && !isMetaLoading) {
       dismissOverlay();
       return undefined;
     }
 
-    if (!project) return undefined;
+    if (!meta) return undefined;
 
     const src = (() => {
       if (activeMaterial?.modelUrl) return activeMaterial.modelUrl;
       if (activeVariant?.modelUrl) return activeVariant.modelUrl;
-      return project.modelUrl;
+      return meta.modelUrl;
     })();
 
     if (!src) {
@@ -390,9 +408,9 @@ export default function Studio() {
       mv.removeEventListener("error", onError);
       clearTimeout(fallback);
     };
-  }, [project, isError, isLoading, activeMaterial, activeVariant, dismissOverlay]);
+  }, [meta, isMetaError, isMetaLoading, activeMaterial, activeVariant, dismissOverlay]);
 
-  const baseModelUrl = project?.modelUrl ?? null;
+  const baseModelUrl = meta?.modelUrl ?? null;
 
   const activeSrc = (() => {
     if (activeMaterial?.modelUrl) return activeMaterial.modelUrl;
@@ -409,7 +427,7 @@ export default function Studio() {
     setActiveMaterial(material);
   };
 
-  if (isError && !isLoading && !overlayVisible) {
+  if (isMetaError && !isMetaLoading && !overlayVisible) {
     return (
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-6">
         <div className="w-20 h-20 rounded-full border border-primary/20 flex items-center justify-center">
@@ -428,15 +446,15 @@ export default function Studio() {
     );
   }
 
-  const envStyle = project ? (ENV_STYLES[project.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
-  const textClass = project ? (ENV_TEXT[project.environment] ?? "text-white") : "text-white";
-  const isLightBg = !!project && (project.environment === "white" || project.environment === "walls-plants");
+  const envStyle = meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
+  const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
+  const isLightBg = !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
 
   return (
     <>
       {/* Luxury loading overlay */}
       {overlayVisible && (
-        <LuxuryLoadingScreen projectName={project?.name} />
+        <LuxuryLoadingScreen projectName={meta?.name} />
       )}
 
       {/* Main studio layout */}
@@ -450,20 +468,20 @@ export default function Studio() {
         }}
         data-testid="studio-page"
       >
-        {/* Viewer — fills all remaining height */}
+        {/* Viewer — fills all remaining height; renders as soon as phase-1 meta arrives */}
         <div className="flex-1 relative min-h-0">
           {activeSrc ? (
             <model-viewer
               ref={modelViewerRef}
               src={activeSrc}
-              alt={project?.name ?? ""}
+              alt={meta?.name ?? ""}
               camera-controls
               auto-rotate
               ar
               ar-modes="webxr scene-viewer quick-look"
               shadow-intensity="1"
-              disable-zoom={!project?.isScalable || undefined}
-              camera-target={project ? `${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m` : undefined}
+              disable-zoom={!meta?.isScalable || undefined}
+              camera-target={meta ? `${meta.hotspotX}m ${meta.hotspotY}m ${meta.hotspotZ}m` : undefined}
               style={{ width: "100%", height: "100%", display: "block" }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
@@ -488,7 +506,7 @@ export default function Studio() {
           )}
 
           {/* AR Scalable badge */}
-          {project?.isScalable && (
+          {meta?.isScalable && (
             <div
               className={`absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border ${isLightBg ? "bg-white/70 border-gray-200 text-gray-700" : "bg-black/40 border-white/10 text-white/80"}`}
             >
@@ -497,13 +515,13 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Floating variation sidebar — shows skeleton while deferred data loads */}
+          {/* Floating variation sidebar — phase 2: shown with skeleton until fullProject arrives */}
           <VariationSidebar
-            project={deferredProject ?? null}
+            project={fullProject ?? null}
             isLightBg={isLightBg}
             activeVariantId={activeVariant?.id ?? null}
             activeMaterialId={activeMaterial?.id ?? null}
-            isLoadingData={isLoading || deferredProject !== project}
+            isLoadingData={isFullLoading || !fullProject}
             onSelectVariant={handleSelectVariant}
             onSelectMaterial={handleSelectMaterial}
           />
@@ -527,11 +545,11 @@ export default function Studio() {
         >
           <div className="flex-1 min-w-0">
             <h1 className={`font-serif text-lg font-semibold leading-tight truncate ${textClass}`}>
-              {project?.name ?? ""}
+              {meta?.name ?? ""}
             </h1>
-            {project?.companyName && (
+            {meta?.companyName && (
               <p className={`text-xs font-light truncate mt-0.5 ${isLightBg ? "text-gray-400" : "text-white/40"}`}>
-                {project.companyName}
+                {meta.companyName}
               </p>
             )}
           </div>

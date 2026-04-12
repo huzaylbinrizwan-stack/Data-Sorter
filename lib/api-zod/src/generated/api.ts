@@ -300,7 +300,43 @@ export const UnpublishProjectResponse = zod.object({
 });
 
 /**
- * @summary Get public studio data for a project (no auth required)
+ * @summary Get minimal public studio metadata for a project (phase 1 load — no auth required)
+ */
+export const GetStudioProjectMetaParams = zod.object({
+  slug: zod.coerce.string(),
+});
+
+export const GetStudioProjectMetaResponse = zod
+  .object({
+    id: zod.number(),
+    name: zod.string(),
+    companyName: zod.string(),
+    modelUrl: zod.string().nullable(),
+    environment: zod.enum([
+      "black",
+      "white",
+      "luxury-home",
+      "classic-luxury",
+      "walls-plants",
+    ]),
+    hotspotX: zod.number(),
+    hotspotY: zod.number(),
+    hotspotZ: zod.number(),
+    language: zod.string(),
+    type: zod.enum(["furniture", "object"]),
+    isScalable: zod.boolean(),
+    enableMaterials: zod.boolean(),
+    enableVariants: zod.boolean(),
+    defaultModelName: zod.string(),
+    defaultColorName: zod.string(),
+    publicSlug: zod.string(),
+  })
+  .describe(
+    "Minimal studio project data for initial page render (no materials or variants)",
+  );
+
+/**
+ * @summary Get full public studio data for a project — includes materials and variants (no auth required)
  */
 export const GetStudioProjectParams = zod.object({
   slug: zod.coerce.string(),

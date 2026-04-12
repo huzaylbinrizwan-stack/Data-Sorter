@@ -257,11 +257,32 @@ paths:
           description: Not found
 
   # ── Public Studio ────────────────────────────────────────────────────────────
+  /studio/{slug}/meta:
+    get:
+      operationId: getStudioProjectMeta
+      tags: [projects]
+      summary: Get minimal public studio metadata for a project (phase 1 load — no auth required)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Core studio project metadata (no materials or variants)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioProjectMeta"
+        "404":
+          description: Not found
+
   /studio/{slug}:
     get:
       operationId: getStudioProject
       tags: [projects]
-      summary: Get public studio data for a project (no auth required)
+      summary: Get full public studio data for a project — includes materials and variants (no auth required)
       parameters:
         - name: slug
           in: path
@@ -727,6 +748,62 @@ components:
           type: string
         folderId:
           type: ["integer", "null"]
+
+    StudioProjectMeta:
+      type: object
+      description: Minimal studio project data for initial page render (no materials or variants)
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        companyName:
+          type: string
+        modelUrl:
+          type: ["string", "null"]
+        environment:
+          type: string
+          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+        hotspotX:
+          type: number
+        hotspotY:
+          type: number
+        hotspotZ:
+          type: number
+        language:
+          type: string
+        type:
+          type: string
+          enum: [furniture, object]
+        isScalable:
+          type: boolean
+        enableMaterials:
+          type: boolean
+        enableVariants:
+          type: boolean
+        defaultModelName:
+          type: string
+        defaultColorName:
+          type: string
+        publicSlug:
+          type: string
+      required:
+        - id
+        - name
+        - companyName
+        - modelUrl
+        - environment
+        - hotspotX
+        - hotspotY
+        - hotspotZ
+        - language
+        - type
+        - isScalable
+        - enableMaterials
+        - enableVariants
+        - defaultModelName
+        - defaultColorName
+        - publicSlug
 
     StudioVariant:
       type: object

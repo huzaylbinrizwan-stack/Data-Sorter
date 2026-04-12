@@ -10,6 +10,8 @@ import {
   PublishProjectParams,
   UnpublishProjectParams,
   GetStudioProjectParams,
+  GetStudioProjectMetaParams,
+  GetStudioProjectMetaResponse,
   ListProjectsQueryParams,
   ListProjectsResponse,
   GetProjectResponse,
@@ -23,6 +25,44 @@ import { nanoid } from "nanoid";
 const router: IRouter = Router();
 
 export const studioRouter: IRouter = Router();
+
+studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
+  const params = GetStudioProjectMetaParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.publicSlug, params.data.slug));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  if (!project.isLive) {
+    res.status(404).json({ error: "AR experience not available" });
+    return;
+  }
+  res.json(GetStudioProjectMetaResponse.parse({
+    id: project.id,
+    name: project.name,
+    companyName: project.companyName,
+    modelUrl: project.modelUrl,
+    environment: project.environment,
+    hotspotX: project.hotspotX,
+    hotspotY: project.hotspotY,
+    hotspotZ: project.hotspotZ,
+    language: project.language,
+    type: project.type,
+    isScalable: project.isScalable,
+    enableMaterials: project.enableMaterials,
+    enableVariants: project.enableVariants,
+    defaultModelName: project.defaultModelName,
+    defaultColorName: project.defaultColorName,
+    publicSlug: project.publicSlug,
+  }));
+});
 
 studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
   const params = GetStudioProjectParams.safeParse(req.params);
