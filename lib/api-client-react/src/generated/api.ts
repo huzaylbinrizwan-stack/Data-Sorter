@@ -18,17 +18,23 @@ import type {
 
 import type {
   CreateFolderBody,
+  CreateMaterialBody,
   CreateProjectBody,
+  CreateVariantBody,
   DashboardStats,
   Folder,
   HealthStatus,
   ListProjectsParams,
   Project,
+  ProjectMaterial,
+  ProjectVariant,
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
   StudioProject,
   UpdateFolderBody,
+  UpdateMaterialBody,
   UpdateProjectBody,
+  UpdateVariantBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1388,3 +1394,698 @@ export function useGetStorageObject<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List materials for a project
+ */
+export const getListMaterialsUrl = (projectId: number) => {
+  return `/api/projects/${projectId}/materials`;
+};
+
+export const listMaterials = async (
+  projectId: number,
+  options?: RequestInit,
+): Promise<ProjectMaterial[]> => {
+  return customFetch<ProjectMaterial[]>(getListMaterialsUrl(projectId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMaterialsQueryKey = (projectId: number) => {
+  return [`/api/projects/${projectId}/materials`] as const;
+};
+
+export const getListMaterialsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMaterials>>,
+  TError = ErrorType<unknown>,
+>(
+  projectId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMaterials>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListMaterialsQueryKey(projectId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterials>>> = ({
+    signal,
+  }) => listMaterials(projectId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMaterials>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMaterialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMaterials>>
+>;
+export type ListMaterialsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List materials for a project
+ */
+
+export function useListMaterials<
+  TData = Awaited<ReturnType<typeof listMaterials>>,
+  TError = ErrorType<unknown>,
+>(
+  projectId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMaterials>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMaterialsQueryOptions(projectId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a material for a project
+ */
+export const getCreateMaterialUrl = (projectId: number) => {
+  return `/api/projects/${projectId}/materials`;
+};
+
+export const createMaterial = async (
+  projectId: number,
+  createMaterialBody: CreateMaterialBody,
+  options?: RequestInit,
+): Promise<ProjectMaterial> => {
+  return customFetch<ProjectMaterial>(getCreateMaterialUrl(projectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createMaterialBody),
+  });
+};
+
+export const getCreateMaterialMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMaterial>>,
+    TError,
+    { projectId: number; data: BodyType<CreateMaterialBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createMaterial>>,
+  TError,
+  { projectId: number; data: BodyType<CreateMaterialBody> },
+  TContext
+> => {
+  const mutationKey = ["createMaterial"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createMaterial>>,
+    { projectId: number; data: BodyType<CreateMaterialBody> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return createMaterial(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createMaterial>>
+>;
+export type CreateMaterialMutationBody = BodyType<CreateMaterialBody>;
+export type CreateMaterialMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a material for a project
+ */
+export const useCreateMaterial = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMaterial>>,
+    TError,
+    { projectId: number; data: BodyType<CreateMaterialBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createMaterial>>,
+  TError,
+  { projectId: number; data: BodyType<CreateMaterialBody> },
+  TContext
+> => {
+  return useMutation(getCreateMaterialMutationOptions(options));
+};
+
+/**
+ * @summary Update a material
+ */
+export const getUpdateMaterialUrl = (projectId: number, id: number) => {
+  return `/api/projects/${projectId}/materials/${id}`;
+};
+
+export const updateMaterial = async (
+  projectId: number,
+  id: number,
+  updateMaterialBody: UpdateMaterialBody,
+  options?: RequestInit,
+): Promise<ProjectMaterial> => {
+  return customFetch<ProjectMaterial>(getUpdateMaterialUrl(projectId, id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMaterialBody),
+  });
+};
+
+export const getUpdateMaterialMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMaterial>>,
+    TError,
+    { projectId: number; id: number; data: BodyType<UpdateMaterialBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMaterial>>,
+  TError,
+  { projectId: number; id: number; data: BodyType<UpdateMaterialBody> },
+  TContext
+> => {
+  const mutationKey = ["updateMaterial"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMaterial>>,
+    { projectId: number; id: number; data: BodyType<UpdateMaterialBody> }
+  > = (props) => {
+    const { projectId, id, data } = props ?? {};
+
+    return updateMaterial(projectId, id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMaterial>>
+>;
+export type UpdateMaterialMutationBody = BodyType<UpdateMaterialBody>;
+export type UpdateMaterialMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a material
+ */
+export const useUpdateMaterial = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMaterial>>,
+    TError,
+    { projectId: number; id: number; data: BodyType<UpdateMaterialBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMaterial>>,
+  TError,
+  { projectId: number; id: number; data: BodyType<UpdateMaterialBody> },
+  TContext
+> => {
+  return useMutation(getUpdateMaterialMutationOptions(options));
+};
+
+/**
+ * @summary Delete a material
+ */
+export const getDeleteMaterialUrl = (projectId: number, id: number) => {
+  return `/api/projects/${projectId}/materials/${id}`;
+};
+
+export const deleteMaterial = async (
+  projectId: number,
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMaterialUrl(projectId, id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMaterialMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMaterial>>,
+    TError,
+    { projectId: number; id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMaterial>>,
+  TError,
+  { projectId: number; id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMaterial"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMaterial>>,
+    { projectId: number; id: number }
+  > = (props) => {
+    const { projectId, id } = props ?? {};
+
+    return deleteMaterial(projectId, id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMaterialMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMaterial>>
+>;
+
+export type DeleteMaterialMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a material
+ */
+export const useDeleteMaterial = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMaterial>>,
+    TError,
+    { projectId: number; id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMaterial>>,
+  TError,
+  { projectId: number; id: number },
+  TContext
+> => {
+  return useMutation(getDeleteMaterialMutationOptions(options));
+};
+
+/**
+ * @summary List variants for a project
+ */
+export const getListVariantsUrl = (projectId: number) => {
+  return `/api/projects/${projectId}/variants`;
+};
+
+export const listVariants = async (
+  projectId: number,
+  options?: RequestInit,
+): Promise<ProjectVariant[]> => {
+  return customFetch<ProjectVariant[]>(getListVariantsUrl(projectId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListVariantsQueryKey = (projectId: number) => {
+  return [`/api/projects/${projectId}/variants`] as const;
+};
+
+export const getListVariantsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVariants>>,
+  TError = ErrorType<unknown>,
+>(
+  projectId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVariants>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListVariantsQueryKey(projectId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listVariants>>> = ({
+    signal,
+  }) => listVariants(projectId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listVariants>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListVariantsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVariants>>
+>;
+export type ListVariantsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List variants for a project
+ */
+
+export function useListVariants<
+  TData = Awaited<ReturnType<typeof listVariants>>,
+  TError = ErrorType<unknown>,
+>(
+  projectId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVariants>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListVariantsQueryOptions(projectId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a variant for a project
+ */
+export const getCreateVariantUrl = (projectId: number) => {
+  return `/api/projects/${projectId}/variants`;
+};
+
+export const createVariant = async (
+  projectId: number,
+  createVariantBody: CreateVariantBody,
+  options?: RequestInit,
+): Promise<ProjectVariant> => {
+  return customFetch<ProjectVariant>(getCreateVariantUrl(projectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createVariantBody),
+  });
+};
+
+export const getCreateVariantMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVariant>>,
+    TError,
+    { projectId: number; data: BodyType<CreateVariantBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVariant>>,
+  TError,
+  { projectId: number; data: BodyType<CreateVariantBody> },
+  TContext
+> => {
+  const mutationKey = ["createVariant"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVariant>>,
+    { projectId: number; data: BodyType<CreateVariantBody> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return createVariant(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVariantMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVariant>>
+>;
+export type CreateVariantMutationBody = BodyType<CreateVariantBody>;
+export type CreateVariantMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a variant for a project
+ */
+export const useCreateVariant = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVariant>>,
+    TError,
+    { projectId: number; data: BodyType<CreateVariantBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVariant>>,
+  TError,
+  { projectId: number; data: BodyType<CreateVariantBody> },
+  TContext
+> => {
+  return useMutation(getCreateVariantMutationOptions(options));
+};
+
+/**
+ * @summary Update a variant
+ */
+export const getUpdateVariantUrl = (projectId: number, id: number) => {
+  return `/api/projects/${projectId}/variants/${id}`;
+};
+
+export const updateVariant = async (
+  projectId: number,
+  id: number,
+  updateVariantBody: UpdateVariantBody,
+  options?: RequestInit,
+): Promise<ProjectVariant> => {
+  return customFetch<ProjectVariant>(getUpdateVariantUrl(projectId, id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateVariantBody),
+  });
+};
+
+export const getUpdateVariantMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVariant>>,
+    TError,
+    { projectId: number; id: number; data: BodyType<UpdateVariantBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVariant>>,
+  TError,
+  { projectId: number; id: number; data: BodyType<UpdateVariantBody> },
+  TContext
+> => {
+  const mutationKey = ["updateVariant"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVariant>>,
+    { projectId: number; id: number; data: BodyType<UpdateVariantBody> }
+  > = (props) => {
+    const { projectId, id, data } = props ?? {};
+
+    return updateVariant(projectId, id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVariantMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVariant>>
+>;
+export type UpdateVariantMutationBody = BodyType<UpdateVariantBody>;
+export type UpdateVariantMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a variant
+ */
+export const useUpdateVariant = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVariant>>,
+    TError,
+    { projectId: number; id: number; data: BodyType<UpdateVariantBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVariant>>,
+  TError,
+  { projectId: number; id: number; data: BodyType<UpdateVariantBody> },
+  TContext
+> => {
+  return useMutation(getUpdateVariantMutationOptions(options));
+};
+
+/**
+ * @summary Delete a variant
+ */
+export const getDeleteVariantUrl = (projectId: number, id: number) => {
+  return `/api/projects/${projectId}/variants/${id}`;
+};
+
+export const deleteVariant = async (
+  projectId: number,
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteVariantUrl(projectId, id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVariantMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVariant>>,
+    TError,
+    { projectId: number; id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVariant>>,
+  TError,
+  { projectId: number; id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteVariant"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVariant>>,
+    { projectId: number; id: number }
+  > = (props) => {
+    const { projectId, id } = props ?? {};
+
+    return deleteVariant(projectId, id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVariantMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVariant>>
+>;
+
+export type DeleteVariantMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a variant
+ */
+export const useDeleteVariant = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVariant>>,
+    TError,
+    { projectId: number; id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVariant>>,
+  TError,
+  { projectId: number; id: number },
+  TContext
+> => {
+  return useMutation(getDeleteVariantMutationOptions(options));
+};

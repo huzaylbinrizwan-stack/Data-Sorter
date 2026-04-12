@@ -7,9 +7,11 @@
  */
 
 export * from "./createFolderBody";
+export * from "./createMaterialBody";
 export * from "./createProjectBody";
 export * from "./createProjectBodyEnvironment";
 export * from "./createProjectBodyType";
+export * from "./createVariantBody";
 export * from "./dashboardStats";
 export * from "./environmentCount";
 export * from "./folder";
@@ -17,13 +19,17 @@ export * from "./healthStatus";
 export * from "./listProjectsParams";
 export * from "./project";
 export * from "./projectEnvironment";
+export * from "./projectMaterial";
 export * from "./projectType";
+export * from "./projectVariant";
 export * from "./requestUploadUrlBody";
 export * from "./requestUploadUrlResponse";
 export * from "./studioProject";
 export * from "./studioProjectEnvironment";
 export * from "./studioProjectType";
 export * from "./updateFolderBody";
+export * from "./updateMaterialBody";
 export * from "./updateProjectBody";
 export * from "./updateProjectBodyEnvironment";
 export * from "./updateProjectBodyType";
+export * from "./updateVariantBody";

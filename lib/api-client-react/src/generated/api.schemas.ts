@@ -62,6 +62,8 @@ export interface Project {
   language: string;
   type: ProjectType;
   isScalable: boolean;
+  enableMaterials: boolean;
+  enableVariants: boolean;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;
@@ -102,6 +104,8 @@ export interface CreateProjectBody {
   language?: string;
   type?: CreateProjectBodyType;
   isScalable?: boolean;
+  enableMaterials?: boolean;
+  enableVariants?: boolean;
   /** @nullable */
   folderId?: number | null;
 }
@@ -139,6 +143,8 @@ export interface UpdateProjectBody {
   language?: string;
   type?: UpdateProjectBodyType;
   isScalable?: boolean;
+  enableMaterials?: boolean;
+  enableVariants?: boolean;
   /** @nullable */
   folderId?: number | null;
 }
@@ -162,6 +168,30 @@ export const StudioProjectType = {
   object: "object",
 } as const;
 
+export interface ProjectMaterial {
+  id: number;
+  projectId: number;
+  name: string;
+  /** @nullable */
+  thumbnailUrl: string | null;
+  /** @nullable */
+  modelUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface ProjectVariant {
+  id: number;
+  projectId: number;
+  name: string;
+  /** @nullable */
+  thumbnailUrl: string | null;
+  /** @nullable */
+  modelUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface StudioProject {
   id: number;
   name: string;
@@ -175,7 +205,11 @@ export interface StudioProject {
   language: string;
   type: StudioProjectType;
   isScalable: boolean;
+  enableMaterials: boolean;
+  enableVariants: boolean;
   publicSlug: string;
+  materials: ProjectMaterial[];
+  variants: ProjectVariant[];
 }
 
 export interface EnvironmentCount {
@@ -200,6 +234,42 @@ export interface RequestUploadUrlBody {
 export interface RequestUploadUrlResponse {
   uploadURL: string;
   objectPath: string;
+}
+
+export interface CreateMaterialBody {
+  name: string;
+  /** @nullable */
+  thumbnailUrl?: string | null;
+  /** @nullable */
+  modelUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateMaterialBody {
+  name?: string;
+  /** @nullable */
+  thumbnailUrl?: string | null;
+  /** @nullable */
+  modelUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface CreateVariantBody {
+  name: string;
+  /** @nullable */
+  thumbnailUrl?: string | null;
+  /** @nullable */
+  modelUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateVariantBody {
+  name?: string;
+  /** @nullable */
+  thumbnailUrl?: string | null;
+  /** @nullable */
+  modelUrl?: string | null;
+  sortOrder?: number;
 }
 
 export type ListProjectsParams = {

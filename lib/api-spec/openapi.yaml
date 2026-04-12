@@ -18,6 +18,10 @@ tags:
     description: Dashboard statistics
   - name: storage
     description: Object storage operations
+  - name: materials
+    description: Project material variations
+  - name: variants
+    description: Project model variants
 
 paths:
   /healthz:
@@ -325,6 +329,200 @@ paths:
         "404":
           description: Not found
 
+  # ── Materials ──────────────────────────────────────────────────────────────
+  /projects/{projectId}/materials:
+    get:
+      operationId: listMaterials
+      tags: [materials]
+      summary: List materials for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectMaterial"
+
+    post:
+      operationId: createMaterial
+      tags: [materials]
+      summary: Create a material for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMaterialBody"
+      responses:
+        "201":
+          description: Material created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMaterial"
+
+  /projects/{projectId}/materials/{id}:
+    patch:
+      operationId: updateMaterial
+      tags: [materials]
+      summary: Update a material
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMaterialBody"
+      responses:
+        "200":
+          description: Updated material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMaterial"
+        "404":
+          description: Not found
+
+    delete:
+      operationId: deleteMaterial
+      tags: [materials]
+      summary: Delete a material
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Variants ──────────────────────────────────────────────────────────────
+  /projects/{projectId}/variants:
+    get:
+      operationId: listVariants
+      tags: [variants]
+      summary: List variants for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of variants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectVariant"
+
+    post:
+      operationId: createVariant
+      tags: [variants]
+      summary: Create a variant for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVariantBody"
+      responses:
+        "201":
+          description: Variant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectVariant"
+
+  /projects/{projectId}/variants/{id}:
+    patch:
+      operationId: updateVariant
+      tags: [variants]
+      summary: Update a variant
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVariantBody"
+      responses:
+        "200":
+          description: Updated variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectVariant"
+        "404":
+          description: Not found
+
+    delete:
+      operationId: deleteVariant
+      tags: [variants]
+      summary: Delete a variant
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -404,6 +602,10 @@ components:
           enum: [furniture, object]
         isScalable:
           type: boolean
+        enableMaterials:
+          type: boolean
+        enableVariants:
+          type: boolean
         folderId:
           type: ["integer", "null"]
         publicSlug:
@@ -428,6 +630,8 @@ components:
         - language
         - type
         - isScalable
+        - enableMaterials
+        - enableVariants
         - folderId
         - publicSlug
         - createdAt
@@ -459,6 +663,10 @@ components:
           type: string
           enum: [furniture, object]
         isScalable:
+          type: boolean
+        enableMaterials:
+          type: boolean
+        enableVariants:
           type: boolean
         folderId:
           type: ["integer", "null"]
@@ -493,6 +701,10 @@ components:
           enum: [furniture, object]
         isScalable:
           type: boolean
+        enableMaterials:
+          type: boolean
+        enableVariants:
+          type: boolean
         folderId:
           type: ["integer", "null"]
 
@@ -523,8 +735,20 @@ components:
           enum: [furniture, object]
         isScalable:
           type: boolean
+        enableMaterials:
+          type: boolean
+        enableVariants:
+          type: boolean
         publicSlug:
           type: string
+        materials:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMaterial"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectVariant"
       required:
         - id
         - name
@@ -537,7 +761,11 @@ components:
         - language
         - type
         - isScalable
+        - enableMaterials
+        - enableVariants
         - publicSlug
+        - materials
+        - variants
 
     DashboardStats:
       type: object
@@ -598,3 +826,109 @@ components:
       required:
         - uploadURL
         - objectPath
+
+    ProjectMaterial:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - name
+        - thumbnailUrl
+        - modelUrl
+        - sortOrder
+        - createdAt
+
+    CreateMaterialBody:
+      type: object
+      properties:
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+      required:
+        - name
+
+    UpdateMaterialBody:
+      type: object
+      properties:
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+
+    ProjectVariant:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - name
+        - thumbnailUrl
+        - modelUrl
+        - sortOrder
+        - createdAt
+
+    CreateVariantBody:
+      type: object
+      properties:
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+      required:
+        - name
+
+    UpdateVariantBody:
+      type: object
+      properties:
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer

@@ -88,6 +88,8 @@ export const ListProjectsResponseItem = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -112,6 +114,8 @@ export const CreateProjectBody = zod.object({
   language: zod.string().optional(),
   type: zod.enum(["furniture", "object"]).optional(),
   isScalable: zod.boolean().optional(),
+  enableMaterials: zod.boolean().optional(),
+  enableVariants: zod.boolean().optional(),
   folderId: zod.number().nullish(),
 });
 
@@ -142,6 +146,8 @@ export const GetProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -169,6 +175,8 @@ export const UpdateProjectBody = zod.object({
   language: zod.string().optional(),
   type: zod.enum(["furniture", "object"]).optional(),
   isScalable: zod.boolean().optional(),
+  enableMaterials: zod.boolean().optional(),
+  enableVariants: zod.boolean().optional(),
   folderId: zod.number().nullish(),
 });
 
@@ -192,6 +200,8 @@ export const UpdateProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -232,6 +242,8 @@ export const PublishProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -265,6 +277,8 @@ export const UnpublishProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -275,7 +289,7 @@ export const UnpublishProjectResponse = zod.object({
  * @summary Get public studio data for a project (no auth required)
  */
 export const GetStudioProjectParams = zod.object({
-  slug: zod.string().min(1),
+  slug: zod.coerce.string(),
 });
 
 export const GetStudioProjectResponse = zod.object({
@@ -296,7 +310,31 @@ export const GetStudioProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  enableMaterials: zod.boolean(),
+  enableVariants: zod.boolean(),
   publicSlug: zod.string(),
+  materials: zod.array(
+    zod.object({
+      id: zod.number(),
+      projectId: zod.number(),
+      name: zod.string(),
+      thumbnailUrl: zod.string().nullable(),
+      modelUrl: zod.string().nullable(),
+      sortOrder: zod.number(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  variants: zod.array(
+    zod.object({
+      id: zod.number(),
+      projectId: zod.number(),
+      name: zod.string(),
+      thumbnailUrl: zod.string().nullable(),
+      modelUrl: zod.string().nullable(),
+      sortOrder: zod.number(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
 });
 
 /**
@@ -327,6 +365,8 @@ export const GetDashboardStatsResponse = zod.object({
       language: zod.string(),
       type: zod.enum(["furniture", "object"]),
       isScalable: zod.boolean(),
+      enableMaterials: zod.boolean(),
+      enableVariants: zod.boolean(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),
@@ -360,4 +400,134 @@ export const RequestUploadUrlResponse = zod.object({
  */
 export const GetStorageObjectParams = zod.object({
   objectPath: zod.coerce.string(),
+});
+
+/**
+ * @summary List materials for a project
+ */
+export const ListMaterialsParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const ListMaterialsResponseItem = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullable(),
+  modelUrl: zod.string().nullable(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMaterialsResponse = zod.array(ListMaterialsResponseItem);
+
+/**
+ * @summary Create a material for a project
+ */
+export const CreateMaterialParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const CreateMaterialBody = zod.object({
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullish(),
+  modelUrl: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a material
+ */
+export const UpdateMaterialParams = zod.object({
+  projectId: zod.coerce.number(),
+  id: zod.coerce.number(),
+});
+
+export const UpdateMaterialBody = zod.object({
+  name: zod.string().optional(),
+  thumbnailUrl: zod.string().nullish(),
+  modelUrl: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateMaterialResponse = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullable(),
+  modelUrl: zod.string().nullable(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a material
+ */
+export const DeleteMaterialParams = zod.object({
+  projectId: zod.coerce.number(),
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List variants for a project
+ */
+export const ListVariantsParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const ListVariantsResponseItem = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullable(),
+  modelUrl: zod.string().nullable(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListVariantsResponse = zod.array(ListVariantsResponseItem);
+
+/**
+ * @summary Create a variant for a project
+ */
+export const CreateVariantParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const CreateVariantBody = zod.object({
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullish(),
+  modelUrl: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a variant
+ */
+export const UpdateVariantParams = zod.object({
+  projectId: zod.coerce.number(),
+  id: zod.coerce.number(),
+});
+
+export const UpdateVariantBody = zod.object({
+  name: zod.string().optional(),
+  thumbnailUrl: zod.string().nullish(),
+  modelUrl: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateVariantResponse = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  name: zod.string(),
+  thumbnailUrl: zod.string().nullable(),
+  modelUrl: zod.string().nullable(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a variant
+ */
+export const DeleteVariantParams = zod.object({
+  projectId: zod.coerce.number(),
+  id: zod.coerce.number(),
 });

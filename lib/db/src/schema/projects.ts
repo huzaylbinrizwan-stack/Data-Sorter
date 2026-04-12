@@ -16,12 +16,36 @@ export const projectsTable = pgTable("projects", {
   language: text("language").notNull().default("en"),
   type: text("type").notNull().default("furniture"),
   isScalable: boolean("is_scalable").notNull().default(false),
+  enableMaterials: boolean("enable_materials").notNull().default(false),
+  enableVariants: boolean("enable_variants").notNull().default(false),
   folderId: integer("folder_id"),
   publicSlug: text("public_slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const projectMaterialsTable = pgTable("project_materials", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  name: text("name").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  modelUrl: text("model_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const projectVariantsTable = pgTable("project_variants", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  name: text("name").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  modelUrl: text("model_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertProjectSchema = createInsertSchema(projectsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projectsTable.$inferSelect;
+export type ProjectMaterial = typeof projectMaterialsTable.$inferSelect;
+export type ProjectVariant = typeof projectVariantsTable.$inferSelect;

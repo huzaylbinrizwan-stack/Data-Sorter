@@ -22,6 +22,8 @@ export interface CreateProjectBody {
   language?: string;
   type?: CreateProjectBodyType;
   isScalable?: boolean;
+  enableMaterials?: boolean;
+  enableVariants?: boolean;
   /** @nullable */
   folderId?: number | null;
 }

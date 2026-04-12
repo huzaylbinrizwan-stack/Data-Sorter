@@ -6,15 +6,28 @@ import {
   usePublishProject,
   useUnpublishProject,
   useRequestUploadUrl,
+  useListMaterials,
+  useCreateMaterial,
+  useUpdateMaterial,
+  useDeleteMaterial,
+  useListVariants,
+  useCreateVariant,
+  useUpdateVariant,
+  useDeleteVariant,
   getGetProjectQueryKey,
   getGetDashboardStatsQueryKey,
   getListProjectsQueryKey,
+  getListMaterialsQueryKey,
+  getListVariantsQueryKey,
   type UpdateProjectBody,
+  type ProjectMaterial,
+  type ProjectVariant,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -32,6 +45,10 @@ import {
   Check,
   Globe,
   Box,
+  Plus,
+  Trash2,
+  Layers,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +70,106 @@ const LANGUAGES = [
   { value: "ja", label: "Japanese" },
 ];
 
+type UploadTarget =
+  | { kind: "model" }
+  | { kind: "materialModel"; materialId: number }
+  | { kind: "materialThumb"; materialId: number }
+  | { kind: "variantModel"; variantId: number }
+  | { kind: "variantThumb"; variantId: number };
+
+interface VariationItemProps {
+  item: ProjectMaterial | ProjectVariant;
+  kind: "material" | "variant";
+  projectId: number;
+  onUpload: (target: UploadTarget) => void;
+  onDelete: () => void;
+  onRename: (name: string) => void;
+}
+
+function VariationItem({ item, kind, projectId, onUpload, onDelete, onRename }: VariationItemProps) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState(item.name);
+
+  const handleNameBlur = () => {
+    setEditingName(false);
+    if (nameVal.trim() && nameVal !== item.name) {
+      onRename(nameVal.trim());
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 p-3 rounded-sm border border-border bg-background/40">
+      <div className="flex items-center gap-2">
+        {editingName ? (
+          <Input
+            value={nameVal}
+            onChange={(e) => setNameVal(e.target.value)}
+            onBlur={handleNameBlur}
+            onKeyDown={(e) => { if (e.key === "Enter") handleNameBlur(); if (e.key === "Escape") { setEditingName(false); setNameVal(item.name); } }}
+            className="h-6 text-xs flex-1 bg-transparent border-primary/40"
+            autoFocus
+          />
+        ) : (
+          <span
+            className="text-xs font-medium flex-1 cursor-pointer hover:text-primary transition-colors truncate"
+            onClick={() => setEditingName(true)}
+            title="Click to rename"
+          >
+            {item.name}
+          </span>
+        )}
+        <button
+          onClick={onDelete}
+          className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {/* Thumbnail */}
+        <button
+          onClick={() => onUpload(kind === "material"
+            ? { kind: "materialThumb", materialId: item.id }
+            : { kind: "variantThumb", variantId: item.id }
+          )}
+          className="flex flex-col items-center justify-center gap-1 h-14 rounded-sm border border-dashed border-border hover:border-primary/40 transition-colors"
+        >
+          {item.thumbnailUrl ? (
+            <img src={item.thumbnailUrl} alt="thumb" className="w-full h-full object-cover rounded-sm" />
+          ) : (
+            <>
+              <Upload className="w-3 h-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Thumbnail</span>
+            </>
+          )}
+        </button>
+
+        {/* Model */}
+        <button
+          onClick={() => onUpload(kind === "material"
+            ? { kind: "materialModel", materialId: item.id }
+            : { kind: "variantModel", variantId: item.id }
+          )}
+          className="flex flex-col items-center justify-center gap-1 h-14 rounded-sm border border-dashed border-border hover:border-primary/40 transition-colors"
+        >
+          {item.modelUrl ? (
+            <div className="flex flex-col items-center gap-0.5">
+              <Box className="w-4 h-4 text-primary/60" />
+              <span className="text-xs text-primary/60">GLB ✓</span>
+            </div>
+          ) : (
+            <>
+              <Box className="w-3 h-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">.GLB</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Editor() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id ?? "", 10);
@@ -63,10 +180,24 @@ export default function Editor() {
     query: { enabled: !!projectId, queryKey: getGetProjectQueryKey(projectId) },
   });
 
+  const { data: materials = [] } = useListMaterials(projectId, {
+    query: { enabled: !!projectId && !!project?.enableMaterials, queryKey: getListMaterialsQueryKey(projectId) },
+  });
+  const { data: variants = [] } = useListVariants(projectId, {
+    query: { enabled: !!projectId && !!project?.enableVariants, queryKey: getListVariantsQueryKey(projectId) },
+  });
+
   const updateProject = useUpdateProject();
   const publishProject = usePublishProject();
   const unpublishProject = useUnpublishProject();
   const requestUploadUrl = useRequestUploadUrl();
+
+  const createMaterial = useCreateMaterial();
+  const updateMaterial = useUpdateMaterial();
+  const deleteMaterial = useDeleteMaterial();
+  const createVariant = useCreateVariant();
+  const updateVariant = useUpdateVariant();
+  const deleteVariant = useDeleteVariant();
 
   const [hotspotMode, setHotspotMode] = useState(false);
   const [hotspotPos, setHotspotPos] = useState({ x: 50, y: 50 });
@@ -75,6 +206,8 @@ export default function Editor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadTarget, setUploadTarget] = useState<UploadTarget>({ kind: "model" });
+  const [showVariations, setShowVariations] = useState(false);
 
   useEffect(() => {
     if (project) {
@@ -156,34 +289,102 @@ export default function Editor() {
     queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadFile = async (file: File, accept: "image" | "model"): Promise<string> => {
+    const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+      data: { name: file.name, size: file.size, contentType: file.type || (accept === "model" ? "model/gltf-binary" : "image/png") },
+    });
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+    };
+    await new Promise<void>((resolve, reject) => {
+      xhr.open("PUT", uploadURL);
+      xhr.setRequestHeader("Content-Type", file.type || (accept === "model" ? "model/gltf-binary" : "image/png"));
+      xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+      xhr.onerror = reject;
+      xhr.send(file);
+    });
+    return objectPath;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadProgress(0);
     try {
-      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-        data: { name: file.name, size: file.size, contentType: file.type || "model/gltf-binary" },
-      });
-      const xhr = new XMLHttpRequest();
-      xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-      };
-      await new Promise<void>((resolve, reject) => {
-        xhr.open("PUT", uploadURL);
-        xhr.setRequestHeader("Content-Type", file.type || "model/gltf-binary");
-        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
-        xhr.onerror = reject;
-        xhr.send(file);
-      });
-      await updateProject.mutateAsync({ id: projectId, data: { modelUrl: objectPath } });
-      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
-      toast({ title: "Model uploaded successfully" });
+      const target = uploadTarget;
+
+      if (target.kind === "model") {
+        const objectPath = await uploadFile(file, "model");
+        await updateProject.mutateAsync({ id: projectId, data: { modelUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+        toast({ title: "Model uploaded successfully" });
+      } else if (target.kind === "materialModel") {
+        const objectPath = await uploadFile(file, "model");
+        await updateMaterial.mutateAsync({ projectId, id: target.materialId, data: { modelUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+        toast({ title: "Material model uploaded" });
+      } else if (target.kind === "materialThumb") {
+        const objectPath = await uploadFile(file, "image");
+        await updateMaterial.mutateAsync({ projectId, id: target.materialId, data: { thumbnailUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+        toast({ title: "Material thumbnail uploaded" });
+      } else if (target.kind === "variantModel") {
+        const objectPath = await uploadFile(file, "model");
+        await updateVariant.mutateAsync({ projectId, id: target.variantId, data: { modelUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
+        toast({ title: "Variant model uploaded" });
+      } else if (target.kind === "variantThumb") {
+        const objectPath = await uploadFile(file, "image");
+        await updateVariant.mutateAsync({ projectId, id: target.variantId, data: { thumbnailUrl: objectPath } });
+        queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
+        toast({ title: "Variant thumbnail uploaded" });
+      }
     } catch (err) {
       toast({ title: "Upload failed", variant: "destructive" });
     } finally {
       setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const triggerUpload = (target: UploadTarget) => {
+    setUploadTarget(target);
+    if (fileInputRef.current) {
+      const isImage = target.kind === "materialThumb" || target.kind === "variantThumb";
+      fileInputRef.current.accept = isImage ? "image/png,image/jpeg,image/webp" : ".glb,.gltf";
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleAddMaterial = async () => {
+    await createMaterial.mutateAsync({ projectId, data: { name: `Material ${materials.length + 1}` } });
+    queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+  };
+
+  const handleAddVariant = async () => {
+    await createVariant.mutateAsync({ projectId, data: { name: `Variant ${variants.length + 1}` } });
+    queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
+  };
+
+  const handleDeleteMaterial = async (id: number) => {
+    await deleteMaterial.mutateAsync({ projectId, id });
+    queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+  };
+
+  const handleDeleteVariant = async (id: number) => {
+    await deleteVariant.mutateAsync({ projectId, id });
+    queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
+  };
+
+  const handleRenameMaterial = async (id: number, name: string) => {
+    await updateMaterial.mutateAsync({ projectId, id, data: { name } });
+    queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey(projectId) });
+  };
+
+  const handleRenameVariant = async (id: number, name: string) => {
+    await updateVariant.mutateAsync({ projectId, id, data: { name } });
+    queryClient.invalidateQueries({ queryKey: getListVariantsQueryKey(projectId) });
   };
 
   const getEnvStyle = (env: string): React.CSSProperties => {
@@ -265,13 +466,13 @@ export default function Editor() {
               type="file"
               accept=".glb,.gltf"
               className="hidden"
-              onChange={handleFileUpload}
+              onChange={handleFileChange}
               data-testid="input-model-file"
             />
             <Button
               variant="outline"
               className="w-full border-border text-sm gap-2"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => triggerUpload({ kind: "model" })}
               disabled={uploadProgress !== null}
               data-testid="button-add-file"
             >
@@ -418,7 +619,7 @@ export default function Editor() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => triggerUpload({ kind: "model" })}
                   data-testid="button-upload-empty"
                 >
                   <Upload className="w-4 h-4 mr-2" /> Add 3D Model
@@ -436,7 +637,6 @@ export default function Editor() {
               onMouseLeave={() => setIsDragging(false)}
               data-testid="hotspot-overlay"
             >
-              {/* Grid */}
               <div
                 className="absolute inset-0 opacity-20"
                 style={{
@@ -449,7 +649,6 @@ export default function Editor() {
                   Drag to set placement
                 </p>
               </div>
-              {/* Hotspot dot */}
               <div
                 className="absolute w-6 h-6 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ left: `${hotspotPos.x}%`, top: `${hotspotPos.y}%` }}
@@ -474,6 +673,99 @@ export default function Editor() {
             )}
           </div>
         </main>
+
+        {/* Right Panel — Material Variations */}
+        <aside className="w-72 border-l border-border bg-card flex flex-col overflow-y-auto shrink-0">
+          {/* Header */}
+          <div className="p-5 border-b border-border flex items-center gap-2">
+            <Layers className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest flex-1">
+              Variations
+            </h3>
+          </div>
+
+          {/* Materials Toggle */}
+          <div className="p-5 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-xs font-medium">Different Materials</Label>
+              <Switch
+                checked={project.enableMaterials}
+                onCheckedChange={async (checked) => {
+                  await updateProject.mutateAsync({ id: projectId, data: { enableMaterials: checked } });
+                  queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+                }}
+                data-testid="switch-enable-materials"
+              />
+            </div>
+
+            {project.enableMaterials && (
+              <div className="flex flex-col gap-2">
+                {materials.map((mat) => (
+                  <VariationItem
+                    key={mat.id}
+                    item={mat}
+                    kind="material"
+                    projectId={projectId}
+                    onUpload={triggerUpload}
+                    onDelete={() => handleDeleteMaterial(mat.id)}
+                    onRename={(name) => handleRenameMaterial(mat.id, name)}
+                  />
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 border-dashed text-xs mt-1"
+                  onClick={handleAddMaterial}
+                  data-testid="button-add-material"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Material
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Variants Toggle */}
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-xs font-medium">Different Models</Label>
+              <Switch
+                checked={project.enableVariants}
+                onCheckedChange={async (checked) => {
+                  await updateProject.mutateAsync({ id: projectId, data: { enableVariants: checked } });
+                  queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+                }}
+                data-testid="switch-enable-variants"
+              />
+            </div>
+
+            {project.enableVariants && (
+              <div className="flex flex-col gap-2">
+                {variants.map((variant) => (
+                  <VariationItem
+                    key={variant.id}
+                    item={variant}
+                    kind="variant"
+                    projectId={projectId}
+                    onUpload={triggerUpload}
+                    onDelete={() => handleDeleteVariant(variant.id)}
+                    onRename={(name) => handleRenameVariant(variant.id, name)}
+                  />
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 border-dashed text-xs mt-1"
+                  onClick={handleAddVariant}
+                  data-testid="button-add-variant"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Variant
+                </Button>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );

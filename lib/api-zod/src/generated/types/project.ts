@@ -24,6 +24,8 @@ export interface Project {
   language: string;
   type: ProjectType;
   isScalable: boolean;
+  enableMaterials: boolean;
+  enableVariants: boolean;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;

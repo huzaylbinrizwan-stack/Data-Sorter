@@ -5,6 +5,8 @@
  * AR Studio API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectMaterial } from "./projectMaterial";
+import type { ProjectVariant } from "./projectVariant";
 import type { StudioProjectEnvironment } from "./studioProjectEnvironment";
 import type { StudioProjectType } from "./studioProjectType";
 
@@ -21,4 +23,9 @@ export interface StudioProject {
   language: string;
   type: StudioProjectType;
   isScalable: boolean;
+  enableMaterials: boolean;
+  enableVariants: boolean;
+  publicSlug: string;
+  materials: ProjectMaterial[];
+  variants: ProjectVariant[];
 }

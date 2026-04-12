@@ -1,12 +1,13 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
-import { and, eq, like } from "drizzle-orm";
+import { like, or, and, eq } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { db, projectsTable } from "@workspace/db";
+import { requireClerkAuth } from "../middlewares/requireClerkAuth";
 
 const objectStorageService = new ObjectStorageService();
 
@@ -83,11 +84,12 @@ storagePublicRouter.get("/storage/public-objects/*filePath", async (req: Request
 });
 
 /**
- * GET /storage/objects/*  (CONDITIONALLY PUBLIC — only for objects referenced by live projects)
+ * GET /storage/objects/*  (CONDITIONALLY PUBLIC)
  *
- * Serve uploaded 3D model files from PRIVATE_OBJECT_DIR.
- * Only objects whose paths appear in the `modelUrl` of a live (published) project
- * are served. This prevents exposure of unpublished/draft assets.
+ * - If the request is authenticated (Clerk session), serve the object freely
+ *   (admin preview of draft models).
+ * - If not authenticated, only serve objects referenced by a live project
+ *   (public AR experience).
  */
 storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
@@ -96,16 +98,29 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
     const objectPath = `/objects/${wildcardPath}`;
     const apiObjectUrl = `/api/storage${objectPath}`;
 
-    // Ensure this object is referenced by at least one live (published) project
-    const [liveProject] = await db
-      .select({ id: projectsTable.id })
-      .from(projectsTable)
-      .where(and(eq(projectsTable.isLive, true), like(projectsTable.modelUrl, `%${apiObjectUrl}%`)))
-      .limit(1);
+    // Check if request comes from an authenticated admin user
+    let isAuthenticated = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      isAuthenticated = true;
+    }
+    // Also check for Clerk session cookie (set by Clerk middleware)
+    if ((req as Request & { auth?: { userId?: string } }).auth?.userId) {
+      isAuthenticated = true;
+    }
 
-    if (!liveProject) {
-      res.status(404).json({ error: "Object not found" });
-      return;
+    if (!isAuthenticated) {
+      // Public access: only serve objects from live projects
+      const [liveProject] = await db
+        .select({ id: projectsTable.id })
+        .from(projectsTable)
+        .where(and(eq(projectsTable.isLive, true), like(projectsTable.modelUrl, `%${apiObjectUrl}%`)))
+        .limit(1);
+
+      if (!liveProject) {
+        res.status(404).json({ error: "Object not found" });
+        return;
+      }
     }
 
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);

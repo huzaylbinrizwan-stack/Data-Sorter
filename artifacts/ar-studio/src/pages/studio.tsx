@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
-import { Smartphone, Box, ZoomIn } from "lucide-react";
+import type { StudioProject, ProjectMaterial, ProjectVariant } from "@workspace/api-client-react";
+import { Smartphone, Box, ZoomIn, ChevronDown, ChevronUp } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
   black: { background: "#0a0a0a" },
@@ -21,12 +22,151 @@ const ENV_TEXT: Record<string, string> = {
 
 interface ModelViewerElement extends HTMLElement {
   activateAR(): void;
+  src: string;
+}
+
+type ActiveTab = "materials" | "variants";
+
+function VariationSidebar({
+  project,
+  isLightBg,
+  activeModel,
+  onSelectModel,
+}: {
+  project: StudioProject;
+  isLightBg: boolean;
+  activeModel: string | null;
+  onSelectModel: (url: string | null) => void;
+}) {
+  const hasMaterials = project.enableMaterials && project.materials && project.materials.length > 0;
+  const hasVariants = project.enableVariants && project.variants && project.variants.length > 0;
+  const showBoth = hasMaterials && hasVariants;
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>("materials");
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (!hasMaterials && !hasVariants) return null;
+
+  const currentTab = showBoth ? activeTab : hasMaterials ? "materials" : "variants";
+  const items: (ProjectMaterial | ProjectVariant)[] = currentTab === "materials"
+    ? (project.materials ?? [])
+    : (project.variants ?? []);
+
+  const glassBg = isLightBg
+    ? "bg-white/80 border-gray-200/70"
+    : "bg-black/50 border-white/10";
+  const labelColor = isLightBg ? "text-gray-700" : "text-white/80";
+  const subColor = isLightBg ? "text-gray-400" : "text-white/40";
+  const tabActive = isLightBg
+    ? "bg-gray-900 text-white"
+    : "bg-[hsl(44,54%,54%)] text-black";
+  const tabInactive = isLightBg
+    ? "text-gray-500 hover:text-gray-700"
+    : "text-white/40 hover:text-white/70";
+
+  return (
+    <div
+      className={`fixed right-4 top-1/2 -translate-y-1/2 w-56 rounded-xl border backdrop-blur-md shadow-2xl overflow-hidden ${glassBg}`}
+      style={{ zIndex: 20 }}
+    >
+      {/* Header */}
+      <div
+        className={`flex items-center justify-between px-4 py-3 border-b ${isLightBg ? "border-gray-200/60" : "border-white/10"}`}
+      >
+        {showBoth ? (
+          <div className="flex gap-1">
+            {(["materials", "variants"] as ActiveTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all capitalize ${currentTab === tab ? tabActive : tabInactive}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className={`text-xs font-medium uppercase tracking-widest ${labelColor}`}>
+            {currentTab === "materials" ? "Materials" : "Variants"}
+          </span>
+        )}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`${subColor} transition-colors hover:${labelColor}`}
+        >
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Items */}
+      {isOpen && (
+        <div className="p-3 flex flex-col gap-2 max-h-96 overflow-y-auto">
+          {/* Default / original option */}
+          <button
+            onClick={() => onSelectModel(null)}
+            className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
+              activeModel === null
+                ? isLightBg
+                  ? "border-gray-900 bg-gray-100"
+                  : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                : isLightBg
+                ? "border-gray-200 hover:border-gray-300"
+                : "border-white/10 hover:border-white/20"
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
+                isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
+              }`}
+            >
+              <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+            </div>
+            <span className={`text-xs font-medium ${labelColor}`}>Original</span>
+          </button>
+
+          {items.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onSelectModel(item.modelUrl ?? null)}
+              className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
+                activeModel === item.modelUrl
+                  ? isLightBg
+                    ? "border-gray-900 bg-gray-100"
+                    : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                  : isLightBg
+                  ? "border-gray-200 hover:border-gray-300"
+                  : "border-white/10 hover:border-white/20"
+              }`}
+            >
+              {item.thumbnailUrl ? (
+                <img
+                  src={item.thumbnailUrl}
+                  alt={item.name}
+                  className="w-9 h-9 rounded-md object-cover shrink-0 border border-white/10"
+                />
+              ) : (
+                <div
+                  className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
+                    isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
+                  }`}
+                >
+                  <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                </div>
+              )}
+              <span className={`text-xs font-medium truncate ${labelColor}`}>{item.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Studio() {
   const { slug } = useParams<{ slug: string }>();
   const projectSlug = slug ?? "";
   const modelViewerRef = useRef<ModelViewerElement>(null);
+  const [activeVariantModel, setActiveVariantModel] = useState<string | null>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
     query: { enabled: !!projectSlug, queryKey: getGetStudioProjectQueryKey(projectSlug), retry: false },
@@ -35,6 +175,13 @@ export default function Studio() {
   const handleViewInAR = () => {
     if (modelViewerRef.current) {
       modelViewerRef.current.activateAR();
+    }
+  };
+
+  const handleSelectModel = (url: string | null) => {
+    setActiveVariantModel(url);
+    if (modelViewerRef.current) {
+      modelViewerRef.current.src = url ?? project?.modelUrl ?? "";
     }
   };
 
@@ -76,15 +223,16 @@ export default function Studio() {
   const envStyle = ENV_STYLES[project.environment] ?? ENV_STYLES.black;
   const textClass = ENV_TEXT[project.environment] ?? "text-white";
   const isLightBg = project.environment === "white" || project.environment === "walls-plants";
+  const activeModelSrc = activeVariantModel ?? project.modelUrl;
 
   return (
     <div className="min-h-screen flex flex-col" style={envStyle} data-testid="studio-page">
       {/* Viewer */}
-      <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 120px)" }}>
-        {project.modelUrl ? (
+      <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 90px)" }}>
+        {activeModelSrc ? (
           <model-viewer
             ref={modelViewerRef as React.RefObject<HTMLElement>}
-            src={project.modelUrl}
+            src={activeModelSrc}
             alt={project.name}
             camera-controls
             auto-rotate
@@ -93,7 +241,7 @@ export default function Studio() {
             shadow-intensity="1"
             disable-zoom={!project.isScalable || undefined}
             camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
-            style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 120px)" }}
+            style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 90px)" }}
             interaction-prompt="none"
             data-testid="studio-model-viewer"
           />
@@ -108,20 +256,28 @@ export default function Studio() {
           </div>
         )}
 
-        {/* AR Info Badge */}
+        {/* AR Scalable badge */}
         {project.isScalable && (
           <div
-            className={`absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border ${isLightBg ? "bg-white/70 border-gray-200 text-gray-700" : "bg-black/40 border-white/10 text-white/80"}`}
+            className={`absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border ${isLightBg ? "bg-white/70 border-gray-200 text-gray-700" : "bg-black/40 border-white/10 text-white/80"}`}
           >
             <ZoomIn className="w-3 h-3" />
             AR Scalable
           </div>
         )}
+
+        {/* Material/Variant sidebar */}
+        <VariationSidebar
+          project={project}
+          isLightBg={isLightBg}
+          activeModel={activeVariantModel}
+          onSelectModel={handleSelectModel}
+        />
       </div>
 
       {/* Bottom Info Bar */}
       <footer
-        className={`px-6 py-5 flex items-center gap-4 backdrop-blur-sm border-t ${
+        className={`px-6 py-4 flex items-center gap-4 backdrop-blur-sm border-t ${
           isLightBg
             ? "bg-white/80 border-gray-200/50"
             : "bg-black/60 border-white/10"
@@ -133,22 +289,10 @@ export default function Studio() {
           >
             {project.name}
           </h1>
-          <p
-            className={`text-sm font-light truncate ${isLightBg ? "text-gray-500" : "text-white/60"}`}
-          >
-            {project.companyName}
-          </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <div
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${isLightBg ? "bg-gray-100 text-gray-600" : "bg-white/10 text-white/70"}`}
-          >
-            <Smartphone className="w-3 h-3" />
-            <span>Point & Place</span>
-          </div>
-
-          {project.modelUrl && (
+          {activeModelSrc && (
             <button
               type="button"
               onClick={handleViewInAR}

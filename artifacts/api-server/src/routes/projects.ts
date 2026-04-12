@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, isNull } from "drizzle-orm";
-import { db, projectsTable } from "@workspace/db";
+import { db, projectsTable, projectMaterialsTable, projectVariantsTable } from "@workspace/db";
 import {
   CreateProjectBody,
   GetProjectParams,
@@ -42,6 +42,23 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     res.status(404).json({ error: "AR experience not available" });
     return;
   }
+
+  const materials = project.enableMaterials
+    ? await db
+        .select()
+        .from(projectMaterialsTable)
+        .where(eq(projectMaterialsTable.projectId, project.id))
+        .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt)
+    : [];
+
+  const variants = project.enableVariants
+    ? await db
+        .select()
+        .from(projectVariantsTable)
+        .where(eq(projectVariantsTable.projectId, project.id))
+        .orderBy(projectVariantsTable.sortOrder, projectVariantsTable.createdAt)
+    : [];
+
   res.json(GetStudioProjectResponse.parse({
     id: project.id,
     name: project.name,
@@ -54,7 +71,11 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     language: project.language,
     type: project.type,
     isScalable: project.isScalable,
+    enableMaterials: project.enableMaterials,
+    enableVariants: project.enableVariants,
     publicSlug: project.publicSlug,
+    materials,
+    variants,
   }));
 });
 
@@ -99,6 +120,8 @@ router.post("/projects", async (req, res): Promise<void> => {
       language: parsed.data.language ?? "en",
       type: parsed.data.type ?? "furniture",
       isScalable: parsed.data.isScalable ?? false,
+      enableMaterials: parsed.data.enableMaterials ?? false,
+      enableVariants: parsed.data.enableVariants ?? false,
       isLive: false,
       publicSlug,
     })

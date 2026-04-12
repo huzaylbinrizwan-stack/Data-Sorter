@@ -4,6 +4,8 @@ import foldersRouter from "./folders";
 import projectsRouter, { studioRouter } from "./projects";
 import statsRouter from "./stats";
 import { storageAdminRouter, storagePublicRouter } from "./storage";
+import materialsRouter from "./materials";
+import variantsRouter from "./variants";
 import { requireClerkAuth } from "../middlewares/requireClerkAuth";
 
 const router: IRouter = Router();
@@ -17,5 +19,7 @@ router.use(requireClerkAuth, foldersRouter);
 router.use(requireClerkAuth, statsRouter);
 router.use(requireClerkAuth, storageAdminRouter);
 router.use(requireClerkAuth, projectsRouter);
+router.use(requireClerkAuth, materialsRouter);
+router.use(requireClerkAuth, variantsRouter);
 
 export default router;
