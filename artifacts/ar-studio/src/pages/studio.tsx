@@ -25,11 +25,16 @@ const ENV_TEXT: Record<string, string> = {
   "walls-plants": "text-gray-800",
 };
 
-function LuxuryLoadingScreen({ projectName }: { projectName?: string }) {
+function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; opacity: number }) {
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
-      style={{ background: "linear-gradient(135deg, #0d0d0d 0%, #1a1410 50%, #0d0d0d 100%)" }}
+      style={{
+        background: "linear-gradient(135deg, #0d0d0d 0%, #1a1410 50%, #0d0d0d 100%)",
+        opacity,
+        transition: "opacity 0.5s ease",
+        pointerEvents: opacity === 0 ? "none" : "auto",
+      }}
     >
       <div className="relative w-20 h-20 mb-8">
         <div
@@ -367,7 +372,7 @@ export default function Studio() {
 
   const dismissOverlay = useCallback(() => {
     setOverlayOpacity(0);
-    setTimeout(() => setOverlayVisible(false), 500);
+    setTimeout(() => setOverlayVisible(false), 600);
   }, []);
 
   useEffect(() => {
@@ -452,9 +457,9 @@ export default function Studio() {
 
   return (
     <>
-      {/* Luxury loading overlay */}
+      {/* Luxury loading overlay — stays in DOM until fade completes */}
       {overlayVisible && (
-        <LuxuryLoadingScreen projectName={meta?.name} />
+        <LuxuryLoadingScreen projectName={meta?.name} opacity={overlayOpacity} />
       )}
 
       {/* Main studio layout */}
@@ -463,8 +468,8 @@ export default function Studio() {
         style={{
           height: "100dvh",
           ...envStyle,
-          opacity: overlayOpacity === 1 ? 0 : 1,
-          transition: "opacity 0.4s ease",
+          opacity: 1 - overlayOpacity,
+          transition: "opacity 0.5s ease",
         }}
         data-testid="studio-page"
       >
@@ -515,16 +520,18 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Floating variation sidebar — phase 2: shown with skeleton until fullProject arrives */}
-          <VariationSidebar
-            project={fullProject ?? null}
-            isLightBg={isLightBg}
-            activeVariantId={activeVariant?.id ?? null}
-            activeMaterialId={activeMaterial?.id ?? null}
-            isLoadingData={isFullLoading || !fullProject}
-            onSelectVariant={handleSelectVariant}
-            onSelectMaterial={handleSelectMaterial}
-          />
+          {/* Floating variation sidebar — shown while loading (skeleton) or when content exists */}
+          {(isFullLoading || !fullProject || (fullProject.variants?.length ?? 0) > 0 || (fullProject.materials?.length ?? 0) > 0) && (
+            <VariationSidebar
+              project={fullProject ?? null}
+              isLightBg={isLightBg}
+              activeVariantId={activeVariant?.id ?? null}
+              activeMaterialId={activeMaterial?.id ?? null}
+              isLoadingData={isFullLoading || !fullProject}
+              onSelectVariant={handleSelectVariant}
+              onSelectMaterial={handleSelectMaterial}
+            />
+          )}
 
           {/* AR Studio watermark */}
           <div
