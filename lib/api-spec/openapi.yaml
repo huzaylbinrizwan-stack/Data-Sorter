@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AR Studio API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: folders
+    description: Folder management
+  - name: projects
+    description: AR project management
+  - name: stats
+    description: Dashboard statistics
+  - name: storage
+    description: Object storage operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +33,298 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Folders ─────────────────────────────────────────────────────────────────
+  /folders:
+    get:
+      operationId: listFolders
+      tags: [folders]
+      summary: List all folders
+      responses:
+        "200":
+          description: List of folders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Folder"
+
+    post:
+      operationId: createFolder
+      tags: [folders]
+      summary: Create a new folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderBody"
+      responses:
+        "201":
+          description: Folder created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+  /folders/{id}:
+    patch:
+      operationId: updateFolder
+      tags: [folders]
+      summary: Rename a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFolderBody"
+      responses:
+        "200":
+          description: Updated folder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+        "404":
+          description: Folder not found
+
+    delete:
+      operationId: deleteFolder
+      tags: [folders]
+      summary: Delete a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Projects ─────────────────────────────────────────────────────────────────
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      parameters:
+        - name: folderId
+          in: query
+          required: false
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new AR project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a single project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /projects/{id}/publish:
+    post:
+      operationId: publishProject
+      tags: [projects]
+      summary: Publish (activate) a project AR
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project published with permanent link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+
+  /projects/{id}/unpublish:
+    post:
+      operationId: unpublishProject
+      tags: [projects]
+      summary: Unpublish (deactivate) a project AR
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project unpublished
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+
+  # ── Public Studio ────────────────────────────────────────────────────────────
+  /studio/{id}:
+    get:
+      operationId: getStudioProject
+      tags: [projects]
+      summary: Get public studio data for a project (no auth required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Studio project data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioProject"
+        "404":
+          description: Not found
+
+  # ── Stats ────────────────────────────────────────────────────────────────────
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get admin dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  # ── Storage ──────────────────────────────────────────────────────────────────
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL for a 3D model file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve an uploaded object file
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object file content
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +335,263 @@ components:
       required:
         - status
 
+    Folder:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        parentId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - parentId
+        - createdAt
+        - updatedAt
+
+    CreateFolderBody:
+      type: object
+      properties:
+        name:
+          type: string
+        parentId:
+          type: ["integer", "null"]
+      required:
+        - name
+
+    UpdateFolderBody:
+      type: object
+      properties:
+        name:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        companyName:
+          type: string
+        thumbnail:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        isLive:
+          type: boolean
+        environment:
+          type: string
+          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+        hotspotX:
+          type: number
+        hotspotY:
+          type: number
+        hotspotZ:
+          type: number
+        language:
+          type: string
+        type:
+          type: string
+          enum: [furniture, object]
+        isScalable:
+          type: boolean
+        folderId:
+          type: ["integer", "null"]
+        publicSlug:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - companyName
+        - thumbnail
+        - modelUrl
+        - isLive
+        - environment
+        - hotspotX
+        - hotspotY
+        - hotspotZ
+        - language
+        - type
+        - isScalable
+        - folderId
+        - publicSlug
+        - createdAt
+        - updatedAt
+
+    CreateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        companyName:
+          type: string
+        thumbnail:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        environment:
+          type: string
+          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+        hotspotX:
+          type: number
+        hotspotY:
+          type: number
+        hotspotZ:
+          type: number
+        language:
+          type: string
+        type:
+          type: string
+          enum: [furniture, object]
+        isScalable:
+          type: boolean
+        folderId:
+          type: ["integer", "null"]
+      required:
+        - name
+        - companyName
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        companyName:
+          type: string
+        thumbnail:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        environment:
+          type: string
+          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+        hotspotX:
+          type: number
+        hotspotY:
+          type: number
+        hotspotZ:
+          type: number
+        language:
+          type: string
+        type:
+          type: string
+          enum: [furniture, object]
+        isScalable:
+          type: boolean
+        folderId:
+          type: ["integer", "null"]
+
+    StudioProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        companyName:
+          type: string
+        modelUrl:
+          type: ["string", "null"]
+        environment:
+          type: string
+          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+        hotspotX:
+          type: number
+        hotspotY:
+          type: number
+        hotspotZ:
+          type: number
+        language:
+          type: string
+        type:
+          type: string
+          enum: [furniture, object]
+        isScalable:
+          type: boolean
+      required:
+        - id
+        - name
+        - companyName
+        - modelUrl
+        - environment
+        - hotspotX
+        - hotspotY
+        - hotspotZ
+        - language
+        - type
+        - isScalable
+
+    DashboardStats:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        liveARs:
+          type: integer
+        avgLoadSpeedMs:
+          type: number
+        recentProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        projectsByEnvironment:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnvironmentCount"
+      required:
+        - totalProjects
+        - liveARs
+        - avgLoadSpeedMs
+        - recentProjects
+        - projectsByEnvironment
+
+    EnvironmentCount:
+      type: object
+      properties:
+        environment:
+          type: string
+        count:
+          type: integer
+      required:
+        - environment
+        - count
+
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - name
+        - size
+        - contentType
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required:
+        - uploadURL
+        - objectPath

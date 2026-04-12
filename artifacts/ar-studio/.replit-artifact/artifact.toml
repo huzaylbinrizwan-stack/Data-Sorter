@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "AR Studio"
+version = "1.0.0"
+id = "artifacts/ar-studio"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23400
+
+[services.development]
+run = "pnpm --filter @workspace/ar-studio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ar-studio", "run", "build" ]
+publicDir = "artifacts/ar-studio/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23400"
+BASE_PATH = "/"

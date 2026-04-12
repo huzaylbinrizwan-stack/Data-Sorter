@@ -1,0 +1,27 @@
+import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
+export const projectsTable = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  companyName: text("company_name").notNull(),
+  thumbnail: text("thumbnail"),
+  modelUrl: text("model_url"),
+  isLive: boolean("is_live").notNull().default(false),
+  environment: text("environment").notNull().default("black"),
+  hotspotX: real("hotspot_x").notNull().default(0),
+  hotspotY: real("hotspot_y").notNull().default(0),
+  hotspotZ: real("hotspot_z").notNull().default(0),
+  language: text("language").notNull().default("en"),
+  type: text("type").notNull().default("furniture"),
+  isScalable: boolean("is_scalable").notNull().default(false),
+  folderId: integer("folder_id"),
+  publicSlug: text("public_slug").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const insertProjectSchema = createInsertSchema(projectsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projectsTable.$inferSelect;
