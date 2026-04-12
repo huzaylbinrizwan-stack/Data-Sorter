@@ -24,12 +24,12 @@ interface ModelViewerElement extends HTMLElement {
 }
 
 export default function Studio() {
-  const { id } = useParams<{ id: string }>();
-  const projectId = parseInt(id ?? "", 10);
+  const { slug } = useParams<{ slug: string }>();
+  const projectSlug = slug ?? "";
   const modelViewerRef = useRef<ModelViewerElement>(null);
 
-  const { data: project, isLoading, isError } = useGetStudioProject(projectId, {
-    query: { enabled: !!projectId, queryKey: getGetStudioProjectQueryKey(projectId) },
+  const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
+    query: { enabled: !!projectSlug, queryKey: getGetStudioProjectQueryKey(projectSlug), retry: false },
   });
 
   const handleViewInAR = () => {

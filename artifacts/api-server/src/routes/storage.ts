@@ -1,10 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
+import { like } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { db, projectsTable } from "@workspace/db";
 
 const objectStorageService = new ObjectStorageService();
 
@@ -81,19 +83,32 @@ storagePublicRouter.get("/storage/public-objects/*filePath", async (req: Request
 });
 
 /**
- * GET /storage/objects/*  (PUBLIC — model files must be accessible by end users in AR viewer)
+ * GET /storage/objects/*  (CONDITIONALLY PUBLIC — only for objects referenced by live projects)
  *
  * Serve uploaded 3D model files from PRIVATE_OBJECT_DIR.
- * These files are referenced by published project `modelUrl` fields and must be
- * accessible by unauthenticated users viewing the public AR studio page.
+ * Only objects whose paths appear in the `modelUrl` of a live (published) project
+ * are served. This prevents exposure of unpublished/draft assets.
  */
 storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
-    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const apiObjectUrl = `/api/storage${objectPath}`;
 
+    // Ensure this object is referenced by at least one live project
+    const [liveProject] = await db
+      .select({ id: projectsTable.id })
+      .from(projectsTable)
+      .where(like(projectsTable.modelUrl, `%${apiObjectUrl}%`))
+      .limit(1);
+
+    if (!liveProject) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
     const response = await objectStorageService.downloadObject(objectFile);
 
     res.status(response.status);

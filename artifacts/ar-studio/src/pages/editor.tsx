@@ -36,11 +36,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const ENVIRONMENTS = [
-  { value: "black", label: "Simple Black", bg: "#0a0a0a", desc: "Pure black backdrop" },
-  { value: "white", label: "Simple White", bg: "#fafafa", desc: "Pure white backdrop" },
-  { value: "luxury-home", label: "Luxury Home", bg: "radial-gradient(ellipse at 30% 70%, #2d1b0e 0%, #0f0804 100%)", desc: "Warm walnut tones" },
-  { value: "classic-luxury", label: "Classic Luxury", bg: "linear-gradient(135deg, #0d1b2a 0%, #1a2332 50%, #2d1b0e 100%)", desc: "Deep navy to charcoal" },
-  { value: "walls-plants", label: "Walls & Plants", bg: "radial-gradient(ellipse at 70% 30%, #e8e0d4 0%, #c4b8a8 100%)", desc: "Soft cream with botanics" },
+  { value: "black", label: "Simple Black", bg: "#0a0a0a", desc: "Pure black backdrop", hotspotX: 0, hotspotY: 0, hotspotZ: 0 },
+  { value: "white", label: "Simple White", bg: "#fafafa", desc: "Pure white backdrop", hotspotX: 0, hotspotY: 0, hotspotZ: 0 },
+  { value: "luxury-home", label: "Luxury Home", bg: "radial-gradient(ellipse at 30% 70%, #2d1b0e 0%, #0f0804 100%)", desc: "Warm walnut tones", hotspotX: -0.05, hotspotY: 0.1, hotspotZ: 0.05 },
+  { value: "classic-luxury", label: "Classic Luxury", bg: "linear-gradient(135deg, #0d1b2a 0%, #1a2332 50%, #2d1b0e 100%)", desc: "Deep navy to charcoal", hotspotX: 0, hotspotY: 0.05, hotspotZ: -0.05 },
+  { value: "walls-plants", label: "Walls & Plants", bg: "radial-gradient(ellipse at 70% 30%, #e8e0d4 0%, #c4b8a8 100%)", desc: "Soft cream with botanics", hotspotX: 0.05, hotspotY: 0, hotspotZ: 0.1 },
 ];
 
 const LANGUAGES = [
@@ -107,8 +107,19 @@ export default function Editor() {
     const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
-    const data: UpdateProjectBody = { environment: env as UpdateProjectBody["environment"] };
+    const preset = ENVIRONMENTS.find(e => e.value === env);
+    const data: UpdateProjectBody = {
+      environment: env as UpdateProjectBody["environment"],
+      hotspotX: preset?.hotspotX ?? 0,
+      hotspotY: preset?.hotspotY ?? 0,
+      hotspotZ: preset?.hotspotZ ?? 0,
+    };
     await updateProject.mutateAsync({ id: projectId, data });
+    if (preset) {
+      const px = (preset.hotspotX + 0.5) * 100;
+      const pz = (preset.hotspotZ + 0.5) * 100;
+      setHotspotPos({ x: Math.max(0, Math.min(100, px)), y: Math.max(0, Math.min(100, pz)) });
+    }
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     setIsSaving(false);
   };
@@ -138,7 +149,7 @@ export default function Editor() {
       toast({ title: "AR deactivated" });
     } else {
       await publishProject.mutateAsync({ id: projectId });
-      toast({ title: "AR is now live", description: `Share: /studio/${project.id}` });
+      toast({ title: "AR is now live", description: `Share: /studio/${project.publicSlug}` });
     }
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });

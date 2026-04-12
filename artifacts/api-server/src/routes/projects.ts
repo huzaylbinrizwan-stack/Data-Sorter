@@ -24,7 +24,7 @@ const router: IRouter = Router();
 
 export const studioRouter: IRouter = Router();
 
-studioRouter.get("/studio/:id", async (req, res): Promise<void> => {
+studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
   const params = GetStudioProjectParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -33,7 +33,7 @@ studioRouter.get("/studio/:id", async (req, res): Promise<void> => {
   const [project] = await db
     .select()
     .from(projectsTable)
-    .where(eq(projectsTable.id, params.data.id));
+    .where(eq(projectsTable.publicSlug, params.data.slug));
   if (!project) {
     res.status(404).json({ error: "Project not found" });
     return;
@@ -54,6 +54,7 @@ studioRouter.get("/studio/:id", async (req, res): Promise<void> => {
     language: project.language,
     type: project.type,
     isScalable: project.isScalable,
+    publicSlug: project.publicSlug,
   }));
 });
 

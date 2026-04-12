@@ -275,7 +275,7 @@ export const UnpublishProjectResponse = zod.object({
  * @summary Get public studio data for a project (no auth required)
  */
 export const GetStudioProjectParams = zod.object({
-  id: zod.coerce.number(),
+  slug: zod.string().min(1),
 });
 
 export const GetStudioProjectResponse = zod.object({
@@ -296,6 +296,7 @@ export const GetStudioProjectResponse = zod.object({
   language: zod.string(),
   type: zod.enum(["furniture", "object"]),
   isScalable: zod.boolean(),
+  publicSlug: zod.string(),
 });
 
 /**

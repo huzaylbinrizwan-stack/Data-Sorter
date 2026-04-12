@@ -124,7 +124,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/editor/:id">
             {() => <ProtectedRoute component={Editor} />}
           </Route>
-          <Route path="/studio/:id" component={Studio} />
+          <Route path="/studio/:slug" component={Studio} />
           <Route component={NotFound} />
         </Switch>
         <Toaster />

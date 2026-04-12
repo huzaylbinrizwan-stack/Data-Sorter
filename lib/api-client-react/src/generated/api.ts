@@ -1055,29 +1055,29 @@ export const useUnpublishProject = <
 /**
  * @summary Get public studio data for a project (no auth required)
  */
-export const getGetStudioProjectUrl = (id: number) => {
-  return `/api/studio/${id}`;
+export const getGetStudioProjectUrl = (slug: string) => {
+  return `/api/studio/${slug}`;
 };
 
 export const getStudioProject = async (
-  id: number,
+  slug: string,
   options?: RequestInit,
 ): Promise<StudioProject> => {
-  return customFetch<StudioProject>(getGetStudioProjectUrl(id), {
+  return customFetch<StudioProject>(getGetStudioProjectUrl(slug), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetStudioProjectQueryKey = (id: number) => {
-  return [`/api/studio/${id}`] as const;
+export const getGetStudioProjectQueryKey = (slug: string) => {
+  return [`/api/studio/${slug}`] as const;
 };
 
 export const getGetStudioProjectQueryOptions = <
   TData = Awaited<ReturnType<typeof getStudioProject>>,
   TError = ErrorType<void>,
 >(
-  id: number,
+  slug: string,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof getStudioProject>>,
@@ -1089,16 +1089,16 @@ export const getGetStudioProjectQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetStudioProjectQueryKey(id);
+  const queryKey = queryOptions?.queryKey ?? getGetStudioProjectQueryKey(slug);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getStudioProject>>
-  > = ({ signal }) => getStudioProject(id, { signal, ...requestOptions });
+  > = ({ signal }) => getStudioProject(slug, { signal, ...requestOptions });
 
   return {
     queryKey,
     queryFn,
-    enabled: !!id,
+    enabled: !!slug,
     ...queryOptions,
   } as UseQueryOptions<
     Awaited<ReturnType<typeof getStudioProject>>,
@@ -1120,7 +1120,7 @@ export function useGetStudioProject<
   TData = Awaited<ReturnType<typeof getStudioProject>>,
   TError = ErrorType<void>,
 >(
-  id: number,
+  slug: string,
   options?: {
     query?: UseQueryOptions<
       Awaited<ReturnType<typeof getStudioProject>>,
@@ -1130,7 +1130,7 @@ export function useGetStudioProject<
     request?: SecondParameter<typeof customFetch>;
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetStudioProjectQueryOptions(id, options);
+  const queryOptions = getGetStudioProjectQueryOptions(slug, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

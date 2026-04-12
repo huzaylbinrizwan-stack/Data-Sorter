@@ -175,6 +175,7 @@ export interface StudioProject {
   language: string;
   type: StudioProjectType;
   isScalable: boolean;
+  publicSlug: string;
 }
 
 export interface EnvironmentCount {
