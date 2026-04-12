@@ -204,7 +204,7 @@ export default function Editor() {
   }
 
   const currentEnv = ENVIRONMENTS.find((e) => e.value === project.environment) ?? ENVIRONMENTS[0];
-  const studioUrl = `${import.meta.env.BASE_URL}studio/${project.id}`;
+  const studioUrl = `${import.meta.env.BASE_URL}studio/${project.publicSlug}`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col" data-testid="editor-page">

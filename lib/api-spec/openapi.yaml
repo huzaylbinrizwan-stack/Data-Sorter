@@ -253,17 +253,17 @@ paths:
           description: Not found
 
   # ── Public Studio ────────────────────────────────────────────────────────────
-  /studio/{id}:
+  /studio/{slug}:
     get:
       operationId: getStudioProject
       tags: [projects]
       summary: Get public studio data for a project (no auth required)
       parameters:
-        - name: id
+        - name: slug
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: Studio project data
@@ -523,6 +523,8 @@ components:
           enum: [furniture, object]
         isScalable:
           type: boolean
+        publicSlug:
+          type: string
       required:
         - id
         - name
@@ -535,6 +537,7 @@ components:
         - language
         - type
         - isScalable
+        - publicSlug
 
     DashboardStats:
       type: object

@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
-import { like } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
@@ -96,11 +96,11 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
     const objectPath = `/objects/${wildcardPath}`;
     const apiObjectUrl = `/api/storage${objectPath}`;
 
-    // Ensure this object is referenced by at least one live project
+    // Ensure this object is referenced by at least one live (published) project
     const [liveProject] = await db
       .select({ id: projectsTable.id })
       .from(projectsTable)
-      .where(like(projectsTable.modelUrl, `%${apiObjectUrl}%`))
+      .where(and(eq(projectsTable.isLive, true), like(projectsTable.modelUrl, `%${apiObjectUrl}%`)))
       .limit(1);
 
     if (!liveProject) {
