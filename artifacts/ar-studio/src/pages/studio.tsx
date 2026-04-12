@@ -307,17 +307,19 @@ export default function Studio() {
           </h1>
         </div>
         {/* Single visible "View in AR" footer action — delegates to the native slot button */}
-        <button
-          data-testid="footer-view-in-ar"
-          onClick={() => arButtonRef.current?.click()}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
-            isLightBg
-              ? "bg-gray-900 text-white hover:bg-gray-700"
-              : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-          }`}
-        >
-          View in AR
-        </button>
+        {activeSrc && (
+          <button
+            data-testid="footer-view-in-ar"
+            onClick={() => arButtonRef.current?.click()}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
+              isLightBg
+                ? "bg-gray-900 text-white hover:bg-gray-700"
+                : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+            }`}
+          >
+            View in AR
+          </button>
+        )}
       </footer>
 
       {/* AR Studio Watermark */}
