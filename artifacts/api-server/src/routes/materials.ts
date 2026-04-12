@@ -17,8 +17,7 @@ type ParsedVariantId = number | null | undefined;
 function parseVariantIdQuery(raw: unknown): { ok: true; value: ParsedVariantId } | { ok: false } {
   if (raw === undefined) return { ok: true, value: undefined };
   if (raw === "null" || raw === null) return { ok: true, value: null };
-  const n = Number(raw);
-  if (!Number.isNaN(n) && Number.isFinite(n)) return { ok: true, value: Math.floor(n) };
+  if (typeof raw === "string" && /^\d+$/.test(raw)) return { ok: true, value: parseInt(raw, 10) };
   return { ok: false };
 }
 
