@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useDeferredValue } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
 import type { StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
@@ -345,6 +345,8 @@ export default function Studio() {
     },
   });
 
+  const deferredProject = useDeferredValue(project);
+
   const dismissOverlay = useCallback(() => {
     setOverlayOpacity(0);
     setTimeout(() => setOverlayVisible(false), 500);
@@ -495,13 +497,13 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Floating variation sidebar — always present, shows skeleton while loading */}
+          {/* Floating variation sidebar — shows skeleton while deferred data loads */}
           <VariationSidebar
-            project={project ?? null}
+            project={deferredProject ?? null}
             isLightBg={isLightBg}
             activeVariantId={activeVariant?.id ?? null}
             activeMaterialId={activeMaterial?.id ?? null}
-            isLoadingData={isLoading}
+            isLoadingData={isLoading || deferredProject !== project}
             onSelectVariant={handleSelectVariant}
             onSelectMaterial={handleSelectMaterial}
           />
