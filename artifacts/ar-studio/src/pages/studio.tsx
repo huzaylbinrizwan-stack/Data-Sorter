@@ -61,71 +61,44 @@ function VariationSidebar({
 
   return (
     <div
-      className={`fixed right-4 top-1/2 -translate-y-1/2 w-56 rounded-xl border backdrop-blur-md shadow-2xl overflow-hidden ${glassBg}`}
+      className="fixed right-0 top-1/2 -translate-y-1/2 flex items-center"
       style={{ zIndex: 20 }}
     >
-      {/* Header */}
-      <div
-        className={`flex items-center justify-between px-4 py-3 border-b ${isLightBg ? "border-gray-200/60" : "border-white/10"}`}
-      >
-        {showBoth ? (
-          <div className="flex gap-1">
-            {(["materials", "variants"] as ActiveTab[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all capitalize ${currentTab === tab ? tabActive : tabInactive}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <span className={`text-xs font-medium uppercase tracking-widest ${labelColor}`}>
-            {currentTab === "materials" ? "Materials" : "Variants"}
-          </span>
-        )}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`${subColor} transition-colors`}
-          aria-label={isOpen ? "Collapse" : "Expand"}
-        >
-          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-        </button>
-      </div>
-
-      {/* Items */}
+      {/* Expanded panel */}
       {isOpen && (
-        <div className="p-3 flex flex-col gap-2 max-h-96 overflow-y-auto">
-          {/* Default / original option */}
-          <button
-            onClick={() => onSelectModel(null)}
-            className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
-              activeModel === null
-                ? isLightBg
-                  ? "border-gray-900 bg-gray-100"
-                  : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                : isLightBg
-                ? "border-gray-200 hover:border-gray-300"
-                : "border-white/10 hover:border-white/20"
-            }`}
+        <div
+          className={`w-56 rounded-l-xl border border-r-0 backdrop-blur-md shadow-2xl overflow-hidden ${glassBg}`}
+        >
+          {/* Header */}
+          <div
+            className={`flex items-center justify-between px-4 py-3 border-b ${isLightBg ? "border-gray-200/60" : "border-white/10"}`}
           >
-            <div
-              className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
-                isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
-              }`}
-            >
-              <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-            </div>
-            <span className={`text-xs font-medium ${labelColor}`}>Original</span>
-          </button>
+            {showBoth ? (
+              <div className="flex gap-1">
+                {(["materials", "variants"] as ActiveTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all capitalize ${currentTab === tab ? tabActive : tabInactive}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className={`text-xs font-medium uppercase tracking-widest ${labelColor}`}>
+                {currentTab === "materials" ? "Materials" : "Variants"}
+              </span>
+            )}
+          </div>
 
-          {items.map((item) => (
+          {/* Items */}
+          <div className="p-3 flex flex-col gap-2 max-h-96 overflow-y-auto">
+            {/* Default / original option */}
             <button
-              key={item.id}
-              onClick={() => onSelectModel(item.modelUrl ?? null)}
+              onClick={() => onSelectModel(null)}
               className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
-                activeModel === item.modelUrl
+                activeModel === null
                   ? isLightBg
                     ? "border-gray-900 bg-gray-100"
                     : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
@@ -134,26 +107,63 @@ function VariationSidebar({
                   : "border-white/10 hover:border-white/20"
               }`}
             >
-              {item.thumbnailUrl ? (
-                <img
-                  src={item.thumbnailUrl}
-                  alt={item.name}
-                  className="w-9 h-9 rounded-md object-cover shrink-0 border border-white/10"
-                />
-              ) : (
-                <div
-                  className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
-                    isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
-                  }`}
-                >
-                  <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-                </div>
-              )}
-              <span className={`text-xs font-medium truncate ${labelColor}`}>{item.name}</span>
+              <div
+                className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
+                  isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
+                }`}
+              >
+                <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+              </div>
+              <span className={`text-xs font-medium ${labelColor}`}>Original</span>
             </button>
-          ))}
+
+            {items.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onSelectModel(item.modelUrl ?? null)}
+                className={`flex items-center gap-3 p-2 rounded-lg border transition-all text-left ${
+                  activeModel === item.modelUrl
+                    ? isLightBg
+                      ? "border-gray-900 bg-gray-100"
+                      : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                    : isLightBg
+                    ? "border-gray-200 hover:border-gray-300"
+                    : "border-white/10 hover:border-white/20"
+                }`}
+              >
+                {item.thumbnailUrl ? (
+                  <img
+                    src={item.thumbnailUrl}
+                    alt={item.name}
+                    className="w-9 h-9 rounded-md object-cover shrink-0 border border-white/10"
+                  />
+                ) : (
+                  <div
+                    className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${
+                      isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"
+                    }`}
+                  >
+                    <Box className={`w-4 h-4 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                  </div>
+                )}
+                <span className={`text-xs font-medium truncate ${labelColor}`}>{item.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Arrow tab — always visible, flush to the right edge */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Collapse variations" : "Expand variations"}
+        className={`flex items-center justify-center w-6 h-14 rounded-l-lg border backdrop-blur-md shadow-lg transition-colors ${glassBg} ${isLightBg ? "border-gray-200/70" : "border-white/10"}`}
+        style={{ borderRight: "none" }}
+      >
+        {isOpen
+          ? <ChevronDown className={`w-3.5 h-3.5 rotate-90 ${subColor}`} />
+          : <ChevronUp className={`w-3.5 h-3.5 rotate-90 ${subColor}`} />}
+      </button>
     </div>
   );
 }
@@ -162,7 +172,6 @@ export default function Studio() {
   const { slug } = useParams<{ slug: string }>();
   const projectSlug = slug ?? "";
   const [activeVariantModel, setActiveVariantModel] = useState<string | null>(null);
-  const [modelSrc, setModelSrc] = useState<string | null>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
     query: {
@@ -310,6 +319,21 @@ export default function Studio() {
             {project.name}
           </h1>
         </div>
+        {/* "View in AR" footer action — triggers model-viewer AR slot */}
+        <button
+          data-testid="footer-view-in-ar"
+          onClick={() => {
+            const mv = document.querySelector("[data-testid='studio-model-viewer']") as HTMLElement & { activateAR?: () => void };
+            if (mv && typeof mv.activateAR === "function") mv.activateAR();
+          }}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
+            isLightBg
+              ? "bg-gray-900 text-white hover:bg-gray-700"
+              : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+          }`}
+        >
+          View in AR
+        </button>
       </footer>
 
       {/* AR Studio Watermark */}

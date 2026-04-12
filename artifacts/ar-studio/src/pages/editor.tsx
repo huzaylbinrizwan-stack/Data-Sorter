@@ -81,7 +81,6 @@ type UploadTarget =
 interface VariationItemProps {
   item: ProjectMaterial | ProjectVariant;
   kind: "material" | "variant";
-  projectId: number;
   isFirst: boolean;
   isLast: boolean;
   onUpload: (target: UploadTarget) => void;
@@ -725,15 +724,29 @@ export default function Editor() {
         </main>
 
         {/* Right Panel — Material Variations */}
-        <aside className="w-72 border-l border-border bg-card flex flex-col overflow-y-auto shrink-0">
+        <aside className={`border-l border-border bg-card flex flex-col overflow-y-auto shrink-0 transition-all duration-200 ${showVariations ? "w-72" : "w-10"}`}>
           {/* Header */}
           <div className="p-5 border-b border-border flex items-center gap-2">
-            <Layers className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest flex-1">
-              Variations
-            </h3>
+            {showVariations && (
+              <>
+                <Layers className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest flex-1">
+                  Variations
+                </h3>
+              </>
+            )}
+            <button
+              onClick={() => setShowVariations(!showVariations)}
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-auto"
+              aria-label={showVariations ? "Collapse variations" : "Expand variations"}
+              data-testid="button-toggle-variations"
+            >
+              {showVariations ? <ChevronDown className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
+            </button>
           </div>
 
+          {showVariations && (
+            <>
           {/* Materials Toggle */}
           <div className="p-5 border-b border-border">
             <div className="flex items-center justify-between mb-4">
@@ -755,7 +768,6 @@ export default function Editor() {
                     key={mat.id}
                     item={mat}
                     kind="material"
-                    projectId={projectId}
                     isFirst={idx === 0}
                     isLast={idx === materials.length - 1}
                     onUpload={triggerUpload}
@@ -800,7 +812,6 @@ export default function Editor() {
                     key={variant.id}
                     item={variant}
                     kind="variant"
-                    projectId={projectId}
                     isFirst={idx === 0}
                     isLast={idx === variants.length - 1}
                     onUpload={triggerUpload}
@@ -823,6 +834,8 @@ export default function Editor() {
               </div>
             )}
           </div>
+            </>
+          )}
         </aside>
       </div>
     </div>
