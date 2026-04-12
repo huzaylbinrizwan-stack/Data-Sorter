@@ -1,6 +1,7 @@
+import { useRef } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
-import { Smartphone, ExternalLink, Box, ZoomIn } from "lucide-react";
+import { Smartphone, Box, ZoomIn } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
   black: { background: "#0a0a0a" },
@@ -18,13 +19,24 @@ const ENV_TEXT: Record<string, string> = {
   "walls-plants": "text-gray-800",
 };
 
+interface ModelViewerElement extends HTMLElement {
+  activateAR(): void;
+}
+
 export default function Studio() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id ?? "", 10);
+  const modelViewerRef = useRef<ModelViewerElement>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectId, {
     query: { enabled: !!projectId, queryKey: getGetStudioProjectQueryKey(projectId) },
   });
+
+  const handleViewInAR = () => {
+    if (modelViewerRef.current) {
+      modelViewerRef.current.activateAR();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,6 +83,7 @@ export default function Studio() {
       <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 120px)" }}>
         {project.modelUrl ? (
           <model-viewer
+            ref={modelViewerRef as React.RefObject<HTMLElement>}
             src={project.modelUrl}
             alt={project.name}
             camera-controls
@@ -134,17 +147,21 @@ export default function Studio() {
             <span>Point & Place</span>
           </div>
 
-          {/* AR launch hint */}
-          <div
-            className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full cursor-pointer transition-all ${
-              isLightBg
-                ? "bg-gray-900 text-white hover:bg-gray-700"
-                : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-            }`}
-          >
-            <ExternalLink className="w-3 h-3" />
-            <span>View in AR</span>
-          </div>
+          {project.modelUrl && (
+            <button
+              type="button"
+              onClick={handleViewInAR}
+              className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full transition-all ${
+                isLightBg
+                  ? "bg-gray-900 text-white hover:bg-gray-700"
+                  : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+              }`}
+              data-testid="button-view-in-ar"
+            >
+              <Smartphone className="w-3 h-3" />
+              <span>View in AR</span>
+            </button>
+          )}
         </div>
       </footer>
 

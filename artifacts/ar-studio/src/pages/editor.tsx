@@ -9,6 +9,7 @@ import {
   getGetProjectQueryKey,
   getGetDashboardStatsQueryKey,
   getListProjectsQueryKey,
+  type UpdateProjectBody,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -103,8 +104,11 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants"] as const;
+    if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
-    await updateProject.mutateAsync({ id: projectId, data: { environment: env as any } });
+    const data: UpdateProjectBody = { environment: env as UpdateProjectBody["environment"] };
+    await updateProject.mutateAsync({ id: projectId, data });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     setIsSaving(false);
   };
@@ -120,7 +124,10 @@ export default function Editor() {
   };
 
   const handleTypeChange = async (type: string) => {
-    await updateProject.mutateAsync({ id: projectId, data: { type: type as any } });
+    const validTypes = ["furniture", "object"] as const;
+    if (!validTypes.includes(type as (typeof validTypes)[number])) return;
+    const data: UpdateProjectBody = { type: type as UpdateProjectBody["type"] };
+    await updateProject.mutateAsync({ id: projectId, data });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
   };
 
