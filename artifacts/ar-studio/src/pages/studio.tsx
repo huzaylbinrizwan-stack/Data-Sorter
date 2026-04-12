@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
 import type { StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
@@ -26,7 +26,6 @@ function LuxuryLoadingScreen({ projectName }: { projectName?: string }) {
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
       style={{ background: "linear-gradient(135deg, #0d0d0d 0%, #1a1410 50%, #0d0d0d 100%)" }}
     >
-      {/* Gold ring spinner */}
       <div className="relative w-20 h-20 mb-8">
         <div
           className="absolute inset-0 rounded-full animate-spin"
@@ -45,7 +44,6 @@ function LuxuryLoadingScreen({ projectName }: { projectName?: string }) {
         </div>
       </div>
 
-      {/* Message */}
       <div className="text-center px-8 max-w-xs">
         {projectName ? (
           <>
@@ -66,7 +64,6 @@ function LuxuryLoadingScreen({ projectName }: { projectName?: string }) {
         )}
       </div>
 
-      {/* Subtle bottom brand */}
       <div
         className="absolute bottom-6 flex items-center gap-1.5 text-xs font-light tracking-widest"
         style={{ color: "hsl(44,54%,54%,0.4)" }}
@@ -74,6 +71,17 @@ function LuxuryLoadingScreen({ projectName }: { projectName?: string }) {
         <Box className="w-3 h-3" />
         <span>AR STUDIO</span>
       </div>
+    </div>
+  );
+}
+
+function SidebarSkeleton({ isLightBg }: { isLightBg: boolean }) {
+  const pulse = isLightBg ? "bg-gray-200 animate-pulse" : "bg-white/10 animate-pulse";
+  return (
+    <div className="flex flex-col gap-2 p-2.5">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className={`h-11 rounded-xl ${pulse}`} style={{ opacity: 1 - i * 0.2 }} />
+      ))}
     </div>
   );
 }
@@ -121,18 +129,18 @@ function VariationSidebar({
   isLightBg,
   activeVariantId,
   activeMaterialId,
+  isLoadingData,
   onSelectVariant,
   onSelectMaterial,
 }: {
-  project: StudioProject;
+  project: StudioProject | null;
   isLightBg: boolean;
   activeVariantId: number | null;
   activeMaterialId: number | null;
+  isLoadingData: boolean;
   onSelectVariant: (variant: StudioVariant | null) => void;
   onSelectMaterial: (material: ProjectMaterial | null) => void;
 }) {
-  const hasVariants = project.enableVariants && project.variants && project.variants.length > 0;
-  const baseMaterials = project.materials ?? [];
   const [isOpen, setIsOpen] = useState(true);
   const [expandedVariantId, setExpandedVariantId] = useState<number | null>(null);
 
@@ -143,7 +151,10 @@ function VariationSidebar({
   const subColor = isLightBg ? "text-gray-400" : "text-white/40";
   const dividerColor = isLightBg ? "border-gray-200/60" : "border-white/10";
 
-  const variants = project.variants ?? [];
+  const hasVariants = !!(project?.enableVariants && project.variants && project.variants.length > 0);
+  const baseMaterials = project?.materials ?? [];
+  const variants = project?.variants ?? [];
+
   const isVariantActive = (v: StudioVariant) => activeVariantId === v.id;
 
   return (
@@ -151,148 +162,152 @@ function VariationSidebar({
       className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center"
       style={{ zIndex: 20, maxHeight: "calc(100% - 48px)" }}
     >
-      {/* Expanded panel */}
       {isOpen && (
         <div
           className={`rounded-l-2xl border border-r-0 backdrop-blur-xl shadow-2xl flex flex-col ${glassBg}`}
           style={{ width: "clamp(180px, 48vw, 224px)", maxHeight: "calc(100dvh - 140px)" }}
         >
-          {/* Header */}
           <div className={`flex items-center justify-between px-3 py-2.5 border-b shrink-0 ${dividerColor}`}>
             <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>
               {hasVariants ? "Models & Colors" : "Colors"}
             </span>
           </div>
 
-          {/* Scrollable items */}
-          <div className="flex-1 overflow-y-auto overscroll-contain p-2.5 flex flex-col gap-1 min-h-0">
-            {/* Default / original model option */}
-            <button
-              onClick={() => { onSelectVariant(null); onSelectMaterial(null); setExpandedVariantId(null); }}
-              className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
-                activeVariantId === null
-                  ? isLightBg
-                    ? "border-gray-800 bg-gray-100"
-                    : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                  : isLightBg
-                  ? "border-gray-200 hover:border-gray-300"
-                  : "border-white/10 hover:border-white/20"
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-              </div>
-              <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
-                {project.defaultModelName || "Original"}
-              </span>
-              <ChevronRight
-                className={`w-3 h-3 shrink-0 transition-transform ${subColor} ${activeVariantId === null ? "rotate-90" : ""}`}
-              />
-            </button>
-
-            {/* Base model colors — shown when base model is selected */}
-            {activeVariantId === null && (
-              <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
+          {/* Scrollable content — shows skeleton until data loaded */}
+          <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
+            {isLoadingData ? (
+              <SidebarSkeleton isLightBg={isLightBg} />
+            ) : (
+              <div className="p-2.5 flex flex-col gap-1">
+                {/* Default / original model option */}
                 <button
-                  onClick={() => onSelectMaterial(null)}
-                  className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
-                    activeMaterialId === null
+                  onClick={() => { onSelectVariant(null); onSelectMaterial(null); setExpandedVariantId(null); }}
+                  className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                    activeVariantId === null
                       ? isLightBg
-                        ? "border-gray-700 bg-gray-50"
-                        : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                        ? "border-gray-800 bg-gray-100"
+                        : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
                       : isLightBg
                       ? "border-gray-200 hover:border-gray-300"
                       : "border-white/10 hover:border-white/20"
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                    <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                    <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
                   </div>
-                  <span className={`text-xs ${labelColor}`}>{project.defaultColorName || "Original Color"}</span>
-                </button>
-                {baseMaterials.map((mat) => (
-                  <MaterialItem
-                    key={mat.id}
-                    mat={mat}
-                    isActive={activeMaterialId === mat.id}
-                    isLightBg={isLightBg}
-                    labelColor={labelColor}
-                    onSelect={() => onSelectMaterial(mat)}
+                  <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
+                    {project?.defaultModelName || "Original"}
+                  </span>
+                  <ChevronRight
+                    className={`w-3 h-3 shrink-0 transition-transform duration-200 ${subColor} ${activeVariantId === null ? "rotate-90" : ""}`}
                   />
-                ))}
-              </div>
-            )}
+                </button>
 
-            {/* Variant list */}
-            {variants.map((variant) => {
-              const variantMaterials = variant.materials ?? [];
-              const isExpanded = expandedVariantId === variant.id;
-
-              return (
-                <div key={variant.id} className="flex flex-col gap-1">
-                  <button
-                    onClick={() => {
-                      onSelectVariant(variant);
-                      onSelectMaterial(null);
-                      setExpandedVariantId(isExpanded && isVariantActive(variant) ? null : variant.id);
-                    }}
-                    className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
-                      isVariantActive(variant)
-                        ? isLightBg
-                          ? "border-gray-800 bg-gray-100"
-                          : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                        : isLightBg
-                        ? "border-gray-200 hover:border-gray-300"
-                        : "border-white/10 hover:border-white/20"
-                    }`}
-                  >
-                    {variant.thumbnailUrl ? (
-                      <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
-                    ) : (
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                {/* Base model colors — shown when base model is selected */}
+                {activeVariantId === null && (
+                  <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
+                    <button
+                      onClick={() => onSelectMaterial(null)}
+                      className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+                        activeMaterialId === null
+                          ? isLightBg
+                            ? "border-gray-700 bg-gray-50"
+                            : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          : isLightBg
+                          ? "border-gray-200 hover:border-gray-300"
+                          : "border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
                       </div>
-                    )}
-                    <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
-                    <ChevronRight
-                      className={`w-3 h-3 shrink-0 transition-transform ${subColor} ${isVariantActive(variant) && isExpanded ? "rotate-90" : ""}`}
-                    />
-                  </button>
+                      <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
+                    </button>
+                    {baseMaterials.map((mat) => (
+                      <MaterialItem
+                        key={mat.id}
+                        mat={mat}
+                        isActive={activeMaterialId === mat.id}
+                        isLightBg={isLightBg}
+                        labelColor={labelColor}
+                        onSelect={() => onSelectMaterial(mat)}
+                      />
+                    ))}
+                  </div>
+                )}
 
-                  {isVariantActive(variant) && isExpanded && (
-                    <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
+                {/* Variant list */}
+                {variants.map((variant) => {
+                  const variantMaterials = variant.materials ?? [];
+                  const isExpanded = expandedVariantId === variant.id;
+
+                  return (
+                    <div key={variant.id} className="flex flex-col gap-1">
                       <button
-                        onClick={() => onSelectMaterial(null)}
-                        className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
-                          activeMaterialId === null
+                        onClick={() => {
+                          onSelectVariant(variant);
+                          onSelectMaterial(null);
+                          setExpandedVariantId(isExpanded && isVariantActive(variant) ? null : variant.id);
+                        }}
+                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                          isVariantActive(variant)
                             ? isLightBg
-                              ? "border-gray-700 bg-gray-50"
-                              : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                              ? "border-gray-800 bg-gray-100"
+                              : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
                             : isLightBg
                             ? "border-gray-200 hover:border-gray-300"
                             : "border-white/10 hover:border-white/20"
                         }`}
                       >
-                        <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                          <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-                        </div>
-                        <span className={`text-xs ${labelColor}`}>{project.defaultColorName || "Original Color"}</span>
-                      </button>
-                      {variantMaterials.map((mat) => (
-                        <MaterialItem
-                          key={mat.id}
-                          mat={mat}
-                          isActive={activeMaterialId === mat.id}
-                          isLightBg={isLightBg}
-                          labelColor={labelColor}
-                          onSelect={() => onSelectMaterial(mat)}
+                        {variant.thumbnailUrl ? (
+                          <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
+                        ) : (
+                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                            <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                          </div>
+                        )}
+                        <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
+                        <ChevronRight
+                          className={`w-3 h-3 shrink-0 transition-transform duration-200 ${subColor} ${isVariantActive(variant) && isExpanded ? "rotate-90" : ""}`}
                         />
-                      ))}
+                      </button>
+
+                      {isVariantActive(variant) && isExpanded && (
+                        <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
+                          <button
+                            onClick={() => onSelectMaterial(null)}
+                            className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+                              activeMaterialId === null
+                                ? isLightBg
+                                  ? "border-gray-700 bg-gray-50"
+                                  : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                                : isLightBg
+                                ? "border-gray-200 hover:border-gray-300"
+                                : "border-white/10 hover:border-white/20"
+                            }`}
+                          >
+                            <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                              <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                            </div>
+                            <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
+                          </button>
+                          {variantMaterials.map((mat) => (
+                            <MaterialItem
+                              key={mat.id}
+                              mat={mat}
+                              isActive={activeMaterialId === mat.id}
+                              isLightBg={isLightBg}
+                              labelColor={labelColor}
+                              onSelect={() => onSelectMaterial(mat)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -317,8 +332,10 @@ export default function Studio() {
   const projectSlug = slug ?? "";
   const [activeVariant, setActiveVariant] = useState<StudioVariant | null>(null);
   const [activeMaterial, setActiveMaterial] = useState<ProjectMaterial | null>(null);
-  const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const [overlayOpacity, setOverlayOpacity] = useState(1);
   const arButtonRef = useRef<HTMLButtonElement>(null);
+  const modelViewerRef = useRef<HTMLElement>(null);
 
   const { data: project, isLoading, isError } = useGetStudioProject(projectSlug, {
     query: {
@@ -328,13 +345,50 @@ export default function Studio() {
     },
   });
 
+  const dismissOverlay = useCallback(() => {
+    setOverlayOpacity(0);
+    setTimeout(() => setOverlayVisible(false), 500);
+  }, []);
+
   useEffect(() => {
-    if (!isLoading && (project || isError)) {
-      const t = setTimeout(() => setShowLoadingOverlay(false), 600);
-      return () => clearTimeout(t);
+    if (isError && !isLoading) {
+      dismissOverlay();
+      return undefined;
     }
-    return undefined;
-  }, [isLoading, project, isError]);
+
+    if (!project) return undefined;
+
+    const src = (() => {
+      if (activeMaterial?.modelUrl) return activeMaterial.modelUrl;
+      if (activeVariant?.modelUrl) return activeVariant.modelUrl;
+      return project.modelUrl;
+    })();
+
+    if (!src) {
+      setTimeout(dismissOverlay, 400);
+      return undefined;
+    }
+
+    const mv = modelViewerRef.current;
+    if (!mv) {
+      setTimeout(dismissOverlay, 800);
+      return undefined;
+    }
+
+    const onLoad = () => dismissOverlay();
+    const onError = () => dismissOverlay();
+
+    mv.addEventListener("load", onLoad);
+    mv.addEventListener("error", onError);
+
+    const fallback = setTimeout(dismissOverlay, 8000);
+
+    return () => {
+      mv.removeEventListener("load", onLoad);
+      mv.removeEventListener("error", onError);
+      clearTimeout(fallback);
+    };
+  }, [project, isError, isLoading, activeMaterial, activeVariant, dismissOverlay]);
 
   const baseModelUrl = project?.modelUrl ?? null;
 
@@ -353,7 +407,7 @@ export default function Studio() {
     setActiveMaterial(material);
   };
 
-  if (isError && !isLoading) {
+  if (isError && !isLoading && !overlayVisible) {
     return (
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-6">
         <div className="w-20 h-20 rounded-full border border-primary/20 flex items-center justify-center">
@@ -378,21 +432,27 @@ export default function Studio() {
 
   return (
     <>
-      {/* Luxury loading overlay — shown until data arrives + brief delay */}
-      {showLoadingOverlay && (
+      {/* Luxury loading overlay */}
+      {overlayVisible && (
         <LuxuryLoadingScreen projectName={project?.name} />
       )}
 
-      {/* Main studio layout — always mounted, hidden behind overlay */}
+      {/* Main studio layout */}
       <div
         className="flex flex-col"
-        style={{ height: "100dvh", ...envStyle, opacity: showLoadingOverlay ? 0 : 1, transition: "opacity 0.4s ease" }}
+        style={{
+          height: "100dvh",
+          ...envStyle,
+          opacity: overlayOpacity === 1 ? 0 : 1,
+          transition: "opacity 0.4s ease",
+        }}
         data-testid="studio-page"
       >
         {/* Viewer — fills all remaining height */}
         <div className="flex-1 relative min-h-0">
           {activeSrc ? (
             <model-viewer
+              ref={modelViewerRef}
               src={activeSrc}
               alt={project?.name ?? ""}
               camera-controls
@@ -435,20 +495,27 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Floating variation sidebar */}
-          {project && (
-            <VariationSidebar
-              project={project}
-              isLightBg={isLightBg}
-              activeVariantId={activeVariant?.id ?? null}
-              activeMaterialId={activeMaterial?.id ?? null}
-              onSelectVariant={handleSelectVariant}
-              onSelectMaterial={handleSelectMaterial}
-            />
-          )}
+          {/* Floating variation sidebar — always present, shows skeleton while loading */}
+          <VariationSidebar
+            project={project ?? null}
+            isLightBg={isLightBg}
+            activeVariantId={activeVariant?.id ?? null}
+            activeMaterialId={activeMaterial?.id ?? null}
+            isLoadingData={isLoading}
+            onSelectVariant={handleSelectVariant}
+            onSelectMaterial={handleSelectMaterial}
+          />
+
+          {/* AR Studio watermark */}
+          <div
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-[10px] font-light tracking-wider pointer-events-none ${isLightBg ? "text-gray-300" : "text-white/20"}`}
+          >
+            <Box className="w-2.5 h-2.5" />
+            <span>AR Studio</span>
+          </div>
         </div>
 
-        {/* Footer — pinned at bottom, never scrolled off screen */}
+        {/* Footer — pinned at bottom */}
         <footer
           className={`shrink-0 px-5 py-3.5 flex items-center gap-3 backdrop-blur-sm border-t ${
             isLightBg
@@ -457,9 +524,7 @@ export default function Studio() {
           }`}
         >
           <div className="flex-1 min-w-0">
-            <h1
-              className={`font-serif text-lg font-semibold leading-tight truncate ${textClass}`}
-            >
+            <h1 className={`font-serif text-lg font-semibold leading-tight truncate ${textClass}`}>
               {project?.name ?? ""}
             </h1>
             {project?.companyName && (
@@ -482,14 +547,6 @@ export default function Studio() {
             </button>
           )}
         </footer>
-
-        {/* AR Studio watermark */}
-        <div
-          className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-[10px] font-light tracking-wider pointer-events-none ${isLightBg ? "text-gray-300" : "text-white/20"}`}
-        >
-          <Box className="w-2.5 h-2.5" />
-          <span>AR Studio</span>
-        </div>
       </div>
     </>
   );
