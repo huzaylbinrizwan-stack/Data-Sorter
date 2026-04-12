@@ -43,19 +43,26 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     return;
   }
 
-  const materials = await db
+  const allMaterials = await db
     .select()
     .from(projectMaterialsTable)
     .where(eq(projectMaterialsTable.projectId, project.id))
     .orderBy(projectMaterialsTable.sortOrder, projectMaterialsTable.createdAt);
 
-  const variants = project.enableVariants
+  const baseMaterials = allMaterials.filter((m) => m.variantId === null);
+
+  const variantRows = project.enableVariants
     ? await db
         .select()
         .from(projectVariantsTable)
         .where(eq(projectVariantsTable.projectId, project.id))
         .orderBy(projectVariantsTable.sortOrder, projectVariantsTable.createdAt)
     : [];
+
+  const variants = variantRows.map((v) => ({
+    ...v,
+    materials: allMaterials.filter((m) => m.variantId === v.id),
+  }));
 
   res.json(GetStudioProjectResponse.parse({
     id: project.id,
@@ -74,7 +81,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     defaultModelName: project.defaultModelName,
     defaultColorName: project.defaultColorName,
     publicSlug: project.publicSlug,
-    materials,
+    materials: baseMaterials,
     variants,
   }));
 });

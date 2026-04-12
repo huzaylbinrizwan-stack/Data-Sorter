@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useParams } from "wouter";
 import { useGetStudioProject, getGetStudioProjectQueryKey } from "@workspace/api-client-react";
-import type { StudioProject, ProjectMaterial, ProjectVariant } from "@workspace/api-client-react";
+import type { StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
 import { Box, ZoomIn, ChevronDown, ChevronUp, ChevronRight, Palette } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
@@ -70,15 +70,15 @@ function VariationSidebar({
   isLightBg: boolean;
   activeVariantId: number | null;
   activeMaterialId: number | null;
-  onSelectVariant: (variant: ProjectVariant | null) => void;
+  onSelectVariant: (variant: StudioVariant | null) => void;
   onSelectMaterial: (material: ProjectMaterial | null) => void;
 }) {
   const hasVariants = project.enableVariants && project.variants && project.variants.length > 0;
-  const allMaterials = project.materials ?? [];
-  const baseMaterials = allMaterials.filter((m) => m.variantId === null);
+  const baseMaterials = project.materials ?? [];
   const hasBaseMaterials = baseMaterials.length > 0;
+  const showBaseColors = project.enableMaterials;
 
-  const hasAnything = hasVariants || hasBaseMaterials;
+  const hasAnything = hasVariants || showBaseColors;
   const [isOpen, setIsOpen] = useState(true);
   const [expandedVariantId, setExpandedVariantId] = useState<number | null>(null);
 
@@ -92,10 +92,7 @@ function VariationSidebar({
 
   const variants = project.variants ?? [];
 
-  const getVariantMaterials = (variantId: number) =>
-    allMaterials.filter((m) => m.variantId === variantId);
-
-  const isVariantActive = (v: ProjectVariant) => activeVariantId === v.id;
+  const isVariantActive = (v: StudioVariant) => activeVariantId === v.id;
 
   return (
     <div
@@ -137,17 +134,17 @@ function VariationSidebar({
               <span className={`text-xs font-medium ${labelColor}`}>
                 {project.defaultModelName || "Original"}
               </span>
-              {hasBaseMaterials && (
+              {showBaseColors && (
                 activeVariantId === null
                   ? <ChevronDown className={`w-3 h-3 shrink-0 ${subColor}`} />
                   : <ChevronRight className={`w-3 h-3 shrink-0 ${subColor}`} />
               )}
             </button>
 
-            {/* Base model colors — shown when base model is selected */}
-            {hasBaseMaterials && activeVariantId === null && (
+            {/* Base model colors — shown when base model is selected and materials are enabled */}
+            {showBaseColors && activeVariantId === null && (
               <div className="ml-3 pl-3 border-l border-white/10 flex flex-col gap-1">
-                {/* Default color option for base model */}
+                {/* Default color option for base model — always shown */}
                 <button
                   onClick={() => onSelectMaterial(null)}
                   className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left ${
@@ -180,7 +177,7 @@ function VariationSidebar({
 
             {/* Variant list */}
             {variants.map((variant) => {
-              const variantMaterials = getVariantMaterials(variant.id);
+              const variantMaterials = variant.materials ?? [];
               const isExpanded = expandedVariantId === variant.id;
 
               return (
@@ -274,7 +271,7 @@ function VariationSidebar({
 export default function Studio() {
   const { slug } = useParams<{ slug: string }>();
   const projectSlug = slug ?? "";
-  const [activeVariant, setActiveVariant] = useState<ProjectVariant | null>(null);
+  const [activeVariant, setActiveVariant] = useState<StudioVariant | null>(null);
   const [activeMaterial, setActiveMaterial] = useState<ProjectMaterial | null>(null);
   const arButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -294,7 +291,7 @@ export default function Studio() {
     return baseModelUrl;
   })();
 
-  const handleSelectVariant = (variant: ProjectVariant | null) => {
+  const handleSelectVariant = (variant: StudioVariant | null) => {
     setActiveVariant(variant);
     setActiveMaterial(null);
   };

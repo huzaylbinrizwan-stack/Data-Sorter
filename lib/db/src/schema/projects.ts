@@ -26,10 +26,9 @@ export const projectsTable = pgTable("projects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const projectMaterialsTable = pgTable("project_materials", {
+export const projectVariantsTable = pgTable("project_variants", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(),
-  variantId: integer("variant_id"),
   name: text("name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   modelUrl: text("model_url"),
@@ -37,9 +36,10 @@ export const projectMaterialsTable = pgTable("project_materials", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const projectVariantsTable = pgTable("project_variants", {
+export const projectMaterialsTable = pgTable("project_materials", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(),
+  variantId: integer("variant_id").references(() => projectVariantsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   modelUrl: text("model_url"),

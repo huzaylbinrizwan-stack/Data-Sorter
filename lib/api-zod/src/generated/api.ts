@@ -329,18 +329,20 @@ export const GetStudioProjectResponse = zod.object({
   defaultModelName: zod.string(),
   defaultColorName: zod.string(),
   publicSlug: zod.string(),
-  materials: zod.array(
-    zod.object({
-      id: zod.number(),
-      projectId: zod.number(),
-      variantId: zod.number().nullable(),
-      name: zod.string(),
-      thumbnailUrl: zod.string().nullable(),
-      modelUrl: zod.string().nullable(),
-      sortOrder: zod.number(),
-      createdAt: zod.coerce.date(),
-    }),
-  ),
+  materials: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        projectId: zod.number(),
+        variantId: zod.number().nullable(),
+        name: zod.string(),
+        thumbnailUrl: zod.string().nullable(),
+        modelUrl: zod.string().nullable(),
+        sortOrder: zod.number(),
+        createdAt: zod.coerce.date(),
+      }),
+    )
+    .describe("Base model materials (variantId is null)"),
   variants: zod.array(
     zod.object({
       id: zod.number(),
@@ -350,6 +352,18 @@ export const GetStudioProjectResponse = zod.object({
       modelUrl: zod.string().nullable(),
       sortOrder: zod.number(),
       createdAt: zod.coerce.date(),
+      materials: zod.array(
+        zod.object({
+          id: zod.number(),
+          projectId: zod.number(),
+          variantId: zod.number().nullable(),
+          name: zod.string(),
+          thumbnailUrl: zod.string().nullable(),
+          modelUrl: zod.string().nullable(),
+          sortOrder: zod.number(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
     }),
   ),
 });

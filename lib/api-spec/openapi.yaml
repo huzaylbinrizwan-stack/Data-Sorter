@@ -728,6 +728,38 @@ components:
         folderId:
           type: ["integer", "null"]
 
+    StudioVariant:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        name:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        modelUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        materials:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMaterial"
+      required:
+        - id
+        - projectId
+        - name
+        - thumbnailUrl
+        - modelUrl
+        - sortOrder
+        - createdAt
+        - materials
+
     StudioProject:
       type: object
       properties:
@@ -767,12 +799,13 @@ components:
           type: string
         materials:
           type: array
+          description: Base model materials (variantId is null)
           items:
             $ref: "#/components/schemas/ProjectMaterial"
         variants:
           type: array
           items:
-            $ref: "#/components/schemas/ProjectVariant"
+            $ref: "#/components/schemas/StudioVariant"
       required:
         - id
         - name

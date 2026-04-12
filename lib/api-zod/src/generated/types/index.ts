@@ -28,6 +28,7 @@ export * from "./requestUploadUrlResponse";
 export * from "./studioProject";
 export * from "./studioProjectEnvironment";
 export * from "./studioProjectType";
+export * from "./studioVariant";
 export * from "./updateFolderBody";
 export * from "./updateMaterialBody";
 export * from "./updateProjectBody";

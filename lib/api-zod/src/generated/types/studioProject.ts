@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectMaterial } from "./projectMaterial";
-import type { ProjectVariant } from "./projectVariant";
 import type { StudioProjectEnvironment } from "./studioProjectEnvironment";
 import type { StudioProjectType } from "./studioProjectType";
+import type { StudioVariant } from "./studioVariant";
 
 export interface StudioProject {
   id: number;
@@ -28,6 +28,7 @@ export interface StudioProject {
   defaultModelName: string;
   defaultColorName: string;
   publicSlug: string;
+  /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];
-  variants: ProjectVariant[];
+  variants: StudioVariant[];
 }

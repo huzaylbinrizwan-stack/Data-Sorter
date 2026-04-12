@@ -155,6 +155,33 @@ export interface UpdateProjectBody {
   folderId?: number | null;
 }
 
+export interface ProjectMaterial {
+  id: number;
+  projectId: number;
+  /** @nullable */
+  variantId: number | null;
+  name: string;
+  /** @nullable */
+  thumbnailUrl: string | null;
+  /** @nullable */
+  modelUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface StudioVariant {
+  id: number;
+  projectId: number;
+  name: string;
+  /** @nullable */
+  thumbnailUrl: string | null;
+  /** @nullable */
+  modelUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+  materials: ProjectMaterial[];
+}
+
 export type StudioProjectEnvironment =
   (typeof StudioProjectEnvironment)[keyof typeof StudioProjectEnvironment];
 
@@ -174,32 +201,6 @@ export const StudioProjectType = {
   object: "object",
 } as const;
 
-export interface ProjectMaterial {
-  id: number;
-  projectId: number;
-  /** @nullable */
-  variantId: number | null;
-  name: string;
-  /** @nullable */
-  thumbnailUrl: string | null;
-  /** @nullable */
-  modelUrl: string | null;
-  sortOrder: number;
-  createdAt: string;
-}
-
-export interface ProjectVariant {
-  id: number;
-  projectId: number;
-  name: string;
-  /** @nullable */
-  thumbnailUrl: string | null;
-  /** @nullable */
-  modelUrl: string | null;
-  sortOrder: number;
-  createdAt: string;
-}
-
 export interface StudioProject {
   id: number;
   name: string;
@@ -218,8 +219,9 @@ export interface StudioProject {
   defaultModelName: string;
   defaultColorName: string;
   publicSlug: string;
+  /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];
-  variants: ProjectVariant[];
+  variants: StudioVariant[];
 }
 
 export interface EnvironmentCount {
@@ -266,6 +268,18 @@ export interface UpdateMaterialBody {
   /** @nullable */
   modelUrl?: string | null;
   sortOrder?: number;
+}
+
+export interface ProjectVariant {
+  id: number;
+  projectId: number;
+  name: string;
+  /** @nullable */
+  thumbnailUrl: string | null;
+  /** @nullable */
+  modelUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
 }
 
 export interface CreateVariantBody {
