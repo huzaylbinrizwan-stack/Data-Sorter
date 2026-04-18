@@ -170,16 +170,23 @@ function VariationSidebar({
   const sidebarColor = meta?.studioSidebarColor ?? "#000000";
   const sidebarOpacity = meta?.studioSidebarOpacity ?? 0.65;
   const [r, g, b] = hexToRgb(sidebarColor);
+
+  // Compute effective luminance blending sidebar colour with the environment
+  const sidebarLum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const envLum = isLightBg ? 0.9 : 0.1;
+  const effectiveLum = sidebarLum * sidebarOpacity + envLum * (1 - sidebarOpacity);
+  const isSidebarLight = effectiveLum > 0.4;
+
   const glassStyle: React.CSSProperties = {
     background: `rgba(${r}, ${g}, ${b}, ${sidebarOpacity})`,
-    borderColor: isLightBg ? "rgba(200,200,200,0.5)" : "rgba(255,255,255,0.1)",
+    borderColor: isSidebarLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.1)",
   };
 
-  const labelColor = isLightBg ? "text-gray-700" : "text-white/80";
-  const subColor = isLightBg ? "text-gray-400" : "text-white/40";
-  const dividerColor = isLightBg ? "border-gray-200/60" : "border-white/10";
-  const tabActive = isLightBg ? "bg-gray-800 text-white" : "bg-[hsl(44,54%,54%)] text-black";
-  const tabInactive = isLightBg ? "text-gray-500 hover:text-gray-700" : "text-white/40 hover:text-white/70";
+  const labelColor = isSidebarLight ? "text-gray-800" : "text-white/90";
+  const subColor = isSidebarLight ? "text-gray-500" : "text-white/45";
+  const dividerColor = isSidebarLight ? "border-gray-300/60" : "border-white/10";
+  const tabActive = isSidebarLight ? "bg-gray-900 text-white" : "bg-[hsl(44,54%,54%)] text-black";
+  const tabInactive = isSidebarLight ? "text-gray-500 hover:text-gray-800" : "text-white/40 hover:text-white/70";
 
   const hasVariants = !!(project?.enableVariants && project.variants && project.variants.length > 0);
   const baseMaterials = project?.materials ?? [];
@@ -190,7 +197,8 @@ function VariationSidebar({
     ? baseMaterials
     : (activeVariant?.materials ?? []);
 
-  const panelW = 252;
+  // Responsive panel: 50 % of viewport on mobile, capped at 252 px on larger screens
+  const panelSize = "min(50vw, 252px)";
 
   return (
     <div
@@ -214,13 +222,13 @@ function VariationSidebar({
         className="border-l backdrop-blur-xl shadow-2xl flex flex-col h-full overflow-hidden"
         style={{
           ...glassStyle,
-          maxWidth: isOpen ? `${panelW}px` : "0px",
+          maxWidth: isOpen ? panelSize : "0px",
           transition: "max-width 0.3s ease",
         }}
       >
         <div
           className="flex flex-col h-full"
-          style={{ width: `${panelW}px`, minWidth: `${panelW}px` }}
+          style={{ width: panelSize, minWidth: panelSize }}
         >
           {hasVariants ? (
             /* Mode B: two tabs — Variants | Materials */
@@ -242,7 +250,7 @@ function VariationSidebar({
 
               <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
                 {isLoadingData ? (
-                  <SidebarSkeleton isLightBg={isLightBg} />
+                  <SidebarSkeleton isLightBg={isSidebarLight} />
                 ) : mode === "variants" ? (
                   <div className="p-2.5 flex flex-col gap-1">
                     {/* Base model option */}
@@ -250,12 +258,12 @@ function VariationSidebar({
                       onClick={() => { onSelectVariant(null); onSelectMaterial(null); }}
                       className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
                         activeVariantId === null
-                          ? isLightBg ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                          ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                          : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Box className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
                       </div>
                       <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
                         {project?.defaultModelName || "Original"}
@@ -268,15 +276,15 @@ function VariationSidebar({
                         onClick={() => { onSelectVariant(variant); onSelectMaterial(null); setMode("materials"); }}
                         className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
                           activeVariantId === variant.id
-                            ? isLightBg ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                            : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                            ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                            : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                         }`}
                       >
                         {variant.thumbnailUrl ? (
                           <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
                         ) : (
-                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                            <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                            <Box className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
                           </div>
                         )}
                         <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
@@ -291,12 +299,12 @@ function VariationSidebar({
                       onClick={() => onSelectMaterial(null)}
                       className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
                         activeMaterialId === null
-                          ? isLightBg ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
-                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                     >
-                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
                       </div>
                       <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
                     </button>
@@ -305,7 +313,7 @@ function VariationSidebar({
                         key={mat.id}
                         mat={mat}
                         isActive={activeMaterialId === mat.id}
-                        isLightBg={isLightBg}
+                        isLightBg={isSidebarLight}
                         labelColor={labelColor}
                         onSelect={() => onSelectMaterial(mat)}
                       />
@@ -325,19 +333,19 @@ function VariationSidebar({
               </div>
               <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
                 {isLoadingData ? (
-                  <SidebarSkeleton isLightBg={isLightBg} />
+                  <SidebarSkeleton isLightBg={isSidebarLight} />
                 ) : (
                   <div className="p-2.5 flex flex-col gap-1">
                     <button
                       onClick={() => onSelectMaterial(null)}
                       className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
                         activeMaterialId === null
-                          ? isLightBg ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
-                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                     >
-                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
                       </div>
                       <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
                     </button>
@@ -346,7 +354,7 @@ function VariationSidebar({
                         key={mat.id}
                         mat={mat}
                         isActive={activeMaterialId === mat.id}
-                        isLightBg={isLightBg}
+                        isLightBg={isSidebarLight}
                         labelColor={labelColor}
                         onSelect={() => onSelectMaterial(mat)}
                       />
@@ -773,11 +781,12 @@ export default function Studio() {
               <button
                 data-testid="footer-view-in-ar"
                 onClick={() => arButtonRef.current?.click()}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-wide shadow-lg transition-all active:scale-95 ${
                   isLightBg
-                    ? "bg-gray-900 text-white hover:bg-gray-700"
-                    : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+                    ? "bg-gray-900 text-white hover:bg-gray-700 shadow-black/30"
+                    : "bg-[hsl(44,54%,54%)] text-black hover:brightness-110 shadow-[hsl(44,54%,54%)]/30"
                 }`}
+                style={{ letterSpacing: "0.04em" }}
               >
                 View in AR
               </button>
