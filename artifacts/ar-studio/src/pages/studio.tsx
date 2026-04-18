@@ -461,10 +461,11 @@ export default function Studio() {
       a.href = url;
       a.download = `${meta?.name ?? "model"}.png`;
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       setSavedFeedback(true);
       setTimeout(() => setSavedFeedback(false), 2000);
-    } catch {
+    } catch (err) {
+      console.warn("[AR Studio] Photo capture failed:", err);
     }
   }, [meta?.name]);
 
@@ -614,14 +615,17 @@ export default function Studio() {
                 }`}
               >
                 <Camera className="w-4 h-4" />
-                {savedFeedback && (
-                  <span
-                    className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
-                    style={{ background: "hsl(44,54%,54%)", color: "#000" }}
-                  >
-                    Saved!
-                  </span>
-                )}
+                <span
+                  className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none"
+                  style={{
+                    background: "hsl(44,54%,54%)",
+                    color: "#000",
+                    opacity: savedFeedback ? 1 : 0,
+                    transition: "opacity 0.25s ease",
+                  }}
+                >
+                  Saved!
+                </span>
               </button>
 
               {/* View in AR button */}
