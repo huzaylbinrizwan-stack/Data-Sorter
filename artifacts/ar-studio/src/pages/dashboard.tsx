@@ -1,15 +1,26 @@
+import { useState } from "react";
 import { useGetDashboardStats } from "@workspace/api-client-react";
 import { useUser } from "@clerk/react";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Box, Layers, Zap } from "lucide-react";
+import { Box, Layers, Zap, QrCode } from "lucide-react";
 import { Link } from "wouter";
+import QRCodeModal from "@/components/qr-code-modal";
+
+interface QRTarget {
+  name: string;
+  slug: string;
+}
 
 export default function Dashboard() {
   const { user } = useUser();
   const { data: stats, isLoading } = useGetDashboardStats();
+  const [qrTarget, setQrTarget] = useState<QRTarget | null>(null);
 
   const greeting = user?.firstName ? `Welcome back, ${user.firstName}.` : "Welcome to the Studio.";
+
+  const getStudioUrl = (slug: string) =>
+    `${window.location.origin}/studio/${slug}`;
 
   return (
     <Layout>
@@ -72,7 +83,7 @@ export default function Dashboard() {
                           <th className="px-6 py-4 font-medium">Project</th>
                           <th className="px-6 py-4 font-medium">Company</th>
                           <th className="px-6 py-4 font-medium">Status</th>
-                          <th className="px-6 py-4 font-medium text-right">Action</th>
+                          <th className="px-6 py-4 font-medium text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -95,12 +106,22 @@ export default function Dashboard() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <button 
-                                onClick={() => window.open(`/editor/${project.id}`, '_blank')}
-                                className="text-primary hover:text-primary/80 font-medium"
-                              >
-                                Edit
-                              </button>
+                              <div className="flex items-center justify-end gap-4">
+                                <button
+                                  onClick={() => setQrTarget({ name: project.name, slug: project.publicSlug })}
+                                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                                  title="Get QR Code"
+                                >
+                                  <QrCode className="w-4 h-4" />
+                                  <span>QR Code</span>
+                                </button>
+                                <button 
+                                  onClick={() => window.open(`/editor/${project.id}`, '_blank')}
+                                  className="text-primary hover:text-primary/80 font-medium"
+                                >
+                                  Edit
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -139,6 +160,14 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {qrTarget && (
+        <QRCodeModal
+          projectName={qrTarget.name}
+          studioUrl={getStudioUrl(qrTarget.slug)}
+          onClose={() => setQrTarget(null)}
+        />
+      )}
     </Layout>
   );
 }
