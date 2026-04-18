@@ -7,7 +7,7 @@ import {
   getGetStudioProjectQueryKey,
 } from "@workspace/api-client-react";
 import type { StudioProjectMeta, StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
-import { Box, ZoomIn, ChevronLeft, ChevronRight, Palette } from "lucide-react";
+import { Box, Camera, ChevronLeft, ChevronRight, Palette } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
   black: { background: "#0a0a0a" },
@@ -344,6 +344,8 @@ export default function Studio() {
   const [activeMaterial, setActiveMaterial] = useState<ProjectMaterial | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [overlayOpacity, setOverlayOpacity] = useState(1);
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [savedFeedback, setSavedFeedback] = useState(false);
   const arButtonRef = useRef<HTMLButtonElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
 
@@ -432,6 +434,40 @@ export default function Studio() {
     setActiveMaterial(material);
   };
 
+  useEffect(() => {
+    const mv = modelViewerRef.current;
+    if (!mv || !activeSrc) return;
+    setLoadProgress(0);
+    const onProgress = (e: Event) => {
+      const p = ((e as CustomEvent).detail?.totalProgress ?? 0) * 100;
+      setLoadProgress(p);
+    };
+    const onLoad = () => setLoadProgress(100);
+    mv.addEventListener("progress", onProgress);
+    mv.addEventListener("load", onLoad);
+    return () => {
+      mv.removeEventListener("progress", onProgress);
+      mv.removeEventListener("load", onLoad);
+    };
+  }, [activeSrc]);
+
+  const handlePhotoCapture = useCallback(async () => {
+    const mv = modelViewerRef.current as any;
+    if (!mv) return;
+    try {
+      const blob: Blob = await mv.toBlob({ idealAspect: false });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${meta?.name ?? "model"}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setSavedFeedback(true);
+      setTimeout(() => setSavedFeedback(false), 2000);
+    } catch {
+    }
+  }, [meta?.name]);
+
   if (isMetaError && !isMetaLoading && !overlayVisible) {
     return (
       <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-6">
@@ -475,6 +511,20 @@ export default function Studio() {
       >
         {/* Viewer — fills all remaining height; renders as soon as phase-1 meta arrives */}
         <div className="flex-1 relative min-h-0">
+          {/* Gold progress bar — 4px, top of viewer, driven by model-viewer progress event */}
+          <div
+            style={{
+              position: "absolute", top: 0, left: 0, zIndex: 10,
+              height: 4,
+              width: `${loadProgress}%`,
+              background: "hsl(44,54%,54%)",
+              borderRadius: "0 2px 2px 0",
+              transition: "width 0.2s ease, opacity 0.5s ease",
+              opacity: loadProgress >= 100 ? 0 : 1,
+              pointerEvents: "none",
+            }}
+          />
+
           {activeSrc ? (
             <model-viewer
               ref={modelViewerRef}
@@ -483,9 +533,9 @@ export default function Studio() {
               camera-controls
               auto-rotate
               ar
-              ar-modes="webxr scene-viewer quick-look"
+              ar-modes="scene-viewer quick-look"
+              ar-scale="fixed"
               shadow-intensity="1"
-              disable-zoom={!meta?.isScalable || undefined}
               camera-target={meta ? `${meta.hotspotX}m ${meta.hotspotY}m ${meta.hotspotZ}m` : undefined}
               style={{ width: "100%", height: "100%", display: "block" }}
               interaction-prompt="none"
@@ -507,16 +557,6 @@ export default function Studio() {
               <p className={`text-sm font-light ${isLightBg ? "text-gray-500" : "text-white/50"}`}>
                 No 3D model configured
               </p>
-            </div>
-          )}
-
-          {/* AR Scalable badge */}
-          {meta?.isScalable && (
-            <div
-              className={`absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border ${isLightBg ? "bg-white/70 border-gray-200 text-gray-700" : "bg-black/40 border-white/10 text-white/80"}`}
-            >
-              <ZoomIn className="w-3 h-3" />
-              AR Scalable
             </div>
           )}
 
@@ -561,17 +601,42 @@ export default function Studio() {
             )}
           </div>
           {activeSrc && (
-            <button
-              data-testid="footer-view-in-ar"
-              onClick={() => arButtonRef.current?.click()}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all shrink-0 ${
-                isLightBg
-                  ? "bg-gray-900 text-white hover:bg-gray-700"
-                  : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
-              }`}
-            >
-              View in AR
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Photo capture button */}
+              <button
+                data-testid="footer-photo-capture"
+                onClick={handlePhotoCapture}
+                title="Save photo"
+                className={`relative flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
+                  isLightBg
+                    ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                    : "bg-white/10 border-white/20 text-white/80 hover:bg-white/15"
+                }`}
+              >
+                <Camera className="w-4 h-4" />
+                {savedFeedback && (
+                  <span
+                    className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                    style={{ background: "hsl(44,54%,54%)", color: "#000" }}
+                  >
+                    Saved!
+                  </span>
+                )}
+              </button>
+
+              {/* View in AR button */}
+              <button
+                data-testid="footer-view-in-ar"
+                onClick={() => arButtonRef.current?.click()}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all ${
+                  isLightBg
+                    ? "bg-gray-900 text-white hover:bg-gray-700"
+                    : "bg-[hsl(44,54%,54%)] text-black hover:opacity-90"
+                }`}
+              >
+                View in AR
+              </button>
+            </div>
           )}
         </footer>
       </div>
