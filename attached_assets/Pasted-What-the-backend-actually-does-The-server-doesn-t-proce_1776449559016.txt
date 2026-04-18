@@ -1,0 +1,30 @@
+What the backend actually does
+
+The server doesn't process or render any 3D files. Its job is purely data:
+
+Stores URLs, not files. When an admin uploads a .glb (Android) or .usdz (iOS) model file, the frontend asks the backend for a signed upload URL (POST /api/uploads/request-url). The file goes directly from the browser to Replit Object Storage, and the resulting public URL gets saved into the database.
+
+Serves product models (GET /api/products/:id/models) — a list of 3D model files attached to a product, each with a URL and a flag for which one is the default.
+
+Serves materials per model (GET /api/products/:id/models/:modelId/materials) — a list of colour/texture swatches for that model. Each material has a hex colour, an optional texture image URL, and an optional "variant model URL" (a completely different .glb file to swap to).
+
+Serves measurements and theme/studio settings to control what the viewer looks like.
+
+What happens in the browser
+
+The actual AR magic is handled entirely by <model-viewer> — a Google web component. The backend just feeds it URLs:
+
+The ARStudio component fetches the model list and picks the default one, then sets that URL as the src on the <model-viewer> element.
+
+model-viewer loads and renders the .glb file natively in WebGL. The attributes ar, ar-modes="scene-viewer quick-look webxr" tell it to enable AR on supported devices.
+
+When the user taps the AR button, mv.activateAR() is called. On Android it hands off to Google Scene Viewer; on iOS it opens Quick Look with the .usdz file — both are native OS experiences, no server involvement.
+
+Material/colour swapping is done entirely in the browser using model-viewer's materials API. When you pick a swatch, the component either:
+
+Calls mv.createTexture(imageUrl) and patches it onto the model's first material in memory, or
+Calls pbr.setBaseColorFactor(rgba) to tint it with a colour, or
+Swaps the whole src URL to a different .glb if the swatch has a variantModelUrl.
+Short summary
+
+The backend is just a database of URLs. All the 3D rendering, AR launch, and real-time material changes happen inside the browser via the model-viewer web component — the server never touches a .glb file directly.
