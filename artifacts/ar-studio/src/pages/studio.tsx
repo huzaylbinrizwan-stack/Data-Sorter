@@ -190,28 +190,37 @@ function VariationSidebar({
     ? baseMaterials
     : (activeVariant?.materials ?? []);
 
+  const panelW = 252;
+
   return (
     <div
       className="absolute right-0 top-0 h-full flex items-stretch"
       style={{ zIndex: 20 }}
     >
-      {/* Toggle tab — left edge of drawer */}
+      {/* Toggle tab — always visible, on left edge of drawer */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? "Collapse variations" : "Expand variations"}
-        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-lg self-center"
+        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-lg self-center shrink-0"
         style={{ ...glassStyle, width: "20px", height: "52px" }}
       >
         {isOpen
-          ? <ChevronRight className={`w-3 h-3 ${subColor}`} />
-          : <ChevronLeft className={`w-3 h-3 ${subColor}`} />}
+          ? <ChevronLeft className={`w-3 h-3 ${subColor}`} />
+          : <ChevronRight className={`w-3 h-3 ${subColor}`} />}
       </button>
 
-      {/* Drawer panel */}
-      {isOpen && (
+      {/* Drawer panel — always mounted, slides via max-width */}
+      <div
+        className="border-l backdrop-blur-xl shadow-2xl flex flex-col h-full overflow-hidden"
+        style={{
+          ...glassStyle,
+          maxWidth: isOpen ? `${panelW}px` : "0px",
+          transition: "max-width 0.3s ease",
+        }}
+      >
         <div
-          className="border-l backdrop-blur-xl shadow-2xl flex flex-col h-full"
-          style={{ ...glassStyle, width: "clamp(170px, 52vw, 252px)" }}
+          className="flex flex-col h-full"
+          style={{ width: `${panelW}px`, minWidth: `${panelW}px` }}
         >
           {hasVariants ? (
             /* Mode B: two tabs — Variants | Materials */
@@ -348,7 +357,7 @@ function VariationSidebar({
             </>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
