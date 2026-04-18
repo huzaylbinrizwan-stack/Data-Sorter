@@ -1229,24 +1229,17 @@ components:
       properties:
         id:
           type: integer
-        projectId:
-          type: integer
         label:
           type: string
         value:
           type: string
         sortOrder:
           type: integer
-        createdAt:
-          type: string
-          format: date-time
       required:
         - id
-        - projectId
         - label
         - value
         - sortOrder
-        - createdAt
 
     ListMeasurementsResponse:
       type: array

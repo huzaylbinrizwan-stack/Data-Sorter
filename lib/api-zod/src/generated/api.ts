@@ -513,11 +513,9 @@ export const GetStudioMeasurementsParams = zod.object({
 
 export const GetStudioMeasurementsResponseItem = zod.object({
   id: zod.number(),
-  projectId: zod.number(),
   label: zod.string(),
   value: zod.string(),
   sortOrder: zod.number(),
-  createdAt: zod.coerce.date(),
 });
 export const GetStudioMeasurementsResponse = zod.array(
   GetStudioMeasurementsResponseItem,
@@ -532,11 +530,9 @@ export const ListMeasurementsParams = zod.object({
 
 export const ListMeasurementsResponseItem = zod.object({
   id: zod.number(),
-  projectId: zod.number(),
   label: zod.string(),
   value: zod.string(),
   sortOrder: zod.number(),
-  createdAt: zod.coerce.date(),
 });
 export const ListMeasurementsResponse = zod.array(ListMeasurementsResponseItem);
 
@@ -569,11 +565,9 @@ export const UpdateMeasurementBody = zod.object({
 
 export const UpdateMeasurementResponse = zod.object({
   id: zod.number(),
-  projectId: zod.number(),
   label: zod.string(),
   value: zod.string(),
   sortOrder: zod.number(),
-  createdAt: zod.coerce.date(),
 });
 
 /**

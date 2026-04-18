@@ -368,11 +368,9 @@ export interface UpdateVariantBody {
 
 export interface ProjectMeasurement {
   id: number;
-  projectId: number;
   label: string;
   value: string;
   sortOrder: number;
-  createdAt: string;
 }
 
 export type ListMeasurementsResponse = ProjectMeasurement[];

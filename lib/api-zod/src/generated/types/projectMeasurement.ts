@@ -8,9 +8,7 @@
 
 export interface ProjectMeasurement {
   id: number;
-  projectId: number;
   label: string;
   value: string;
   sortOrder: number;
-  createdAt: Date;
 }

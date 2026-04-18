@@ -523,6 +523,94 @@ function BaseMaterialsPanel({
   );
 }
 
+function DimensionsPanel({
+  measurements,
+  newMeasurementLabel,
+  newMeasurementValue,
+  onLabelChange,
+  onValueChange,
+  onAdd,
+  onDelete,
+}: {
+  measurements: { id: number; label: string; value: string; sortOrder: number }[];
+  newMeasurementLabel: string;
+  newMeasurementValue: string;
+  onLabelChange: (v: string) => void;
+  onValueChange: (v: string) => void;
+  onAdd: () => void;
+  onDelete: (id: number) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border-t border-border">
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-accent/50 transition-colors"
+        data-testid="button-toggle-dimensions"
+      >
+        <div className="flex items-center gap-2">
+          <Ruler className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Dimensions</span>
+          {measurements.length > 0 && (
+            <span className="text-[10px] text-muted-foreground/60">({measurements.length})</span>
+          )}
+        </div>
+        {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
+
+      {isOpen && (
+        <div className="px-5 pb-5 space-y-3">
+          {measurements.map((m) => (
+            <div key={m.id} className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{m.label}</p>
+                <p className="text-[10px] text-muted-foreground font-mono">{m.value}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                onClick={() => onDelete(m.id)}
+                data-testid={`button-delete-measurement-${m.id}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+
+          <div className="flex gap-1.5 pt-1">
+            <Input
+              value={newMeasurementLabel}
+              onChange={(e) => onLabelChange(e.target.value)}
+              placeholder="Label (e.g. Width)"
+              className="h-7 text-xs border-border flex-1"
+              data-testid="input-measurement-label"
+            />
+            <Input
+              value={newMeasurementValue}
+              onChange={(e) => onValueChange(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") onAdd(); }}
+              placeholder="Value (e.g. 120cm)"
+              className="h-7 text-xs border-border flex-1"
+              data-testid="input-measurement-value"
+            />
+            <Button
+              size="sm"
+              className="h-7 px-2 text-xs shrink-0"
+              onClick={onAdd}
+              disabled={!newMeasurementLabel.trim() || !newMeasurementValue.trim()}
+              data-testid="button-add-measurement"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Editor() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id ?? "", 10);
@@ -1056,59 +1144,6 @@ export default function Editor() {
             </div>
           </div>
 
-          {/* Measurements Section */}
-          <div className="p-5 border-t border-border">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-              <Ruler className="w-3 h-3 inline mr-2" />
-              Dimensions
-            </h3>
-            <div className="space-y-3">
-              {measurements.map((m) => (
-                <div key={m.id} className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{m.label}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{m.value}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => handleDeleteMeasurementItem(m.id)}
-                    data-testid={`button-delete-measurement-${m.id}`}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              ))}
-
-              <div className="flex gap-1.5 pt-1">
-                <Input
-                  value={newMeasurementLabel}
-                  onChange={(e) => setNewMeasurementLabel(e.target.value)}
-                  placeholder="Label (e.g. Width)"
-                  className="h-7 text-xs border-border flex-1"
-                  data-testid="input-measurement-label"
-                />
-                <Input
-                  value={newMeasurementValue}
-                  onChange={(e) => setNewMeasurementValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleAddMeasurement(); }}
-                  placeholder="Value (e.g. 120cm)"
-                  className="h-7 text-xs border-border flex-1"
-                  data-testid="input-measurement-value"
-                />
-                <Button
-                  size="sm"
-                  className="h-7 px-2 text-xs shrink-0"
-                  onClick={handleAddMeasurement}
-                  disabled={!newMeasurementLabel.trim() || !newMeasurementValue.trim()}
-                  data-testid="button-add-measurement"
-                >
-                  <Plus className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* Center — Model Viewer */}
@@ -1269,6 +1304,17 @@ export default function Editor() {
                   </div>
                 )}
               </div>
+
+              {/* Dimensions Section — collapsible */}
+              <DimensionsPanel
+                measurements={measurements}
+                newMeasurementLabel={newMeasurementLabel}
+                newMeasurementValue={newMeasurementValue}
+                onLabelChange={setNewMeasurementLabel}
+                onValueChange={setNewMeasurementValue}
+                onAdd={handleAddMeasurement}
+                onDelete={handleDeleteMeasurementItem}
+              />
             </>
           )}
         </aside>

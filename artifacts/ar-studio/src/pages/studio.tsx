@@ -143,6 +143,8 @@ function MaterialItem({
   );
 }
 
+type SidebarMode = "variants" | "materials";
+
 function VariationSidebar({
   project,
   meta,
@@ -163,7 +165,7 @@ function VariationSidebar({
   onSelectMaterial: (material: ProjectMaterial | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedVariantId, setExpandedVariantId] = useState<number | null>(null);
+  const [mode, setMode] = useState<SidebarMode>("variants");
 
   const sidebarColor = meta?.studioSidebarColor ?? "#000000";
   const sidebarOpacity = meta?.studioSidebarOpacity ?? 0.65;
@@ -176,71 +178,153 @@ function VariationSidebar({
   const labelColor = isLightBg ? "text-gray-700" : "text-white/80";
   const subColor = isLightBg ? "text-gray-400" : "text-white/40";
   const dividerColor = isLightBg ? "border-gray-200/60" : "border-white/10";
+  const tabActive = isLightBg ? "bg-gray-800 text-white" : "bg-[hsl(44,54%,54%)] text-black";
+  const tabInactive = isLightBg ? "text-gray-500 hover:text-gray-700" : "text-white/40 hover:text-white/70";
 
   const hasVariants = !!(project?.enableVariants && project.variants && project.variants.length > 0);
   const baseMaterials = project?.materials ?? [];
   const variants = project?.variants ?? [];
 
-  const isVariantActive = (v: StudioVariant) => activeVariantId === v.id;
+  const activeVariant = variants.find((v) => v.id === activeVariantId) ?? null;
+  const activeMaterials = activeVariantId === null
+    ? baseMaterials
+    : (activeVariant?.materials ?? []);
 
   return (
     <div
-      className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center"
-      style={{ zIndex: 20, maxHeight: "calc(100% - 48px)" }}
+      className="absolute right-0 top-0 h-full flex items-stretch"
+      style={{ zIndex: 20 }}
     >
+      {/* Toggle tab — left edge of drawer */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Collapse variations" : "Expand variations"}
+        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-lg self-center"
+        style={{ ...glassStyle, width: "20px", height: "52px" }}
+      >
+        {isOpen
+          ? <ChevronRight className={`w-3 h-3 ${subColor}`} />
+          : <ChevronLeft className={`w-3 h-3 ${subColor}`} />}
+      </button>
+
+      {/* Drawer panel */}
       {isOpen && (
         <div
-          className="rounded-l-2xl border border-r-0 backdrop-blur-xl shadow-2xl flex flex-col"
-          style={{ ...glassStyle, width: "clamp(180px, 55vw, 260px)", maxHeight: "calc(100dvh - 140px)" }}
+          className="border-l backdrop-blur-xl shadow-2xl flex flex-col h-full"
+          style={{ ...glassStyle, width: "clamp(170px, 52vw, 252px)" }}
         >
-          <div
-            className={`flex items-center justify-between px-3 py-2.5 border-b shrink-0 ${dividerColor}`}
-          >
-            <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>
-              {hasVariants ? "Models & Colors" : "Colors"}
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
-            {isLoadingData ? (
-              <SidebarSkeleton isLightBg={isLightBg} />
-            ) : (
-              <div className="p-2.5 flex flex-col gap-1">
+          {hasVariants ? (
+            /* Mode B: two tabs — Variants | Materials */
+            <>
+              <div className={`flex shrink-0 border-b ${dividerColor}`}>
                 <button
-                  onClick={() => { onSelectVariant(null); onSelectMaterial(null); setExpandedVariantId(null); }}
-                  className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
-                    activeVariantId === null
-                      ? isLightBg
-                        ? "border-gray-800 bg-gray-100"
-                        : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                      : isLightBg
-                      ? "border-gray-200 hover:border-gray-300"
-                      : "border-white/10 hover:border-white/20"
-                  }`}
+                  onClick={() => setMode("variants")}
+                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "variants" ? tabActive : tabInactive}`}
                 >
-                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                    <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-                  </div>
-                  <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
-                    {project?.defaultModelName || "Original"}
-                  </span>
-                  <ChevronRight
-                    className={`w-3 h-3 shrink-0 transition-transform duration-200 ${subColor} ${activeVariantId === null ? "rotate-90" : ""}`}
-                  />
+                  Variants
                 </button>
+                <button
+                  onClick={() => setMode("materials")}
+                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "materials" ? tabActive : tabInactive}`}
+                >
+                  Materials
+                </button>
+              </div>
 
-                {activeVariantId === null && (
-                  <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
+              <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
+                {isLoadingData ? (
+                  <SidebarSkeleton isLightBg={isLightBg} />
+                ) : mode === "variants" ? (
+                  <div className="p-2.5 flex flex-col gap-1">
+                    {/* Base model option */}
+                    <button
+                      onClick={() => { onSelectVariant(null); onSelectMaterial(null); }}
+                      className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                        activeVariantId === null
+                          ? isLightBg ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                      </div>
+                      <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
+                        {project?.defaultModelName || "Original"}
+                      </span>
+                    </button>
+                    {/* Variant options */}
+                    {variants.map((variant) => (
+                      <button
+                        key={variant.id}
+                        onClick={() => { onSelectVariant(variant); onSelectMaterial(null); setMode("materials"); }}
+                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                          activeVariantId === variant.id
+                            ? isLightBg ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                            : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        {variant.thumbnailUrl ? (
+                          <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
+                        ) : (
+                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                            <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                          </div>
+                        )}
+                        <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
+                        <ChevronRight className={`w-3 h-3 shrink-0 ${subColor}`} />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  /* Materials tab */
+                  <div className="p-2.5 flex flex-col gap-1">
                     <button
                       onClick={() => onSelectMaterial(null)}
                       className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
                         activeMaterialId === null
-                          ? isLightBg
-                            ? "border-gray-700 bg-gray-50"
-                            : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
-                          : isLightBg
-                          ? "border-gray-200 hover:border-gray-300"
-                          : "border-white/10 hover:border-white/20"
+                          ? isLightBg ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
+                        <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+                      </div>
+                      <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
+                    </button>
+                    {activeMaterials.map((mat) => (
+                      <MaterialItem
+                        key={mat.id}
+                        mat={mat}
+                        isActive={activeMaterialId === mat.id}
+                        isLightBg={isLightBg}
+                        labelColor={labelColor}
+                        onSelect={() => onSelectMaterial(mat)}
+                      />
+                    ))}
+                    {activeMaterials.length === 0 && (
+                      <p className={`text-[10px] px-1 py-3 text-center ${subColor}`}>No colors for this model</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Mode A: only materials, no variants */
+            <>
+              <div className={`px-3 py-2.5 border-b shrink-0 ${dividerColor}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>Colors</span>
+              </div>
+              <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
+                {isLoadingData ? (
+                  <SidebarSkeleton isLightBg={isLightBg} />
+                ) : (
+                  <div className="p-2.5 flex flex-col gap-1">
+                    <button
+                      onClick={() => onSelectMaterial(null)}
+                      className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+                        activeMaterialId === null
+                          ? isLightBg ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          : isLightBg ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                     >
                       <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
@@ -260,107 +344,23 @@ function VariationSidebar({
                     ))}
                   </div>
                 )}
-
-                {variants.map((variant) => {
-                  const variantMaterials = variant.materials ?? [];
-                  const isExpanded = expandedVariantId === variant.id;
-
-                  return (
-                    <div key={variant.id} className="flex flex-col gap-1">
-                      <button
-                        onClick={() => {
-                          onSelectVariant(variant);
-                          onSelectMaterial(null);
-                          setExpandedVariantId(isExpanded && isVariantActive(variant) ? null : variant.id);
-                        }}
-                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
-                          isVariantActive(variant)
-                            ? isLightBg
-                              ? "border-gray-800 bg-gray-100"
-                              : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
-                            : isLightBg
-                            ? "border-gray-200 hover:border-gray-300"
-                            : "border-white/10 hover:border-white/20"
-                        }`}
-                      >
-                        {variant.thumbnailUrl ? (
-                          <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
-                        ) : (
-                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                            <Box className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-                          </div>
-                        )}
-                        <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
-                        <ChevronRight
-                          className={`w-3 h-3 shrink-0 transition-transform duration-200 ${subColor} ${isVariantActive(variant) && isExpanded ? "rotate-90" : ""}`}
-                        />
-                      </button>
-
-                      {isVariantActive(variant) && isExpanded && (
-                        <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
-                          <button
-                            onClick={() => onSelectMaterial(null)}
-                            className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
-                              activeMaterialId === null
-                                ? isLightBg
-                                  ? "border-gray-700 bg-gray-50"
-                                  : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
-                                : isLightBg
-                                ? "border-gray-200 hover:border-gray-300"
-                                : "border-white/10 hover:border-white/20"
-                            }`}
-                          >
-                            <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                              <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
-                            </div>
-                            <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
-                          </button>
-                          {variantMaterials.map((mat) => (
-                            <MaterialItem
-                              key={mat.id}
-                              mat={mat}
-                              isActive={activeMaterialId === mat.id}
-                              isLightBg={isLightBg}
-                              labelColor={labelColor}
-                              onSelect={() => onSelectMaterial(mat)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       )}
-
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Collapse variations" : "Expand variations"}
-        className="flex items-center justify-center w-5 rounded-l-lg backdrop-blur-md shadow-xl transition-all border-l border-y"
-        style={{ ...glassStyle, height: "52px" }}
-      >
-        {isOpen
-          ? <ChevronRight className={`w-3 h-3 ${subColor}`} />
-          : <ChevronLeft className={`w-3 h-3 ${subColor}`} />}
-      </button>
     </div>
   );
 }
 
-function MeasurementsPanel({
+function MeasurementsOverlay({
   slug,
   isLightBg,
-  isOpen,
-  onClose,
 }: {
   slug: string;
   isLightBg: boolean;
-  isOpen: boolean;
-  onClose: () => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const { data: measurements } = useGetStudioMeasurements(slug, {
@@ -374,52 +374,63 @@ function MeasurementsPanel({
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
+        setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const items = measurements ?? [];
+  if (items.length === 0) return null;
 
   return (
-    <div
-      ref={panelRef}
-      data-measurements-panel
-      className="absolute bottom-16 left-4"
-      style={{
-        zIndex: 25,
-        opacity: isOpen ? 1 : 0,
-        transform: isOpen ? "scale(1) translateY(0)" : "scale(0.95) translateY(8px)",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
-        pointerEvents: isOpen ? "auto" : "none",
-      }}
-    >
+    <div ref={panelRef} className="absolute bottom-16 left-4" style={{ zIndex: 25 }}>
+      {/* Toggle button */}
+      <button
+        data-testid="button-measurements-toggle"
+        onClick={() => setIsOpen((v) => !v)}
+        title="Dimensions"
+        className={`flex items-center justify-center w-9 h-9 rounded-full border shadow-lg transition-all ${
+          isOpen
+            ? "bg-[hsl(44,54%,54%)] border-[hsl(44,54%,54%)] text-black"
+            : isLightBg
+            ? "bg-white/80 border-gray-300 text-gray-700 hover:bg-white"
+            : "bg-black/50 border-white/20 text-white/80 hover:bg-black/60"
+        }`}
+        style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      >
+        <Ruler className="w-4 h-4" />
+      </button>
+
+      {/* Panel */}
       <div
-        className="rounded-xl shadow-2xl overflow-hidden"
+        className="absolute bottom-11 left-0"
         style={{
-          background: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          minWidth: "180px",
-          maxWidth: "240px",
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? "scale(1) translateY(0)" : "scale(0.95) translateY(6px)",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
+          pointerEvents: isOpen ? "auto" : "none",
         }}
       >
         <div
-          className="px-3 py-2 border-b"
-          style={{ borderColor: "rgba(255,255,255,0.1)" }}
+          className="rounded-xl shadow-2xl overflow-hidden"
+          style={{
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            minWidth: "180px",
+            maxWidth: "240px",
+          }}
         >
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">
-            Dimensions
-          </span>
-        </div>
-        <div className="p-2 flex flex-col gap-1 max-h-48 overflow-y-auto">
-          {items.length === 0 ? (
-            <p className="text-xs text-white/30 px-1 py-2 text-center">No dimensions available</p>
-          ) : (
-            items.map((m) => (
+          <div className="px-3 py-2 border-b" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">
+              Dimensions
+            </span>
+          </div>
+          <div className="p-2 flex flex-col gap-1 max-h-48 overflow-y-auto">
+            {items.map((m) => (
               <div
                 key={m.id}
                 className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg"
@@ -433,8 +444,8 @@ function MeasurementsPanel({
                   {m.value}
                 </span>
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -450,7 +461,8 @@ export default function Studio() {
   const [overlayOpacity, setOverlayOpacity] = useState(1);
   const [loadProgress, setLoadProgress] = useState(0);
   const [savedFeedback, setSavedFeedback] = useState(false);
-  const [measurementsOpen, setMeasurementsOpen] = useState(false);
+  const [pendingSrc, setPendingSrc] = useState<string | null>(null);
+  const [displaySrc, setDisplaySrc] = useState<string | null>(null);
   const arButtonRef = useRef<HTMLButtonElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
 
@@ -530,6 +542,13 @@ export default function Studio() {
     return baseModelUrl;
   })();
 
+  useEffect(() => {
+    if (!activeSrc) return;
+    if (activeSrc === pendingSrc) return;
+    setPendingSrc(activeSrc);
+    setLoadProgress(0);
+  }, [activeSrc, pendingSrc]);
+
   const handleSelectVariant = (variant: StudioVariant | null) => {
     setActiveVariant(variant);
     setActiveMaterial(null);
@@ -541,20 +560,22 @@ export default function Studio() {
 
   useEffect(() => {
     const mv = modelViewerRef.current;
-    if (!mv || !activeSrc) return;
-    setLoadProgress(0);
+    if (!mv || !pendingSrc) return;
     const onProgress = (e: Event) => {
       const p = ((e as CustomEvent).detail?.totalProgress ?? 0) * 100;
       setLoadProgress(p);
     };
-    const onLoad = () => setLoadProgress(100);
+    const onLoad = () => {
+      setLoadProgress(100);
+      setDisplaySrc(pendingSrc);
+    };
     mv.addEventListener("progress", onProgress);
     mv.addEventListener("load", onLoad);
     return () => {
       mv.removeEventListener("progress", onProgress);
       mv.removeEventListener("load", onLoad);
     };
-  }, [activeSrc]);
+  }, [pendingSrc]);
 
   const handlePhotoCapture = useCallback(async () => {
     const mv = modelViewerRef.current as any;
@@ -634,10 +655,10 @@ export default function Studio() {
             }}
           />
 
-          {activeSrc ? (
+          {pendingSrc ? (
             <model-viewer
               ref={modelViewerRef}
-              src={activeSrc}
+              src={pendingSrc}
               alt={meta?.name ?? ""}
               camera-controls
               auto-rotate
@@ -646,7 +667,13 @@ export default function Studio() {
               ar-scale="fixed"
               shadow-intensity="1"
               camera-target={meta ? `${meta.hotspotX}m ${meta.hotspotY}m ${meta.hotspotZ}m` : undefined}
-              style={{ width: "100%", height: "100%", display: "block" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+                opacity: displaySrc === pendingSrc ? 1 : 0.6,
+                transition: "opacity 0.3s ease",
+              }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
             >
@@ -683,12 +710,7 @@ export default function Studio() {
           )}
 
           {projectSlug && (
-            <MeasurementsPanel
-              slug={projectSlug}
-              isLightBg={isLightBg}
-              isOpen={measurementsOpen}
-              onClose={() => setMeasurementsOpen(false)}
-            />
+            <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} />
           )}
         </div>
 
@@ -711,23 +733,8 @@ export default function Studio() {
               </p>
             )}
           </div>
-          {activeSrc && (
+          {pendingSrc && (
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                data-testid="footer-measurements-toggle"
-                onClick={() => setMeasurementsOpen((v) => !v)}
-                title="Dimensions"
-                className={`relative flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
-                  measurementsOpen
-                    ? "bg-[hsl(44,54%,54%)] border-[hsl(44,54%,54%)] text-black"
-                    : isLightBg
-                    ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                    : "bg-white/10 border-white/20 text-white/80 hover:bg-white/15"
-                }`}
-              >
-                <Ruler className="w-4 h-4" />
-              </button>
-
               <button
                 data-testid="footer-photo-capture"
                 onClick={handlePhotoCapture}
