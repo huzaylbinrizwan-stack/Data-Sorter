@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, isNull } from "drizzle-orm";
-import { db, projectsTable, projectMaterialsTable, projectVariantsTable } from "@workspace/db";
+import { db, projectsTable, projectMaterialsTable, projectVariantsTable, projectMeasurementsTable } from "@workspace/db";
 import {
   CreateProjectBody,
   GetProjectParams,
@@ -12,6 +12,8 @@ import {
   GetStudioProjectParams,
   GetStudioProjectMetaParams,
   GetStudioProjectMetaResponse,
+  GetStudioMeasurementsParams,
+  GetStudioMeasurementsResponse,
   ListProjectsQueryParams,
   ListProjectsResponse,
   GetProjectResponse,
@@ -61,6 +63,8 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     defaultModelName: project.defaultModelName,
     defaultColorName: project.defaultColorName,
     publicSlug: project.publicSlug,
+    studioSidebarColor: project.studioSidebarColor,
+    studioSidebarOpacity: project.studioSidebarOpacity,
   }));
 });
 
@@ -121,9 +125,33 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     defaultModelName: project.defaultModelName,
     defaultColorName: project.defaultColorName,
     publicSlug: project.publicSlug,
+    studioSidebarColor: project.studioSidebarColor,
+    studioSidebarOpacity: project.studioSidebarOpacity,
     materials: baseMaterials,
     variants,
   }));
+});
+
+studioRouter.get("/studio/:slug/measurements", async (req, res): Promise<void> => {
+  const params = GetStudioMeasurementsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [project] = await db
+    .select({ id: projectsTable.id, isLive: projectsTable.isLive })
+    .from(projectsTable)
+    .where(eq(projectsTable.publicSlug, params.data.slug));
+  if (!project || !project.isLive) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+  const rows = await db
+    .select()
+    .from(projectMeasurementsTable)
+    .where(eq(projectMeasurementsTable.projectId, project.id))
+    .orderBy(projectMeasurementsTable.sortOrder, projectMeasurementsTable.createdAt);
+  res.json(GetStudioMeasurementsResponse.parse(rows));
 });
 
 router.get("/projects", async (req, res): Promise<void> => {

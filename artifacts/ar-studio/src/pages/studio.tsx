@@ -3,11 +3,13 @@ import { useParams } from "wouter";
 import {
   useGetStudioProjectMeta,
   useGetStudioProject,
+  useGetStudioMeasurements,
   getGetStudioProjectMetaQueryKey,
   getGetStudioProjectQueryKey,
+  getGetStudioMeasurementsQueryKey,
 } from "@workspace/api-client-react";
 import type { StudioProjectMeta, StudioProject, ProjectMaterial, StudioVariant } from "@workspace/api-client-react";
-import { Box, Camera, ChevronLeft, ChevronRight, Palette } from "lucide-react";
+import { Box, Camera, ChevronLeft, ChevronRight, Palette, Ruler } from "lucide-react";
 
 const ENV_STYLES: Record<string, React.CSSProperties> = {
   black: { background: "#0a0a0a" },
@@ -24,6 +26,13 @@ const ENV_TEXT: Record<string, string> = {
   "classic-luxury": "text-white",
   "walls-plants": "text-gray-800",
 };
+
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [0, 0, 0];
+}
 
 function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; opacity: number }) {
   return (
@@ -136,6 +145,7 @@ function MaterialItem({
 
 function VariationSidebar({
   project,
+  meta,
   isLightBg,
   activeVariantId,
   activeMaterialId,
@@ -144,6 +154,7 @@ function VariationSidebar({
   onSelectMaterial,
 }: {
   project: StudioProject | null;
+  meta: StudioProjectMeta | null | undefined;
   isLightBg: boolean;
   activeVariantId: number | null;
   activeMaterialId: number | null;
@@ -154,9 +165,14 @@ function VariationSidebar({
   const [isOpen, setIsOpen] = useState(true);
   const [expandedVariantId, setExpandedVariantId] = useState<number | null>(null);
 
-  const glassBg = isLightBg
-    ? "bg-white/85 border-gray-200/70"
-    : "bg-black/60 border-white/10";
+  const sidebarColor = meta?.studioSidebarColor ?? "#000000";
+  const sidebarOpacity = meta?.studioSidebarOpacity ?? 0.65;
+  const [r, g, b] = hexToRgb(sidebarColor);
+  const glassStyle: React.CSSProperties = {
+    background: `rgba(${r}, ${g}, ${b}, ${sidebarOpacity})`,
+    borderColor: isLightBg ? "rgba(200,200,200,0.5)" : "rgba(255,255,255,0.1)",
+  };
+
   const labelColor = isLightBg ? "text-gray-700" : "text-white/80";
   const subColor = isLightBg ? "text-gray-400" : "text-white/40";
   const dividerColor = isLightBg ? "border-gray-200/60" : "border-white/10";
@@ -174,22 +190,22 @@ function VariationSidebar({
     >
       {isOpen && (
         <div
-          className={`rounded-l-2xl border border-r-0 backdrop-blur-xl shadow-2xl flex flex-col ${glassBg}`}
-          style={{ width: "clamp(180px, 48vw, 224px)", maxHeight: "calc(100dvh - 140px)" }}
+          className="rounded-l-2xl border border-r-0 backdrop-blur-xl shadow-2xl flex flex-col"
+          style={{ ...glassStyle, width: "clamp(180px, 55vw, 260px)", maxHeight: "calc(100dvh - 140px)" }}
         >
-          <div className={`flex items-center justify-between px-3 py-2.5 border-b shrink-0 ${dividerColor}`}>
+          <div
+            className={`flex items-center justify-between px-3 py-2.5 border-b shrink-0 ${dividerColor}`}
+          >
             <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>
               {hasVariants ? "Models & Colors" : "Colors"}
             </span>
           </div>
 
-          {/* Scrollable content — shows skeleton until data loaded */}
           <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
             {isLoadingData ? (
               <SidebarSkeleton isLightBg={isLightBg} />
             ) : (
               <div className="p-2.5 flex flex-col gap-1">
-                {/* Default / original model option */}
                 <button
                   onClick={() => { onSelectVariant(null); onSelectMaterial(null); setExpandedVariantId(null); }}
                   className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
@@ -213,7 +229,6 @@ function VariationSidebar({
                   />
                 </button>
 
-                {/* Base model colors — shown when base model is selected */}
                 {activeVariantId === null && (
                   <div className={`ml-2.5 pl-2.5 border-l flex flex-col gap-1 ${dividerColor}`}>
                     <button
@@ -246,7 +261,6 @@ function VariationSidebar({
                   </div>
                 )}
 
-                {/* Variant list */}
                 {variants.map((variant) => {
                   const variantMaterials = variant.materials ?? [];
                   const isExpanded = expandedVariantId === variant.id;
@@ -322,17 +336,107 @@ function VariationSidebar({
         </div>
       )}
 
-      {/* Toggle tab — always visible on right edge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? "Collapse variations" : "Expand variations"}
-        className={`flex items-center justify-center w-5 rounded-l-lg border-l border-y backdrop-blur-md shadow-xl transition-all ${glassBg}`}
-        style={{ height: "52px" }}
+        className="flex items-center justify-center w-5 rounded-l-lg backdrop-blur-md shadow-xl transition-all border-l border-y"
+        style={{ ...glassStyle, height: "52px" }}
       >
         {isOpen
           ? <ChevronRight className={`w-3 h-3 ${subColor}`} />
           : <ChevronLeft className={`w-3 h-3 ${subColor}`} />}
       </button>
+    </div>
+  );
+}
+
+function MeasurementsPanel({
+  slug,
+  isLightBg,
+  isOpen,
+  onClose,
+}: {
+  slug: string;
+  isLightBg: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const { data: measurements } = useGetStudioMeasurements(slug, {
+    query: {
+      enabled: !!slug,
+      queryKey: getGetStudioMeasurementsQueryKey(slug),
+    },
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen, onClose]);
+
+  const items = measurements ?? [];
+
+  return (
+    <div
+      ref={panelRef}
+      data-measurements-panel
+      className="absolute bottom-16 left-4"
+      style={{
+        zIndex: 25,
+        opacity: isOpen ? 1 : 0,
+        transform: isOpen ? "scale(1) translateY(0)" : "scale(0.95) translateY(8px)",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+        pointerEvents: isOpen ? "auto" : "none",
+      }}
+    >
+      <div
+        className="rounded-xl shadow-2xl overflow-hidden"
+        style={{
+          background: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          minWidth: "180px",
+          maxWidth: "240px",
+        }}
+      >
+        <div
+          className="px-3 py-2 border-b"
+          style={{ borderColor: "rgba(255,255,255,0.1)" }}
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">
+            Dimensions
+          </span>
+        </div>
+        <div className="p-2 flex flex-col gap-1 max-h-48 overflow-y-auto">
+          {items.length === 0 ? (
+            <p className="text-xs text-white/30 px-1 py-2 text-center">No dimensions available</p>
+          ) : (
+            items.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg"
+                style={{ background: "rgba(255,255,255,0.05)" }}
+              >
+                <span className="text-xs text-white/60 truncate">{m.label}</span>
+                <span
+                  className="text-xs font-medium shrink-0 tabular-nums"
+                  style={{ color: "hsl(44,54%,54%)" }}
+                >
+                  {m.value}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -346,6 +450,7 @@ export default function Studio() {
   const [overlayOpacity, setOverlayOpacity] = useState(1);
   const [loadProgress, setLoadProgress] = useState(0);
   const [savedFeedback, setSavedFeedback] = useState(false);
+  const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const arButtonRef = useRef<HTMLButtonElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
 
@@ -492,14 +597,19 @@ export default function Studio() {
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
 
+  const showSidebar = !!(
+    meta &&
+    (isFullLoading || !fullProject ||
+      (fullProject.variants?.length ?? 0) > 0 ||
+      (fullProject.materials?.length ?? 0) > 0)
+  );
+
   return (
     <>
-      {/* Luxury loading overlay — stays in DOM until fade completes */}
       {overlayVisible && (
         <LuxuryLoadingScreen projectName={meta?.name} opacity={overlayOpacity} />
       )}
 
-      {/* Main studio layout */}
       <div
         className="flex flex-col"
         style={{
@@ -510,9 +620,7 @@ export default function Studio() {
         }}
         data-testid="studio-page"
       >
-        {/* Viewer — fills all remaining height; renders as soon as phase-1 meta arrives */}
         <div className="flex-1 relative min-h-0">
-          {/* Gold progress bar — 4px, top of viewer, driven by model-viewer progress event */}
           <div
             style={{
               position: "absolute", top: 0, left: 0, zIndex: 10,
@@ -561,49 +669,65 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Floating variation sidebar — shown while loading (skeleton) or when content exists */}
-          {(isFullLoading || !fullProject || (fullProject.variants?.length ?? 0) > 0 || (fullProject.materials?.length ?? 0) > 0) && (
+          {showSidebar && (
             <VariationSidebar
               project={fullProject ?? null}
+              meta={meta}
               isLightBg={isLightBg}
               activeVariantId={activeVariant?.id ?? null}
               activeMaterialId={activeMaterial?.id ?? null}
-              isLoadingData={isFullLoading || !fullProject}
+              isLoadingData={isFullLoading}
               onSelectVariant={handleSelectVariant}
               onSelectMaterial={handleSelectMaterial}
             />
           )}
 
-          {/* AR Studio watermark */}
-          <div
-            className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-[10px] font-light tracking-wider pointer-events-none ${isLightBg ? "text-gray-300" : "text-white/20"}`}
-          >
-            <Box className="w-2.5 h-2.5" />
-            <span>AR Studio</span>
-          </div>
+          {projectSlug && (
+            <MeasurementsPanel
+              slug={projectSlug}
+              isLightBg={isLightBg}
+              isOpen={measurementsOpen}
+              onClose={() => setMeasurementsOpen(false)}
+            />
+          )}
         </div>
 
-        {/* Footer — pinned at bottom */}
         <footer
-          className={`shrink-0 px-5 py-3.5 flex items-center gap-3 backdrop-blur-sm border-t ${
-            isLightBg
-              ? "bg-white/80 border-gray-200/50"
-              : "bg-black/60 border-white/10"
-          }`}
+          className={`flex items-center justify-between px-4 py-3 shrink-0 ${isLightBg ? "border-t border-gray-200/60" : "border-t border-white/8"}`}
+          style={{ background: "rgba(0,0,0,0.15)" }}
         >
-          <div className="flex-1 min-w-0">
-            <h1 className={`font-serif text-lg font-semibold leading-tight truncate ${textClass}`}>
-              {meta?.name ?? ""}
-            </h1>
+          <div className="flex flex-col min-w-0">
+            {meta?.name && (
+              <p className={`text-sm font-semibold tracking-wide truncate leading-tight ${textClass}`}>
+                {meta.name}
+              </p>
+            )}
             {meta?.companyName && (
-              <p className={`text-xs font-light truncate mt-0.5 ${isLightBg ? "text-gray-400" : "text-white/40"}`}>
+              <p
+                className="text-[10px] font-light tracking-widest uppercase truncate"
+                style={{ color: "hsl(44,54%,54%,0.8)" }}
+              >
                 {meta.companyName}
               </p>
             )}
           </div>
           {activeSrc && (
             <div className="flex items-center gap-2 shrink-0">
-              {/* Photo capture button */}
+              <button
+                data-testid="footer-measurements-toggle"
+                onClick={() => setMeasurementsOpen((v) => !v)}
+                title="Dimensions"
+                className={`relative flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
+                  measurementsOpen
+                    ? "bg-[hsl(44,54%,54%)] border-[hsl(44,54%,54%)] text-black"
+                    : isLightBg
+                    ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                    : "bg-white/10 border-white/20 text-white/80 hover:bg-white/15"
+                }`}
+              >
+                <Ruler className="w-4 h-4" />
+              </button>
+
               <button
                 data-testid="footer-photo-capture"
                 onClick={handlePhotoCapture}
@@ -628,7 +752,6 @@ export default function Studio() {
                 </span>
               </button>
 
-              {/* View in AR button */}
               <button
                 data-testid="footer-view-in-ar"
                 onClick={() => arButtonRef.current?.click()}

@@ -299,6 +299,118 @@ paths:
         "404":
           description: Not found
 
+  /studio/{slug}/measurements:
+    get:
+      operationId: getStudioMeasurements
+      tags: [measurements]
+      summary: Get measurements for a public studio project (no auth required)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of measurements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMeasurementsResponse"
+        "404":
+          description: Not found
+
+  # ── Measurements (admin) ─────────────────────────────────────────────────────
+  /projects/{id}/measurements:
+    get:
+      operationId: listMeasurements
+      tags: [measurements]
+      summary: List measurements for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of measurements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMeasurementsResponse"
+    post:
+      operationId: createMeasurement
+      tags: [measurements]
+      summary: Create a measurement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeasurementBody"
+      responses:
+        "201":
+          description: Created measurement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMeasurement"
+
+  /projects/{id}/measurements/{measurementId}:
+    patch:
+      operationId: updateMeasurement
+      tags: [measurements]
+      summary: Update a measurement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: measurementId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeasurementBody"
+      responses:
+        "200":
+          description: Updated measurement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMeasurement"
+    delete:
+      operationId: deleteMeasurement
+      tags: [measurements]
+      summary: Delete a measurement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: measurementId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ── Stats ────────────────────────────────────────────────────────────────────
   /stats/dashboard:
     get:
@@ -637,6 +749,14 @@ components:
           type: string
         defaultColorName:
           type: string
+        studioSidebarColor:
+          type: string
+          default: "#000000"
+        studioSidebarOpacity:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.65
         folderId:
           type: ["integer", "null"]
         publicSlug:
@@ -665,6 +785,8 @@ components:
         - enableVariants
         - defaultModelName
         - defaultColorName
+        - studioSidebarColor
+        - studioSidebarOpacity
         - folderId
         - publicSlug
         - createdAt
@@ -748,6 +870,12 @@ components:
           type: string
         folderId:
           type: ["integer", "null"]
+        studioSidebarColor:
+          type: string
+        studioSidebarOpacity:
+          type: number
+          minimum: 0
+          maximum: 1
 
     StudioProjectMeta:
       type: object
@@ -787,6 +915,14 @@ components:
           type: string
         publicSlug:
           type: string
+        studioSidebarColor:
+          type: string
+          default: "#000000"
+        studioSidebarOpacity:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.65
       required:
         - id
         - name
@@ -804,6 +940,8 @@ components:
         - defaultModelName
         - defaultColorName
         - publicSlug
+        - studioSidebarColor
+        - studioSidebarOpacity
 
     StudioVariant:
       type: object
@@ -872,6 +1010,14 @@ components:
           type: string
         defaultColorName:
           type: string
+        studioSidebarColor:
+          type: string
+          default: "#000000"
+        studioSidebarOpacity:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.65
         publicSlug:
           type: string
         materials:
@@ -899,6 +1045,8 @@ components:
         - enableVariants
         - defaultModelName
         - defaultColorName
+        - studioSidebarColor
+        - studioSidebarOpacity
         - publicSlug
         - materials
         - variants
@@ -1073,5 +1221,57 @@ components:
           type: ["string", "null"]
         modelUrl:
           type: ["string", "null"]
+        sortOrder:
+          type: integer
+
+    ProjectMeasurement:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        label:
+          type: string
+        value:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - label
+        - value
+        - sortOrder
+        - createdAt
+
+    ListMeasurementsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/ProjectMeasurement"
+
+    CreateMeasurementBody:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        sortOrder:
+          type: integer
+      required:
+        - label
+        - value
+
+    UpdateMeasurementBody:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
         sortOrder:
           type: integer

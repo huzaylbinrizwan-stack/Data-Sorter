@@ -28,4 +28,10 @@ export interface UpdateProjectBody {
   defaultColorName?: string;
   /** @nullable */
   folderId?: number | null;
+  studioSidebarColor?: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity?: number;
 }

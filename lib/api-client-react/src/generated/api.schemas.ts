@@ -66,6 +66,12 @@ export interface Project {
   enableVariants: boolean;
   defaultModelName: string;
   defaultColorName: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;
@@ -153,6 +159,12 @@ export interface UpdateProjectBody {
   defaultColorName?: string;
   /** @nullable */
   folderId?: number | null;
+  studioSidebarColor?: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity?: number;
 }
 
 export type StudioProjectMetaEnvironment =
@@ -195,6 +207,12 @@ export interface StudioProjectMeta {
   defaultModelName: string;
   defaultColorName: string;
   publicSlug: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
 }
 
 export interface ProjectMaterial {
@@ -260,6 +278,12 @@ export interface StudioProject {
   enableVariants: boolean;
   defaultModelName: string;
   defaultColorName: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];
@@ -339,6 +363,29 @@ export interface UpdateVariantBody {
   thumbnailUrl?: string | null;
   /** @nullable */
   modelUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface ProjectMeasurement {
+  id: number;
+  projectId: number;
+  label: string;
+  value: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export type ListMeasurementsResponse = ProjectMeasurement[];
+
+export interface CreateMeasurementBody {
+  label: string;
+  value: string;
+  sortOrder?: number;
+}
+
+export interface UpdateMeasurementBody {
+  label?: string;
+  value?: string;
   sortOrder?: number;
 }
 

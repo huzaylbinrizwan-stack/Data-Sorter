@@ -28,6 +28,12 @@ export interface Project {
   enableVariants: boolean;
   defaultModelName: string;
   defaultColorName: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;

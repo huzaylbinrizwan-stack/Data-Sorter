@@ -6,6 +6,7 @@ import statsRouter from "./stats";
 import { storageAdminRouter, storagePublicRouter } from "./storage";
 import materialsRouter from "./materials";
 import variantsRouter from "./variants";
+import measurementsRouter from "./measurements";
 import { requireClerkAuth } from "../middlewares/requireClerkAuth";
 
 const router: IRouter = Router();
@@ -21,5 +22,6 @@ router.use(requireClerkAuth, storageAdminRouter);
 router.use(requireClerkAuth, projectsRouter);
 router.use(requireClerkAuth, materialsRouter);
 router.use(requireClerkAuth, variantsRouter);
+router.use(requireClerkAuth, measurementsRouter);
 
 export default router;

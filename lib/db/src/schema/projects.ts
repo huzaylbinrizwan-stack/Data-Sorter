@@ -20,6 +20,8 @@ export const projectsTable = pgTable("projects", {
   enableVariants: boolean("enable_variants").notNull().default(false),
   defaultModelName: text("default_model_name").notNull().default("Original"),
   defaultColorName: text("default_color_name").notNull().default("Original Color"),
+  studioSidebarColor: text("studio_sidebar_color").notNull().default("#000000"),
+  studioSidebarOpacity: real("studio_sidebar_opacity").notNull().default(0.65),
   folderId: integer("folder_id"),
   publicSlug: text("public_slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -47,8 +49,19 @@ export const projectMaterialsTable = pgTable("project_materials", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const projectMeasurementsTable = pgTable("project_measurements", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  label: text("label").notNull(),
+  value: text("value").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertProjectSchema = createInsertSchema(projectsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertMeasurementSchema = createInsertSchema(projectMeasurementsTable).omit({ id: true, createdAt: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projectsTable.$inferSelect;
 export type ProjectMaterial = typeof projectMaterialsTable.$inferSelect;
 export type ProjectVariant = typeof projectVariantsTable.$inferSelect;
+export type Measurement = typeof projectMeasurementsTable.$inferSelect;

@@ -14,11 +14,15 @@ import {
   useCreateVariant,
   useUpdateVariant,
   useDeleteVariant,
+  useListMeasurements,
+  useCreateMeasurement,
+  useDeleteMeasurement,
   getGetProjectQueryKey,
   getGetDashboardStatsQueryKey,
   getListProjectsQueryKey,
   getListMaterialsQueryKey,
   getListVariantsQueryKey,
+  getListMeasurementsQueryKey,
   type UpdateProjectBody,
   type ProjectMaterial,
   type ProjectVariant,
@@ -52,6 +56,7 @@ import {
   ChevronDown,
   Palette,
   ChevronRight,
+  Ruler,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -552,6 +557,18 @@ export default function Editor() {
   const [showVariations, setShowVariations] = useState(false);
   const [defaultModelNameVal, setDefaultModelNameVal] = useState("");
   const [defaultColorNameVal, setDefaultColorNameVal] = useState("");
+  const [sidebarColorVal, setSidebarColorVal] = useState("#000000");
+  const [sidebarOpacityVal, setSidebarOpacityVal] = useState(0.65);
+  const sidebarDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [newMeasurementLabel, setNewMeasurementLabel] = useState("");
+  const [newMeasurementValue, setNewMeasurementValue] = useState("");
+
+  const { data: measurements = [] } = useListMeasurements(projectId, {
+    query: { enabled: !!projectId, queryKey: getListMeasurementsQueryKey(projectId) },
+  });
+
+  const createMeasurement = useCreateMeasurement();
+  const deleteMeasurement = useDeleteMeasurement();
 
   useEffect(() => {
     if (project) {
@@ -560,6 +577,8 @@ export default function Editor() {
       setHotspotPos({ x: Math.max(0, Math.min(100, px)), y: Math.max(0, Math.min(100, pz)) });
       setDefaultModelNameVal(project.defaultModelName);
       setDefaultColorNameVal(project.defaultColorName);
+      setSidebarColorVal(project.studioSidebarColor ?? "#000000");
+      setSidebarOpacityVal(project.studioSidebarOpacity ?? 0.65);
     }
   }, [project?.id]);
 
@@ -733,6 +752,40 @@ export default function Editor() {
     await updateProject.mutateAsync({ id: projectId, data: { defaultColorName: defaultColorNameVal.trim() } });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     toast({ title: "Default color name saved" });
+  };
+
+  const handleSidebarColorChange = (color: string) => {
+    setSidebarColorVal(color);
+    if (sidebarDebounceRef.current) clearTimeout(sidebarDebounceRef.current);
+    sidebarDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { studioSidebarColor: color } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handleSidebarOpacityChange = (opacity: number) => {
+    setSidebarOpacityVal(opacity);
+    if (sidebarDebounceRef.current) clearTimeout(sidebarDebounceRef.current);
+    sidebarDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { studioSidebarOpacity: opacity } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handleAddMeasurement = async () => {
+    if (!newMeasurementLabel.trim() || !newMeasurementValue.trim()) return;
+    await createMeasurement.mutateAsync({
+      id: projectId,
+      data: { label: newMeasurementLabel.trim(), value: newMeasurementValue.trim() },
+    });
+    queryClient.invalidateQueries({ queryKey: getListMeasurementsQueryKey(projectId) });
+    setNewMeasurementLabel("");
+    setNewMeasurementValue("");
+  };
+
+  const handleDeleteMeasurementItem = async (measurementId: number) => {
+    await deleteMeasurement.mutateAsync({ id: projectId, measurementId });
+    queryClient.invalidateQueries({ queryKey: getListMeasurementsQueryKey(projectId) });
   };
 
   const getEnvStyle = (env: string): React.CSSProperties => {
@@ -966,6 +1019,93 @@ export default function Editor() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground/60">Shown in studio as the base color label</p>
+              </div>
+
+              {/* Sidebar Appearance */}
+              <div className="space-y-3 pt-2 border-t border-border">
+                <Label className="text-xs text-muted-foreground">Sidebar Background Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={sidebarColorVal}
+                    onChange={(e) => handleSidebarColorChange(e.target.value)}
+                    className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent p-0.5"
+                    data-testid="input-sidebar-color"
+                  />
+                  <span className="text-xs text-muted-foreground font-mono">{sidebarColorVal}</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Background Opacity</Label>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {Math.round(sidebarOpacityVal * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={sidebarOpacityVal}
+                    onChange={(e) => handleSidebarOpacityChange(parseFloat(e.target.value))}
+                    className="w-full h-1.5 accent-primary cursor-pointer"
+                    data-testid="input-sidebar-opacity"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Measurements Section */}
+          <div className="p-5 border-t border-border">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+              <Ruler className="w-3 h-3 inline mr-2" />
+              Dimensions
+            </h3>
+            <div className="space-y-3">
+              {measurements.map((m) => (
+                <div key={m.id} className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{m.label}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{m.value}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => handleDeleteMeasurementItem(m.id)}
+                    data-testid={`button-delete-measurement-${m.id}`}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+
+              <div className="flex gap-1.5 pt-1">
+                <Input
+                  value={newMeasurementLabel}
+                  onChange={(e) => setNewMeasurementLabel(e.target.value)}
+                  placeholder="Label (e.g. Width)"
+                  className="h-7 text-xs border-border flex-1"
+                  data-testid="input-measurement-label"
+                />
+                <Input
+                  value={newMeasurementValue}
+                  onChange={(e) => setNewMeasurementValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddMeasurement(); }}
+                  placeholder="Value (e.g. 120cm)"
+                  className="h-7 text-xs border-border flex-1"
+                  data-testid="input-measurement-value"
+                />
+                <Button
+                  size="sm"
+                  className="h-7 px-2 text-xs shrink-0"
+                  onClick={handleAddMeasurement}
+                  disabled={!newMeasurementLabel.trim() || !newMeasurementValue.trim()}
+                  data-testid="button-add-measurement"
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
               </div>
             </div>
           </div>

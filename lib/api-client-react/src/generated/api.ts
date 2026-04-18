@@ -19,15 +19,18 @@ import type {
 import type {
   CreateFolderBody,
   CreateMaterialBody,
+  CreateMeasurementBody,
   CreateProjectBody,
   CreateVariantBody,
   DashboardStats,
   Folder,
   HealthStatus,
   ListMaterialsParams,
+  ListMeasurementsResponse,
   ListProjectsParams,
   Project,
   ProjectMaterial,
+  ProjectMeasurement,
   ProjectVariant,
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
@@ -35,6 +38,7 @@ import type {
   StudioProjectMeta,
   UpdateFolderBody,
   UpdateMaterialBody,
+  UpdateMeasurementBody,
   UpdateProjectBody,
   UpdateVariantBody,
 } from "./api.schemas";
@@ -1234,6 +1238,456 @@ export function useGetStudioProject<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get measurements for a public studio project (no auth required)
+ */
+export const getGetStudioMeasurementsUrl = (slug: string) => {
+  return `/api/studio/${slug}/measurements`;
+};
+
+export const getStudioMeasurements = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<ListMeasurementsResponse> => {
+  return customFetch<ListMeasurementsResponse>(
+    getGetStudioMeasurementsUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetStudioMeasurementsQueryKey = (slug: string) => {
+  return [`/api/studio/${slug}/measurements`] as const;
+};
+
+export const getGetStudioMeasurementsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStudioMeasurements>>,
+  TError = ErrorType<void>,
+>(
+  slug: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStudioMeasurements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetStudioMeasurementsQueryKey(slug);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStudioMeasurements>>
+  > = ({ signal }) =>
+    getStudioMeasurements(slug, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!slug,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStudioMeasurements>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStudioMeasurementsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStudioMeasurements>>
+>;
+export type GetStudioMeasurementsQueryError = ErrorType<void>;
+
+/**
+ * @summary Get measurements for a public studio project (no auth required)
+ */
+
+export function useGetStudioMeasurements<
+  TData = Awaited<ReturnType<typeof getStudioMeasurements>>,
+  TError = ErrorType<void>,
+>(
+  slug: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStudioMeasurements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStudioMeasurementsQueryOptions(slug, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List measurements for a project
+ */
+export const getListMeasurementsUrl = (id: number) => {
+  return `/api/projects/${id}/measurements`;
+};
+
+export const listMeasurements = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ListMeasurementsResponse> => {
+  return customFetch<ListMeasurementsResponse>(getListMeasurementsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMeasurementsQueryKey = (id: number) => {
+  return [`/api/projects/${id}/measurements`] as const;
+};
+
+export const getListMeasurementsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMeasurements>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMeasurements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMeasurementsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMeasurements>>
+  > = ({ signal }) => listMeasurements(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMeasurements>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMeasurementsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMeasurements>>
+>;
+export type ListMeasurementsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List measurements for a project
+ */
+
+export function useListMeasurements<
+  TData = Awaited<ReturnType<typeof listMeasurements>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMeasurements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMeasurementsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a measurement
+ */
+export const getCreateMeasurementUrl = (id: number) => {
+  return `/api/projects/${id}/measurements`;
+};
+
+export const createMeasurement = async (
+  id: number,
+  createMeasurementBody: CreateMeasurementBody,
+  options?: RequestInit,
+): Promise<ProjectMeasurement> => {
+  return customFetch<ProjectMeasurement>(getCreateMeasurementUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createMeasurementBody),
+  });
+};
+
+export const getCreateMeasurementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMeasurement>>,
+    TError,
+    { id: number; data: BodyType<CreateMeasurementBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createMeasurement>>,
+  TError,
+  { id: number; data: BodyType<CreateMeasurementBody> },
+  TContext
+> => {
+  const mutationKey = ["createMeasurement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createMeasurement>>,
+    { id: number; data: BodyType<CreateMeasurementBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createMeasurement(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateMeasurementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createMeasurement>>
+>;
+export type CreateMeasurementMutationBody = BodyType<CreateMeasurementBody>;
+export type CreateMeasurementMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a measurement
+ */
+export const useCreateMeasurement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMeasurement>>,
+    TError,
+    { id: number; data: BodyType<CreateMeasurementBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createMeasurement>>,
+  TError,
+  { id: number; data: BodyType<CreateMeasurementBody> },
+  TContext
+> => {
+  return useMutation(getCreateMeasurementMutationOptions(options));
+};
+
+/**
+ * @summary Update a measurement
+ */
+export const getUpdateMeasurementUrl = (id: number, measurementId: number) => {
+  return `/api/projects/${id}/measurements/${measurementId}`;
+};
+
+export const updateMeasurement = async (
+  id: number,
+  measurementId: number,
+  updateMeasurementBody: UpdateMeasurementBody,
+  options?: RequestInit,
+): Promise<ProjectMeasurement> => {
+  return customFetch<ProjectMeasurement>(
+    getUpdateMeasurementUrl(id, measurementId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateMeasurementBody),
+    },
+  );
+};
+
+export const getUpdateMeasurementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMeasurement>>,
+    TError,
+    {
+      id: number;
+      measurementId: number;
+      data: BodyType<UpdateMeasurementBody>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMeasurement>>,
+  TError,
+  { id: number; measurementId: number; data: BodyType<UpdateMeasurementBody> },
+  TContext
+> => {
+  const mutationKey = ["updateMeasurement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMeasurement>>,
+    { id: number; measurementId: number; data: BodyType<UpdateMeasurementBody> }
+  > = (props) => {
+    const { id, measurementId, data } = props ?? {};
+
+    return updateMeasurement(id, measurementId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMeasurementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMeasurement>>
+>;
+export type UpdateMeasurementMutationBody = BodyType<UpdateMeasurementBody>;
+export type UpdateMeasurementMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a measurement
+ */
+export const useUpdateMeasurement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMeasurement>>,
+    TError,
+    {
+      id: number;
+      measurementId: number;
+      data: BodyType<UpdateMeasurementBody>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMeasurement>>,
+  TError,
+  { id: number; measurementId: number; data: BodyType<UpdateMeasurementBody> },
+  TContext
+> => {
+  return useMutation(getUpdateMeasurementMutationOptions(options));
+};
+
+/**
+ * @summary Delete a measurement
+ */
+export const getDeleteMeasurementUrl = (id: number, measurementId: number) => {
+  return `/api/projects/${id}/measurements/${measurementId}`;
+};
+
+export const deleteMeasurement = async (
+  id: number,
+  measurementId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMeasurementUrl(id, measurementId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMeasurementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeasurement>>,
+    TError,
+    { id: number; measurementId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMeasurement>>,
+  TError,
+  { id: number; measurementId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMeasurement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMeasurement>>,
+    { id: number; measurementId: number }
+  > = (props) => {
+    const { id, measurementId } = props ?? {};
+
+    return deleteMeasurement(id, measurementId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMeasurementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMeasurement>>
+>;
+
+export type DeleteMeasurementMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a measurement
+ */
+export const useDeleteMeasurement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeasurement>>,
+    TError,
+    { id: number; measurementId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMeasurement>>,
+  TError,
+  { id: number; measurementId: number },
+  TContext
+> => {
+  return useMutation(getDeleteMeasurementMutationOptions(options));
+};
 
 /**
  * @summary Get admin dashboard statistics

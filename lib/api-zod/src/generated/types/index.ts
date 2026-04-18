@@ -8,6 +8,7 @@
 
 export * from "./createFolderBody";
 export * from "./createMaterialBody";
+export * from "./createMeasurementBody";
 export * from "./createProjectBody";
 export * from "./createProjectBodyEnvironment";
 export * from "./createProjectBodyType";
@@ -17,10 +18,12 @@ export * from "./environmentCount";
 export * from "./folder";
 export * from "./healthStatus";
 export * from "./listMaterialsParams";
+export * from "./listMeasurementsResponse";
 export * from "./listProjectsParams";
 export * from "./project";
 export * from "./projectEnvironment";
 export * from "./projectMaterial";
+export * from "./projectMeasurement";
 export * from "./projectType";
 export * from "./projectVariant";
 export * from "./requestUploadUrlBody";
@@ -34,6 +37,7 @@ export * from "./studioProjectType";
 export * from "./studioVariant";
 export * from "./updateFolderBody";
 export * from "./updateMaterialBody";
+export * from "./updateMeasurementBody";
 export * from "./updateProjectBody";
 export * from "./updateProjectBodyEnvironment";
 export * from "./updateProjectBodyType";

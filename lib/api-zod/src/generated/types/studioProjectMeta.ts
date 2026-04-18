@@ -29,4 +29,10 @@ export interface StudioProjectMeta {
   defaultModelName: string;
   defaultColorName: string;
   publicSlug: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
 }

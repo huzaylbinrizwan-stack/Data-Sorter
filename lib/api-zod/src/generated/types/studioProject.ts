@@ -27,6 +27,12 @@ export interface StudioProject {
   enableVariants: boolean;
   defaultModelName: string;
   defaultColorName: string;
+  studioSidebarColor: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  studioSidebarOpacity: number;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];
