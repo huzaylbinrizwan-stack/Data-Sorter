@@ -34,7 +34,8 @@ function hexToRgb(hex: string): [number, number, number] {
     : [0, 0, 0];
 }
 
-function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; opacity: number }) {
+function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectName?: string; opacity: number; accentColor: string }) {
+  const [ar, ag, ab] = hexToRgb(accentColor);
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
@@ -49,17 +50,17 @@ function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; o
         <div
           className="absolute inset-0 rounded-full animate-spin"
           style={{
-            background: "conic-gradient(from 0deg, transparent 0%, hsl(44,54%,54%) 30%, transparent 60%)",
+            background: `conic-gradient(from 0deg, transparent 0%, ${accentColor} 30%, transparent 60%)`,
             mask: "radial-gradient(transparent 55%, black 56%)",
             WebkitMask: "radial-gradient(transparent 55%, black 56%)",
           }}
         />
         <div
           className="absolute inset-[6px] rounded-full"
-          style={{ border: "1px solid hsl(44,54%,54%,0.15)" }}
+          style={{ border: `1px solid rgba(${ar},${ag},${ab},0.15)` }}
         />
         <div className="absolute inset-0 flex items-center justify-center">
-          <Box className="w-6 h-6" style={{ color: "hsl(44,54%,54%)" }} />
+          <Box className="w-6 h-6" style={{ color: accentColor }} />
         </div>
       </div>
 
@@ -68,7 +69,7 @@ function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; o
           <>
             <p
               className="text-sm font-light tracking-widest uppercase mb-2"
-              style={{ color: "hsl(44,54%,54%)" }}
+              style={{ color: accentColor }}
             >
               {projectName}
             </p>
@@ -85,7 +86,7 @@ function LuxuryLoadingScreen({ projectName, opacity }: { projectName?: string; o
 
       <div
         className="absolute bottom-6 flex items-center gap-1.5 text-xs font-light tracking-widest"
-        style={{ color: "hsl(44,54%,54%,0.4)" }}
+        style={{ color: `rgba(${ar},${ag},${ab},0.4)` }}
       >
         <Box className="w-3 h-3" />
         <span>AR STUDIO</span>
@@ -110,14 +111,20 @@ function MaterialItem({
   isActive,
   isLightBg,
   labelColor,
+  accentColor,
   onSelect,
 }: {
   mat: ProjectMaterial;
   isActive: boolean;
   isLightBg: boolean;
   labelColor: string;
+  accentColor: string;
   onSelect: () => void;
 }) {
+  const [ar, ag, ab] = hexToRgb(accentColor);
+  const activeDarkStyle: React.CSSProperties = !isLightBg && isActive
+    ? { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.05)` }
+    : {};
   return (
     <button
       onClick={onSelect}
@@ -125,11 +132,12 @@ function MaterialItem({
         isActive
           ? isLightBg
             ? "border-gray-700 bg-gray-50"
-            : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+            : "border-transparent"
           : isLightBg
           ? "border-gray-200 hover:border-gray-300"
           : "border-white/10 hover:border-white/20"
       }`}
+      style={activeDarkStyle}
     >
       {mat.thumbnailUrl ? (
         <img src={mat.thumbnailUrl} alt={mat.name} className="w-6 h-6 rounded object-cover shrink-0" />
@@ -152,6 +160,7 @@ function VariationSidebar({
   activeVariantId,
   activeMaterialId,
   isLoadingData,
+  accentColor,
   onSelectVariant,
   onSelectMaterial,
 }: {
@@ -161,6 +170,7 @@ function VariationSidebar({
   activeVariantId: number | null;
   activeMaterialId: number | null;
   isLoadingData: boolean;
+  accentColor: string;
   onSelectVariant: (variant: StudioVariant | null) => void;
   onSelectMaterial: (material: ProjectMaterial | null) => void;
 }) {
@@ -170,6 +180,7 @@ function VariationSidebar({
   const sidebarColor = meta?.studioSidebarColor ?? "#000000";
   const sidebarOpacity = meta?.studioSidebarOpacity ?? 0.65;
   const [r, g, b] = hexToRgb(sidebarColor);
+  const [ar, ag, ab] = hexToRgb(accentColor);
 
   // Compute effective luminance blending sidebar colour with the environment
   const sidebarLum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
@@ -185,8 +196,16 @@ function VariationSidebar({
   const labelColor = isSidebarLight ? "text-gray-800" : "text-white/90";
   const subColor = isSidebarLight ? "text-gray-500" : "text-white/45";
   const dividerColor = isSidebarLight ? "border-gray-300/60" : "border-white/10";
-  const tabActive = isSidebarLight ? "bg-gray-900 text-white" : "bg-[hsl(44,54%,54%)] text-black";
   const tabInactive = isSidebarLight ? "text-gray-500 hover:text-gray-800" : "text-white/40 hover:text-white/70";
+  const tabActiveStyle: React.CSSProperties = isSidebarLight
+    ? { background: "#111827", color: "#fff" }
+    : { background: accentColor, color: "#000" };
+  const activeItemBorderStyle: React.CSSProperties = isSidebarLight
+    ? {}
+    : { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.1)` };
+  const activeMaterialBorderStyle: React.CSSProperties = isSidebarLight
+    ? {}
+    : { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.05)` };
 
   const hasVariants = !!(project?.enableVariants && project.variants && project.variants.length > 0);
   const baseMaterials = project?.materials ?? [];
@@ -236,13 +255,15 @@ function VariationSidebar({
               <div className={`flex shrink-0 border-b ${dividerColor}`}>
                 <button
                   onClick={() => setMode("variants")}
-                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "variants" ? tabActive : tabInactive}`}
+                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "variants" ? "" : tabInactive}`}
+                  style={mode === "variants" ? tabActiveStyle : undefined}
                 >
                   Variants
                 </button>
                 <button
                   onClick={() => setMode("materials")}
-                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "materials" ? tabActive : tabInactive}`}
+                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "materials" ? "" : tabInactive}`}
+                  style={mode === "materials" ? tabActiveStyle : undefined}
                 >
                   Materials
                 </button>
@@ -258,9 +279,10 @@ function VariationSidebar({
                       onClick={() => { onSelectVariant(null); onSelectMaterial(null); }}
                       className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
                         activeVariantId === null
-                          ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                          ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
+                      style={activeVariantId === null && !isSidebarLight ? activeItemBorderStyle : undefined}
                     >
                       <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
                         <Box className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
@@ -276,9 +298,10 @@ function VariationSidebar({
                         onClick={() => { onSelectVariant(variant); onSelectMaterial(null); setMode("materials"); }}
                         className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
                           activeVariantId === variant.id
-                            ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-[hsl(44,54%,54%)] bg-[hsl(44,54%,54%)]/10"
+                            ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-transparent"
                             : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                         }`}
+                        style={activeVariantId === variant.id && !isSidebarLight ? activeItemBorderStyle : undefined}
                       >
                         {variant.thumbnailUrl ? (
                           <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
@@ -299,9 +322,10 @@ function VariationSidebar({
                       onClick={() => onSelectMaterial(null)}
                       className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
                         activeMaterialId === null
-                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
+                      style={activeMaterialId === null && !isSidebarLight ? activeMaterialBorderStyle : undefined}
                     >
                       <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
                         <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
@@ -315,6 +339,7 @@ function VariationSidebar({
                         isActive={activeMaterialId === mat.id}
                         isLightBg={isSidebarLight}
                         labelColor={labelColor}
+                        accentColor={accentColor}
                         onSelect={() => onSelectMaterial(mat)}
                       />
                     ))}
@@ -340,9 +365,10 @@ function VariationSidebar({
                       onClick={() => onSelectMaterial(null)}
                       className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
                         activeMaterialId === null
-                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-[hsl(44,54%,54%)]/60 bg-[hsl(44,54%,54%)]/5"
+                          ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
+                      style={activeMaterialId === null && !isSidebarLight ? activeMaterialBorderStyle : undefined}
                     >
                       <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
                         <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
@@ -356,6 +382,7 @@ function VariationSidebar({
                         isActive={activeMaterialId === mat.id}
                         isLightBg={isSidebarLight}
                         labelColor={labelColor}
+                        accentColor={accentColor}
                         onSelect={() => onSelectMaterial(mat)}
                       />
                     ))}
@@ -374,10 +401,12 @@ function MeasurementsOverlay({
   slug,
   isLightBg,
   metaReady,
+  accentColor,
 }: {
   slug: string;
   isLightBg: boolean;
   metaReady: boolean;
+  accentColor: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -412,12 +441,16 @@ function MeasurementsOverlay({
         title="Dimensions"
         className={`flex items-center justify-center w-9 h-9 rounded-full border shadow-lg transition-all ${
           isOpen
-            ? "bg-[hsl(44,54%,54%)] border-[hsl(44,54%,54%)] text-black"
+            ? ""
             : isLightBg
             ? "bg-white/80 border-gray-300 text-gray-700 hover:bg-white"
             : "bg-black/50 border-white/20 text-white/80 hover:bg-black/60"
         }`}
-        style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+        style={{
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          ...(isOpen ? { background: accentColor, borderColor: accentColor, color: "#000" } : {}),
+        }}
       >
         <Ruler className="w-4 h-4" />
       </button>
@@ -458,7 +491,7 @@ function MeasurementsOverlay({
                 <span className="text-xs text-white/60 truncate">{m.label}</span>
                 <span
                   className="text-xs font-medium shrink-0 tabular-nums"
-                  style={{ color: "hsl(44,54%,54%)" }}
+                  style={{ color: accentColor }}
                 >
                   {m.value}
                 </span>
@@ -636,6 +669,7 @@ export default function Studio() {
   const envStyle = meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
+  const accentColor = meta?.studioAccentColor ?? "#C9A84C";
 
   const showSidebar = !!(
     meta &&
@@ -647,7 +681,7 @@ export default function Studio() {
   return (
     <>
       {overlayVisible && (
-        <LuxuryLoadingScreen projectName={meta?.name} opacity={overlayOpacity} />
+        <LuxuryLoadingScreen projectName={meta?.name} opacity={overlayOpacity} accentColor={accentColor} />
       )}
 
       <div
@@ -666,7 +700,7 @@ export default function Studio() {
               position: "absolute", top: 0, left: 0, zIndex: 10,
               height: 4,
               width: `${loadProgress}%`,
-              background: "hsl(44,54%,54%)",
+              background: accentColor,
               borderRadius: "0 2px 2px 0",
               transition: "width 0.2s ease, opacity 0.5s ease",
               opacity: loadProgress >= 100 ? 0 : 1,
@@ -723,13 +757,14 @@ export default function Studio() {
               activeVariantId={activeVariant?.id ?? null}
               activeMaterialId={activeMaterial?.id ?? null}
               isLoadingData={isFullLoading}
+              accentColor={accentColor}
               onSelectVariant={handleSelectVariant}
               onSelectMaterial={handleSelectMaterial}
             />
           )}
 
           {projectSlug && (
-            <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} metaReady={!!meta} />
+            <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} metaReady={!!meta} accentColor={accentColor} />
           )}
         </div>
 
@@ -746,7 +781,7 @@ export default function Studio() {
             {meta?.companyName && (
               <p
                 className="text-[10px] font-light tracking-widest uppercase truncate"
-                style={{ color: "hsl(44,54%,54%,0.8)" }}
+                style={{ color: accentColor, opacity: 0.8 }}
               >
                 {meta.companyName}
               </p>
@@ -768,7 +803,7 @@ export default function Studio() {
                 <span
                   className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none"
                   style={{
-                    background: "hsl(44,54%,54%)",
+                    background: accentColor,
                     color: "#000",
                     opacity: savedFeedback ? 1 : 0,
                     transition: "opacity 0.25s ease",
@@ -784,9 +819,12 @@ export default function Studio() {
                 className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-wide shadow-lg transition-all active:scale-95 ${
                   isLightBg
                     ? "bg-gray-900 text-white hover:bg-gray-700 shadow-black/30"
-                    : "bg-[hsl(44,54%,54%)] text-black hover:brightness-110 shadow-[hsl(44,54%,54%)]/30"
+                    : ""
                 }`}
-                style={{ letterSpacing: "0.04em" }}
+                style={{
+                  letterSpacing: "0.04em",
+                  ...(!isLightBg ? { background: accentColor, color: "#000" } : {}),
+                }}
               >
                 View in AR
               </button>

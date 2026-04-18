@@ -65,6 +65,7 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     publicSlug: project.publicSlug,
     studioSidebarColor: project.studioSidebarColor,
     studioSidebarOpacity: project.studioSidebarOpacity,
+    studioAccentColor: project.studioAccentColor,
   }));
 });
 
@@ -127,6 +128,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     publicSlug: project.publicSlug,
     studioSidebarColor: project.studioSidebarColor,
     studioSidebarOpacity: project.studioSidebarOpacity,
+    studioAccentColor: project.studioAccentColor,
     materials: baseMaterials,
     variants,
   }));

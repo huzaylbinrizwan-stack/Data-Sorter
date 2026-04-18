@@ -73,6 +73,8 @@ export const listProjectsResponseStudioSidebarOpacityDefault = 0.65;
 export const listProjectsResponseStudioSidebarOpacityMin = 0;
 export const listProjectsResponseStudioSidebarOpacityMax = 1;
 
+export const listProjectsResponseStudioAccentColorDefault = `#C9A84C`;
+
 export const ListProjectsResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
@@ -105,6 +107,9 @@ export const ListProjectsResponseItem = zod.object({
     .min(listProjectsResponseStudioSidebarOpacityMin)
     .max(listProjectsResponseStudioSidebarOpacityMax)
     .default(listProjectsResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(listProjectsResponseStudioAccentColorDefault),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -148,6 +153,8 @@ export const getProjectResponseStudioSidebarOpacityDefault = 0.65;
 export const getProjectResponseStudioSidebarOpacityMin = 0;
 export const getProjectResponseStudioSidebarOpacityMax = 1;
 
+export const getProjectResponseStudioAccentColorDefault = `#C9A84C`;
+
 export const GetProjectResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
@@ -180,6 +187,9 @@ export const GetProjectResponse = zod.object({
     .min(getProjectResponseStudioSidebarOpacityMin)
     .max(getProjectResponseStudioSidebarOpacityMax)
     .default(getProjectResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(getProjectResponseStudioAccentColorDefault),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -221,12 +231,15 @@ export const UpdateProjectBody = zod.object({
     .min(updateProjectBodyStudioSidebarOpacityMin)
     .max(updateProjectBodyStudioSidebarOpacityMax)
     .optional(),
+  studioAccentColor: zod.string().optional(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
 export const updateProjectResponseStudioSidebarOpacityDefault = 0.65;
 export const updateProjectResponseStudioSidebarOpacityMin = 0;
 export const updateProjectResponseStudioSidebarOpacityMax = 1;
+
+export const updateProjectResponseStudioAccentColorDefault = `#C9A84C`;
 
 export const UpdateProjectResponse = zod.object({
   id: zod.number(),
@@ -260,6 +273,9 @@ export const UpdateProjectResponse = zod.object({
     .min(updateProjectResponseStudioSidebarOpacityMin)
     .max(updateProjectResponseStudioSidebarOpacityMax)
     .default(updateProjectResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(updateProjectResponseStudioAccentColorDefault),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -284,6 +300,8 @@ export const publishProjectResponseStudioSidebarColorDefault = `#000000`;
 export const publishProjectResponseStudioSidebarOpacityDefault = 0.65;
 export const publishProjectResponseStudioSidebarOpacityMin = 0;
 export const publishProjectResponseStudioSidebarOpacityMax = 1;
+
+export const publishProjectResponseStudioAccentColorDefault = `#C9A84C`;
 
 export const PublishProjectResponse = zod.object({
   id: zod.number(),
@@ -317,6 +335,9 @@ export const PublishProjectResponse = zod.object({
     .min(publishProjectResponseStudioSidebarOpacityMin)
     .max(publishProjectResponseStudioSidebarOpacityMax)
     .default(publishProjectResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(publishProjectResponseStudioAccentColorDefault),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -334,6 +355,8 @@ export const unpublishProjectResponseStudioSidebarColorDefault = `#000000`;
 export const unpublishProjectResponseStudioSidebarOpacityDefault = 0.65;
 export const unpublishProjectResponseStudioSidebarOpacityMin = 0;
 export const unpublishProjectResponseStudioSidebarOpacityMax = 1;
+
+export const unpublishProjectResponseStudioAccentColorDefault = `#C9A84C`;
 
 export const UnpublishProjectResponse = zod.object({
   id: zod.number(),
@@ -367,6 +390,9 @@ export const UnpublishProjectResponse = zod.object({
     .min(unpublishProjectResponseStudioSidebarOpacityMin)
     .max(unpublishProjectResponseStudioSidebarOpacityMax)
     .default(unpublishProjectResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(unpublishProjectResponseStudioAccentColorDefault),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -384,6 +410,8 @@ export const getStudioProjectMetaResponseStudioSidebarColorDefault = `#000000`;
 export const getStudioProjectMetaResponseStudioSidebarOpacityDefault = 0.65;
 export const getStudioProjectMetaResponseStudioSidebarOpacityMin = 0;
 export const getStudioProjectMetaResponseStudioSidebarOpacityMax = 1;
+
+export const getStudioProjectMetaResponseStudioAccentColorDefault = `#C9A84C`;
 
 export const GetStudioProjectMetaResponse = zod
   .object({
@@ -417,6 +445,9 @@ export const GetStudioProjectMetaResponse = zod
       .min(getStudioProjectMetaResponseStudioSidebarOpacityMin)
       .max(getStudioProjectMetaResponseStudioSidebarOpacityMax)
       .default(getStudioProjectMetaResponseStudioSidebarOpacityDefault),
+    studioAccentColor: zod
+      .string()
+      .default(getStudioProjectMetaResponseStudioAccentColorDefault),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -433,6 +464,8 @@ export const getStudioProjectResponseStudioSidebarColorDefault = `#000000`;
 export const getStudioProjectResponseStudioSidebarOpacityDefault = 0.65;
 export const getStudioProjectResponseStudioSidebarOpacityMin = 0;
 export const getStudioProjectResponseStudioSidebarOpacityMax = 1;
+
+export const getStudioProjectResponseStudioAccentColorDefault = `#C9A84C`;
 
 export const GetStudioProjectResponse = zod.object({
   id: zod.number(),
@@ -464,6 +497,9 @@ export const GetStudioProjectResponse = zod.object({
     .min(getStudioProjectResponseStudioSidebarOpacityMin)
     .max(getStudioProjectResponseStudioSidebarOpacityMax)
     .default(getStudioProjectResponseStudioSidebarOpacityDefault),
+  studioAccentColor: zod
+    .string()
+    .default(getStudioProjectResponseStudioAccentColorDefault),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -586,6 +622,8 @@ export const getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityDefa
 export const getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityMin = 0;
 export const getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityMax = 1;
 
+export const getDashboardStatsResponseRecentProjectsItemStudioAccentColorDefault = `#C9A84C`;
+
 export const GetDashboardStatsResponse = zod.object({
   totalProjects: zod.number(),
   liveARs: zod.number(),
@@ -626,6 +664,11 @@ export const GetDashboardStatsResponse = zod.object({
         .max(getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityMax)
         .default(
           getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityDefault,
+        ),
+      studioAccentColor: zod
+        .string()
+        .default(
+          getDashboardStatsResponseRecentProjectsItemStudioAccentColorDefault,
         ),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),

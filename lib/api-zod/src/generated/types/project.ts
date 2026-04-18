@@ -34,6 +34,7 @@ export interface Project {
    * @maximum 1
    */
   studioSidebarOpacity: number;
+  studioAccentColor: string;
   /** @nullable */
   folderId: number | null;
   publicSlug: string;

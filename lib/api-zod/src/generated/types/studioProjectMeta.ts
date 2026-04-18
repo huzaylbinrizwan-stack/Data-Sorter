@@ -35,4 +35,5 @@ export interface StudioProjectMeta {
    * @maximum 1
    */
   studioSidebarOpacity: number;
+  studioAccentColor: string;
 }

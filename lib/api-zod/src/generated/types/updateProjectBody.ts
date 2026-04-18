@@ -34,4 +34,5 @@ export interface UpdateProjectBody {
    * @maximum 1
    */
   studioSidebarOpacity?: number;
+  studioAccentColor?: string;
 }

@@ -33,6 +33,7 @@ export interface StudioProject {
    * @maximum 1
    */
   studioSidebarOpacity: number;
+  studioAccentColor: string;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

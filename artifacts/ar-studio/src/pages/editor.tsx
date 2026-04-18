@@ -648,6 +648,8 @@ export default function Editor() {
   const [sidebarColorVal, setSidebarColorVal] = useState("#000000");
   const [sidebarOpacityVal, setSidebarOpacityVal] = useState(0.65);
   const sidebarDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [accentColorVal, setAccentColorVal] = useState("#C9A84C");
+  const accentDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newMeasurementLabel, setNewMeasurementLabel] = useState("");
   const [newMeasurementValue, setNewMeasurementValue] = useState("");
 
@@ -667,6 +669,7 @@ export default function Editor() {
       setDefaultColorNameVal(project.defaultColorName);
       setSidebarColorVal(project.studioSidebarColor ?? "#000000");
       setSidebarOpacityVal(project.studioSidebarOpacity ?? 0.65);
+      setAccentColorVal(project.studioAccentColor ?? "#C9A84C");
     }
   }, [project?.id]);
 
@@ -856,6 +859,15 @@ export default function Editor() {
     if (sidebarDebounceRef.current) clearTimeout(sidebarDebounceRef.current);
     sidebarDebounceRef.current = setTimeout(async () => {
       await updateProject.mutateAsync({ id: projectId, data: { studioSidebarOpacity: opacity } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handleAccentColorChange = (color: string) => {
+    setAccentColorVal(color);
+    if (accentDebounceRef.current) clearTimeout(accentDebounceRef.current);
+    accentDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { studioAccentColor: color } });
       queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     }, 300);
   };
@@ -1139,6 +1151,21 @@ export default function Editor() {
                     className="w-full h-1.5 accent-primary cursor-pointer"
                     data-testid="input-sidebar-opacity"
                   />
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-border/60">
+                  <Label className="text-xs text-muted-foreground">Brand Accent Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={accentColorVal}
+                      onChange={(e) => handleAccentColorChange(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent p-0.5"
+                      data-testid="input-accent-color"
+                    />
+                    <span className="text-xs text-muted-foreground font-mono">{accentColorVal}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground/60">Applied to progress bar, company name, measurement values, and the AR button</p>
                 </div>
               </div>
             </div>
