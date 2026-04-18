@@ -36,4 +36,6 @@ export interface StudioProjectMeta {
    */
   studioSidebarOpacity: number;
   studioAccentColor: string;
+  /** @nullable */
+  studioSidebarTextColor: string | null;
 }

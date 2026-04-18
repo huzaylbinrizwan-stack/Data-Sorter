@@ -22,6 +22,7 @@ export const projectsTable = pgTable("projects", {
   defaultColorName: text("default_color_name").notNull().default("Original Color"),
   studioSidebarColor: text("studio_sidebar_color").notNull().default("#000000"),
   studioSidebarOpacity: real("studio_sidebar_opacity").notNull().default(0.65),
+  studioSidebarTextColor: text("studio_sidebar_text_color"),
   studioAccentColor: text("studio_accent_color").notNull().default("#C9A84C"),
   folderId: integer("folder_id"),
   publicSlug: text("public_slug").notNull().unique(),

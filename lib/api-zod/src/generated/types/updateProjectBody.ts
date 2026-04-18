@@ -35,4 +35,6 @@ export interface UpdateProjectBody {
    */
   studioSidebarOpacity?: number;
   studioAccentColor?: string;
+  /** @nullable */
+  studioSidebarTextColor?: string | null;
 }

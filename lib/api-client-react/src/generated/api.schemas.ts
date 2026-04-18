@@ -74,6 +74,8 @@ export interface Project {
   studioSidebarOpacity: number;
   studioAccentColor: string;
   /** @nullable */
+  studioSidebarTextColor: string | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: string;
@@ -167,6 +169,8 @@ export interface UpdateProjectBody {
    */
   studioSidebarOpacity?: number;
   studioAccentColor?: string;
+  /** @nullable */
+  studioSidebarTextColor?: string | null;
 }
 
 export type StudioProjectMetaEnvironment =
@@ -216,6 +220,8 @@ export interface StudioProjectMeta {
    */
   studioSidebarOpacity: number;
   studioAccentColor: string;
+  /** @nullable */
+  studioSidebarTextColor: string | null;
 }
 
 export interface ProjectMaterial {
@@ -288,6 +294,8 @@ export interface StudioProject {
    */
   studioSidebarOpacity: number;
   studioAccentColor: string;
+  /** @nullable */
+  studioSidebarTextColor: string | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

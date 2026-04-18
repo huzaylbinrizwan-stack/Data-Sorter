@@ -760,6 +760,8 @@ components:
         studioAccentColor:
           type: string
           default: "#C9A84C"
+        studioSidebarTextColor:
+          type: ["string", "null"]
         folderId:
           type: ["integer", "null"]
         publicSlug:
@@ -791,6 +793,7 @@ components:
         - studioSidebarColor
         - studioSidebarOpacity
         - studioAccentColor
+        - studioSidebarTextColor
         - folderId
         - publicSlug
         - createdAt
@@ -882,6 +885,8 @@ components:
           maximum: 1
         studioAccentColor:
           type: string
+        studioSidebarTextColor:
+          type: ["string", "null"]
 
     StudioProjectMeta:
       type: object
@@ -932,6 +937,8 @@ components:
         studioAccentColor:
           type: string
           default: "#C9A84C"
+        studioSidebarTextColor:
+          type: ["string", "null"]
       required:
         - id
         - name
@@ -952,6 +959,7 @@ components:
         - studioSidebarColor
         - studioSidebarOpacity
         - studioAccentColor
+        - studioSidebarTextColor
 
     StudioVariant:
       type: object
@@ -1031,6 +1039,8 @@ components:
         studioAccentColor:
           type: string
           default: "#C9A84C"
+        studioSidebarTextColor:
+          type: ["string", "null"]
         publicSlug:
           type: string
         materials:
@@ -1061,6 +1071,7 @@ components:
         - studioSidebarColor
         - studioSidebarOpacity
         - studioAccentColor
+        - studioSidebarTextColor
         - publicSlug
         - materials
         - variants

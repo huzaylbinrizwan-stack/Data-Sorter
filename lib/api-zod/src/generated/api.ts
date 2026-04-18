@@ -110,6 +110,7 @@ export const ListProjectsResponseItem = zod.object({
   studioAccentColor: zod
     .string()
     .default(listProjectsResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -190,6 +191,7 @@ export const GetProjectResponse = zod.object({
   studioAccentColor: zod
     .string()
     .default(getProjectResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -232,6 +234,7 @@ export const UpdateProjectBody = zod.object({
     .max(updateProjectBodyStudioSidebarOpacityMax)
     .optional(),
   studioAccentColor: zod.string().optional(),
+  studioSidebarTextColor: zod.string().nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -276,6 +279,7 @@ export const UpdateProjectResponse = zod.object({
   studioAccentColor: zod
     .string()
     .default(updateProjectResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -338,6 +342,7 @@ export const PublishProjectResponse = zod.object({
   studioAccentColor: zod
     .string()
     .default(publishProjectResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -393,6 +398,7 @@ export const UnpublishProjectResponse = zod.object({
   studioAccentColor: zod
     .string()
     .default(unpublishProjectResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -448,6 +454,7 @@ export const GetStudioProjectMetaResponse = zod
     studioAccentColor: zod
       .string()
       .default(getStudioProjectMetaResponseStudioAccentColorDefault),
+    studioSidebarTextColor: zod.string().nullable(),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -500,6 +507,7 @@ export const GetStudioProjectResponse = zod.object({
   studioAccentColor: zod
     .string()
     .default(getStudioProjectResponseStudioAccentColorDefault),
+  studioSidebarTextColor: zod.string().nullable(),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -670,6 +678,7 @@ export const GetDashboardStatsResponse = zod.object({
         .default(
           getDashboardStatsResponseRecentProjectsItemStudioAccentColorDefault,
         ),
+      studioSidebarTextColor: zod.string().nullable(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),

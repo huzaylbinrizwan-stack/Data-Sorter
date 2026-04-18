@@ -113,6 +113,7 @@ function MaterialItem({
   labelColor,
   accentColor,
   onSelect,
+  textStyle,
 }: {
   mat: ProjectMaterial;
   isActive: boolean;
@@ -120,15 +121,16 @@ function MaterialItem({
   labelColor: string;
   accentColor: string;
   onSelect: () => void;
+  textStyle?: React.CSSProperties;
 }) {
   const [ar, ag, ab] = hexToRgb(accentColor);
   const activeDarkStyle: React.CSSProperties = !isLightBg && isActive
-    ? { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.05)` }
+    ? { borderColor: `rgba(${ar},${ag},${ab},0.5)`, background: `rgba(${ar},${ag},${ab},0.05)` }
     : {};
   return (
     <button
       onClick={onSelect}
-      className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+      className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all text-left w-full ${
         isActive
           ? isLightBg
             ? "border-gray-700 bg-gray-50"
@@ -140,13 +142,13 @@ function MaterialItem({
       style={activeDarkStyle}
     >
       {mat.thumbnailUrl ? (
-        <img src={mat.thumbnailUrl} alt={mat.name} className="w-6 h-6 rounded object-cover shrink-0" />
+        <img src={mat.thumbnailUrl} alt={mat.name} className="w-7 h-7 rounded-lg object-cover shrink-0" />
       ) : (
-        <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-          <Palette className={`w-3 h-3 ${isLightBg ? "text-gray-400" : "text-white/30"}`} />
+        <div className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${isLightBg ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/8"}`}>
+          <Palette className={`w-3.5 h-3.5 ${isLightBg ? "text-gray-400" : "text-white/25"}`} />
         </div>
       )}
-      <span className={`text-xs truncate ${labelColor}`}>{mat.name}</span>
+      <span className={`text-xs truncate ${labelColor}`} style={textStyle}>{mat.name}</span>
     </button>
   );
 }
@@ -179,6 +181,7 @@ function VariationSidebar({
 
   const sidebarColor = meta?.studioSidebarColor ?? "#000000";
   const sidebarOpacity = meta?.studioSidebarOpacity ?? 0.65;
+  const sidebarTextColor = meta?.studioSidebarTextColor ?? null;
   const [r, g, b] = hexToRgb(sidebarColor);
   const [ar, ag, ab] = hexToRgb(accentColor);
 
@@ -190,22 +193,29 @@ function VariationSidebar({
 
   const glassStyle: React.CSSProperties = {
     background: `rgba(${r}, ${g}, ${b}, ${sidebarOpacity})`,
-    borderColor: isSidebarLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.1)",
+    borderColor: isSidebarLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.08)",
   };
 
   const labelColor = isSidebarLight ? "text-gray-800" : "text-white/90";
   const subColor = isSidebarLight ? "text-gray-500" : "text-white/45";
-  const dividerColor = isSidebarLight ? "border-gray-300/60" : "border-white/10";
+  const dividerColor = isSidebarLight ? "border-gray-300/50" : "border-white/8";
   const tabInactive = isSidebarLight ? "text-gray-500 hover:text-gray-800" : "text-white/40 hover:text-white/70";
   const tabActiveStyle: React.CSSProperties = isSidebarLight
     ? { background: "#111827", color: "#fff" }
     : { background: accentColor, color: "#000" };
   const activeItemBorderStyle: React.CSSProperties = isSidebarLight
     ? {}
-    : { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.1)` };
+    : { borderColor: `rgba(${ar},${ag},${ab},0.5)`, background: `rgba(${ar},${ag},${ab},0.08)` };
   const activeMaterialBorderStyle: React.CSSProperties = isSidebarLight
     ? {}
-    : { borderColor: `rgba(${ar},${ag},${ab},0.6)`, background: `rgba(${ar},${ag},${ab},0.05)` };
+    : { borderColor: `rgba(${ar},${ag},${ab},0.5)`, background: `rgba(${ar},${ag},${ab},0.05)` };
+
+  // Admin-overridden text colour — applied as inline style so it wins over Tailwind classes
+  const textStyle: React.CSSProperties | undefined = sidebarTextColor ? { color: sidebarTextColor } : undefined;
+  // Sub-text at 65 % opacity of the chosen text colour
+  const subTextStyle: React.CSSProperties | undefined = sidebarTextColor
+    ? { color: `${sidebarTextColor}a6` }
+    : undefined;
 
   const hasVariants = !!(project?.enableVariants && project.variants && project.variants.length > 0);
   const baseMaterials = project?.materials ?? [];
@@ -228,12 +238,12 @@ function VariationSidebar({
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? "Collapse variations" : "Expand variations"}
-        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-lg self-center shrink-0"
-        style={{ ...glassStyle, width: "20px", height: "52px" }}
+        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-xl self-center shrink-0"
+        style={{ ...glassStyle, width: "22px", height: "56px" }}
       >
         {isOpen
-          ? <ChevronLeft className={`w-3 h-3 ${subColor}`} />
-          : <ChevronRight className={`w-3 h-3 ${subColor}`} />}
+          ? <ChevronLeft className={`w-3 h-3 ${subColor}`} style={subTextStyle} />
+          : <ChevronRight className={`w-3 h-3 ${subColor}`} style={subTextStyle} />}
       </button>
 
       {/* Drawer panel — always mounted, slides via max-width */}
@@ -255,15 +265,15 @@ function VariationSidebar({
               <div className={`flex shrink-0 border-b ${dividerColor}`}>
                 <button
                   onClick={() => setMode("variants")}
-                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "variants" ? "" : tabInactive}`}
-                  style={mode === "variants" ? tabActiveStyle : undefined}
+                  className={`flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "variants" ? "" : tabInactive}`}
+                  style={mode === "variants" ? tabActiveStyle : { ...textStyle }}
                 >
                   Variants
                 </button>
                 <button
                   onClick={() => setMode("materials")}
-                  className={`flex-1 py-2 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "materials" ? "" : tabInactive}`}
-                  style={mode === "materials" ? tabActiveStyle : undefined}
+                  className={`flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${mode === "materials" ? "" : tabInactive}`}
+                  style={mode === "materials" ? tabActiveStyle : { ...textStyle }}
                 >
                   Materials
                 </button>
@@ -273,21 +283,21 @@ function VariationSidebar({
                 {isLoadingData ? (
                   <SidebarSkeleton isLightBg={isSidebarLight} />
                 ) : mode === "variants" ? (
-                  <div className="p-2.5 flex flex-col gap-1">
+                  <div className="p-3 flex flex-col gap-1.5">
                     {/* Base model option */}
                     <button
                       onClick={() => { onSelectVariant(null); onSelectMaterial(null); }}
-                      className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                      className={`flex items-center gap-2.5 p-2.5 rounded-2xl border transition-all text-left w-full ${
                         activeVariantId === null
                           ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                       style={activeVariantId === null && !isSidebarLight ? activeItemBorderStyle : undefined}
                     >
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Box className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/8"}`}>
+                        <Box className={`w-4 h-4 ${isSidebarLight ? "text-gray-400" : "text-white/25"}`} />
                       </div>
-                      <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>
+                      <span className={`text-xs font-medium flex-1 truncate ${labelColor}`} style={textStyle}>
                         {project?.defaultModelName || "Original"}
                       </span>
                     </button>
@@ -296,7 +306,7 @@ function VariationSidebar({
                       <button
                         key={variant.id}
                         onClick={() => { onSelectVariant(variant); onSelectMaterial(null); setMode("materials"); }}
-                        className={`flex items-center gap-2 p-2 rounded-xl border transition-all text-left w-full ${
+                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl border transition-all text-left w-full ${
                           activeVariantId === variant.id
                             ? isSidebarLight ? "border-gray-800 bg-gray-100" : "border-transparent"
                             : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
@@ -304,33 +314,33 @@ function VariationSidebar({
                         style={activeVariantId === variant.id && !isSidebarLight ? activeItemBorderStyle : undefined}
                       >
                         {variant.thumbnailUrl ? (
-                          <img src={variant.thumbnailUrl} alt={variant.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" />
+                          <img src={variant.thumbnailUrl} alt={variant.name} className="w-9 h-9 rounded-xl object-cover shrink-0 border border-white/8" />
                         ) : (
-                          <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                            <Box className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
+                          <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/8"}`}>
+                            <Box className={`w-4 h-4 ${isSidebarLight ? "text-gray-400" : "text-white/25"}`} />
                           </div>
                         )}
-                        <span className={`text-xs font-medium flex-1 truncate ${labelColor}`}>{variant.name}</span>
-                        <ChevronRight className={`w-3 h-3 shrink-0 ${subColor}`} />
+                        <span className={`text-xs font-medium flex-1 truncate ${labelColor}`} style={textStyle}>{variant.name}</span>
+                        <ChevronRight className={`w-3 h-3 shrink-0 ${subColor}`} style={subTextStyle} />
                       </button>
                     ))}
                   </div>
                 ) : (
                   /* Materials tab */
-                  <div className="p-2.5 flex flex-col gap-1">
+                  <div className="p-3 flex flex-col gap-1.5">
                     <button
                       onClick={() => onSelectMaterial(null)}
-                      className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+                      className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all text-left w-full ${
                         activeMaterialId === null
                           ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                       style={activeMaterialId === null && !isSidebarLight ? activeMaterialBorderStyle : undefined}
                     >
-                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/8"}`}>
+                        <Palette className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/25"}`} />
                       </div>
-                      <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
+                      <span className={`text-xs ${labelColor}`} style={textStyle}>{project?.defaultColorName || "Original Color"}</span>
                     </button>
                     {activeMaterials.map((mat) => (
                       <MaterialItem
@@ -341,10 +351,11 @@ function VariationSidebar({
                         labelColor={labelColor}
                         accentColor={accentColor}
                         onSelect={() => onSelectMaterial(mat)}
+                        textStyle={textStyle}
                       />
                     ))}
                     {activeMaterials.length === 0 && (
-                      <p className={`text-[10px] px-1 py-3 text-center ${subColor}`}>No colors for this model</p>
+                      <p className={`text-[10px] px-1 py-3 text-center ${subColor}`} style={subTextStyle}>No colors for this model</p>
                     )}
                   </div>
                 )}
@@ -353,27 +364,27 @@ function VariationSidebar({
           ) : (
             /* Mode A: only materials, no variants */
             <>
-              <div className={`px-3 py-2.5 border-b shrink-0 ${dividerColor}`}>
-                <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>Colors</span>
+              <div className={`px-3 py-3 border-b shrink-0 ${dividerColor}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-widest ${labelColor}`} style={textStyle}>Colors</span>
               </div>
               <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
                 {isLoadingData ? (
                   <SidebarSkeleton isLightBg={isSidebarLight} />
                 ) : (
-                  <div className="p-2.5 flex flex-col gap-1">
+                  <div className="p-3 flex flex-col gap-1.5">
                     <button
                       onClick={() => onSelectMaterial(null)}
-                      className={`flex items-center gap-2 p-1.5 rounded-lg border transition-all text-left w-full ${
+                      className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all text-left w-full ${
                         activeMaterialId === null
                           ? isSidebarLight ? "border-gray-700 bg-gray-50" : "border-transparent"
                           : isSidebarLight ? "border-gray-200 hover:border-gray-300" : "border-white/10 hover:border-white/20"
                       }`}
                       style={activeMaterialId === null && !isSidebarLight ? activeMaterialBorderStyle : undefined}
                     >
-                      <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/10"}`}>
-                        <Palette className={`w-3 h-3 ${isSidebarLight ? "text-gray-400" : "text-white/30"}`} />
+                      <div className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${isSidebarLight ? "bg-gray-100 border border-gray-200" : "bg-white/5 border border-white/8"}`}>
+                        <Palette className={`w-3.5 h-3.5 ${isSidebarLight ? "text-gray-400" : "text-white/25"}`} />
                       </div>
-                      <span className={`text-xs ${labelColor}`}>{project?.defaultColorName || "Original Color"}</span>
+                      <span className={`text-xs ${labelColor}`} style={textStyle}>{project?.defaultColorName || "Original Color"}</span>
                     </button>
                     {baseMaterials.map((mat) => (
                       <MaterialItem
@@ -384,6 +395,7 @@ function VariationSidebar({
                         labelColor={labelColor}
                         accentColor={accentColor}
                         onSelect={() => onSelectMaterial(mat)}
+                        textStyle={textStyle}
                       />
                     ))}
                   </div>

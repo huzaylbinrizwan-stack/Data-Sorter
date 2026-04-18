@@ -650,6 +650,9 @@ export default function Editor() {
   const sidebarDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [accentColorVal, setAccentColorVal] = useState("#C9A84C");
   const accentDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sidebarTextColorVal, setSidebarTextColorVal] = useState("#ffffff");
+  const [sidebarTextColorAuto, setSidebarTextColorAuto] = useState(true);
+  const textColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newMeasurementLabel, setNewMeasurementLabel] = useState("");
   const [newMeasurementValue, setNewMeasurementValue] = useState("");
 
@@ -670,6 +673,9 @@ export default function Editor() {
       setSidebarColorVal(project.studioSidebarColor ?? "#000000");
       setSidebarOpacityVal(project.studioSidebarOpacity ?? 0.65);
       setAccentColorVal(project.studioAccentColor ?? "#C9A84C");
+      const savedTextColor = project.studioSidebarTextColor ?? null;
+      setSidebarTextColorAuto(!savedTextColor);
+      setSidebarTextColorVal(savedTextColor ?? "#ffffff");
     }
   }, [project?.id]);
 
@@ -868,6 +874,16 @@ export default function Editor() {
     if (accentDebounceRef.current) clearTimeout(accentDebounceRef.current);
     accentDebounceRef.current = setTimeout(async () => {
       await updateProject.mutateAsync({ id: projectId, data: { studioAccentColor: color } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handleSidebarTextColorChange = (color: string, auto: boolean) => {
+    setSidebarTextColorVal(color);
+    setSidebarTextColorAuto(auto);
+    if (textColorDebounceRef.current) clearTimeout(textColorDebounceRef.current);
+    textColorDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { studioSidebarTextColor: auto ? null : color } });
       queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     }, 300);
   };
@@ -1166,6 +1182,39 @@ export default function Editor() {
                     <span className="text-xs text-muted-foreground font-mono">{accentColorVal}</span>
                   </div>
                   <p className="text-xs text-muted-foreground/60">Applied to progress bar, company name, measurement values, and the AR button</p>
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Text &amp; Arrow Color</Label>
+                    <button
+                      onClick={() => handleSidebarTextColorChange(sidebarTextColorVal, !sidebarTextColorAuto)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                        sidebarTextColorAuto
+                          ? "border-primary text-primary bg-primary/10"
+                          : "border-border text-muted-foreground hover:border-primary/60 hover:text-primary"
+                      }`}
+                    >
+                      Auto
+                    </button>
+                  </div>
+                  {!sidebarTextColorAuto && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={sidebarTextColorVal}
+                        onChange={(e) => handleSidebarTextColorChange(e.target.value, false)}
+                        className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent p-0.5"
+                        data-testid="input-sidebar-text-color"
+                      />
+                      <span className="text-xs text-muted-foreground font-mono">{sidebarTextColorVal}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground/60">
+                    {sidebarTextColorAuto
+                      ? "Adapts automatically to the sidebar brightness"
+                      : "Applied to variant names, material labels, and navigation arrows"}
+                  </p>
                 </div>
               </div>
             </div>
