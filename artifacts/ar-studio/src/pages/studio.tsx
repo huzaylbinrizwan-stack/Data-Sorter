@@ -365,16 +365,18 @@ function VariationSidebar({
 function MeasurementsOverlay({
   slug,
   isLightBg,
+  metaReady,
 }: {
   slug: string;
   isLightBg: boolean;
+  metaReady: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const { data: measurements } = useGetStudioMeasurements(slug, {
     query: {
-      enabled: !!slug,
+      enabled: !!slug && metaReady,
       queryKey: getGetStudioMeasurementsQueryKey(slug),
     },
   });
@@ -719,7 +721,7 @@ export default function Studio() {
           )}
 
           {projectSlug && (
-            <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} />
+            <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} metaReady={!!meta} />
           )}
         </div>
 
