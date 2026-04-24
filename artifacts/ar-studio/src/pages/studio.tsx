@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "wouter";
+import { QRCodeSVG } from "qrcode.react";
 import {
   useGetStudioProjectMeta,
   useGetStudioProject,
@@ -527,8 +528,22 @@ export default function Studio() {
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [pendingSrc, setPendingSrc] = useState<string | null>(null);
   const [displaySrc, setDisplaySrc] = useState<string | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
   const arButtonRef = useRef<HTMLButtonElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
+
+  const isDesktop = !/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+  useEffect(() => {
+    if (!showQrModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowQrModal(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [showQrModal]);
 
   const {
     data: meta,
@@ -827,7 +842,13 @@ export default function Studio() {
 
               <button
                 data-testid="footer-view-in-ar"
-                onClick={() => arButtonRef.current?.click()}
+                onClick={() => {
+                  if (isDesktop) {
+                    setShowQrModal(true);
+                  } else {
+                    arButtonRef.current?.click();
+                  }
+                }}
                 className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-wide shadow-lg transition-all active:scale-95 ${
                   isLightBg
                     ? "bg-gray-900 text-white hover:bg-gray-700 shadow-black/30"
@@ -844,6 +865,54 @@ export default function Studio() {
           )}
         </footer>
       </div>
+
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+          style={{ background: "rgba(0,0,0,0.85)" }}
+          onClick={() => setShowQrModal(false)}
+          data-testid="qr-modal-backdrop"
+        >
+          <div
+            className="relative flex flex-col items-center gap-5 rounded-2xl p-8"
+            style={{
+              background: "#0f0f0f",
+              border: "1px solid rgba(201,168,76,0.25)",
+              minWidth: 280,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="qr-modal-card"
+          >
+            <button
+              data-testid="qr-modal-close"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-3 right-4 text-white/40 hover:text-white/80 transition-colors text-xl leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <div className="p-3 bg-white rounded-xl">
+              <QRCodeSVG
+                value={window.location.href}
+                size={180}
+                fgColor={accentColor}
+                bgColor="#ffffff"
+                level="M"
+              />
+            </div>
+
+            <div className="text-center">
+              <p className="text-white font-semibold tracking-wide text-base mb-1">
+                Scan to view in AR
+              </p>
+              <p className="text-white/40 text-xs font-light leading-relaxed max-w-[200px]">
+                Open your camera app and point it at the code to continue on your phone
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
