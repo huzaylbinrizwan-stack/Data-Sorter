@@ -16,7 +16,9 @@ declare module "react" {
           "camera-orbit"?: string;
           "camera-target"?: string;
           loading?: string;
+          "ar-scale"?: string;
           "disable-zoom"?: boolean;
+          "disable-tap"?: string;
           "interaction-prompt"?: string;
           poster?: string;
           "ar-button-style"?: string;

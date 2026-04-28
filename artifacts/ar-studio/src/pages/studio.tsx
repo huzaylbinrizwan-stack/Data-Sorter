@@ -744,7 +744,8 @@ export default function Studio() {
               auto-rotate
               ar
               ar-modes="scene-viewer quick-look"
-              ar-scale="fixed"
+              ar-scale={meta?.isScalable ? "auto" : "fixed"}
+              disable-tap={meta?.isScalable ? undefined : ""}
               shadow-intensity="1"
               camera-target={meta ? `${meta.hotspotX}m ${meta.hotspotY}m ${meta.hotspotZ}m` : undefined}
               style={{
