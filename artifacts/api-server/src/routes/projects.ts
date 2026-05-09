@@ -67,6 +67,9 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     studioSidebarOpacity: project.studioSidebarOpacity,
     studioAccentColor: project.studioAccentColor,
     studioSidebarTextColor: project.studioSidebarTextColor ?? null,
+    studioBackgroundUrl: project.studioBackgroundUrl ?? null,
+    studioFocalX: project.studioFocalX ?? null,
+    studioFocalY: project.studioFocalY ?? null,
   }));
 });
 
@@ -131,6 +134,9 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     studioSidebarOpacity: project.studioSidebarOpacity,
     studioAccentColor: project.studioAccentColor,
     studioSidebarTextColor: project.studioSidebarTextColor ?? null,
+    studioBackgroundUrl: project.studioBackgroundUrl ?? null,
+    studioFocalX: project.studioFocalX ?? null,
+    studioFocalY: project.studioFocalY ?? null,
     materials: baseMaterials,
     variants,
   }));

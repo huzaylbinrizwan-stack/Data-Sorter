@@ -38,6 +38,12 @@ export interface Project {
   /** @nullable */
   studioSidebarTextColor: string | null;
   /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: Date;

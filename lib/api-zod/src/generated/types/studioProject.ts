@@ -36,6 +36,12 @@ export interface StudioProject {
   studioAccentColor: string;
   /** @nullable */
   studioSidebarTextColor: string | null;
+  /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

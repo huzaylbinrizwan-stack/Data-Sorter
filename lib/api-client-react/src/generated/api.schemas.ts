@@ -76,6 +76,12 @@ export interface Project {
   /** @nullable */
   studioSidebarTextColor: string | null;
   /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: string;
@@ -171,6 +177,12 @@ export interface UpdateProjectBody {
   studioAccentColor?: string;
   /** @nullable */
   studioSidebarTextColor?: string | null;
+  /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
 }
 
 export type StudioProjectMetaEnvironment =
@@ -222,6 +234,12 @@ export interface StudioProjectMeta {
   studioAccentColor: string;
   /** @nullable */
   studioSidebarTextColor: string | null;
+  /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
 }
 
 export interface ProjectMaterial {
@@ -296,6 +314,12 @@ export interface StudioProject {
   studioAccentColor: string;
   /** @nullable */
   studioSidebarTextColor: string | null;
+  /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

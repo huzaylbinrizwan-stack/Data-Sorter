@@ -111,6 +111,9 @@ export const ListProjectsResponseItem = zod.object({
     .string()
     .default(listProjectsResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -192,6 +195,9 @@ export const GetProjectResponse = zod.object({
     .string()
     .default(getProjectResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -235,6 +241,9 @@ export const UpdateProjectBody = zod.object({
     .optional(),
   studioAccentColor: zod.string().optional(),
   studioSidebarTextColor: zod.string().nullish(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -280,6 +289,9 @@ export const UpdateProjectResponse = zod.object({
     .string()
     .default(updateProjectResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -343,6 +355,9 @@ export const PublishProjectResponse = zod.object({
     .string()
     .default(publishProjectResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -399,6 +414,9 @@ export const UnpublishProjectResponse = zod.object({
     .string()
     .default(unpublishProjectResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -455,6 +473,9 @@ export const GetStudioProjectMetaResponse = zod
       .string()
       .default(getStudioProjectMetaResponseStudioAccentColorDefault),
     studioSidebarTextColor: zod.string().nullable(),
+    studioBackgroundUrl: zod.string().nullish(),
+    studioFocalX: zod.number().nullish(),
+    studioFocalY: zod.number().nullish(),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -508,6 +529,9 @@ export const GetStudioProjectResponse = zod.object({
     .string()
     .default(getStudioProjectResponseStudioAccentColorDefault),
   studioSidebarTextColor: zod.string().nullable(),
+  studioBackgroundUrl: zod.string().nullish(),
+  studioFocalX: zod.number().nullish(),
+  studioFocalY: zod.number().nullish(),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -679,6 +703,9 @@ export const GetDashboardStatsResponse = zod.object({
           getDashboardStatsResponseRecentProjectsItemStudioAccentColorDefault,
         ),
       studioSidebarTextColor: zod.string().nullable(),
+      studioBackgroundUrl: zod.string().nullish(),
+      studioFocalX: zod.number().nullish(),
+      studioFocalY: zod.number().nullish(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),

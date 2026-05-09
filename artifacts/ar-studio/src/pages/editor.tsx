@@ -57,6 +57,8 @@ import {
   Palette,
   ChevronRight,
   Ruler,
+  ImageIcon,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -653,6 +655,10 @@ export default function Editor() {
   const [sidebarTextColorVal, setSidebarTextColorVal] = useState("#ffffff");
   const [sidebarTextColorAuto, setSidebarTextColorAuto] = useState(true);
   const textColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bgPhotoFileInputRef = useRef<HTMLInputElement>(null);
+  const [bgUploadProgress, setBgUploadProgress] = useState<number | null>(null);
+  const [bgFocalX, setBgFocalX] = useState<number>(50);
+  const [bgFocalY, setBgFocalY] = useState<number>(50);
   const [newMeasurementLabel, setNewMeasurementLabel] = useState("");
   const [newMeasurementValue, setNewMeasurementValue] = useState("");
 
@@ -676,6 +682,8 @@ export default function Editor() {
       const savedTextColor = project.studioSidebarTextColor ?? null;
       setSidebarTextColorAuto(!savedTextColor);
       setSidebarTextColorVal(savedTextColor ?? "#ffffff");
+      setBgFocalX(project.studioFocalX ?? 50);
+      setBgFocalY(project.studioFocalY ?? 50);
     }
   }, [project?.id]);
 
@@ -888,6 +896,56 @@ export default function Editor() {
     }, 300);
   };
 
+  const handleBgPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBgUploadProgress(0);
+    try {
+      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+        data: { name: file.name, size: file.size, contentType: file.type || "image/png" },
+      });
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) setBgUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+      };
+      await new Promise<void>((resolve, reject) => {
+        xhr.open("PUT", uploadURL);
+        xhr.setRequestHeader("Content-Type", file.type || "image/png");
+        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+        xhr.onerror = reject;
+        xhr.send(file);
+      });
+      await updateProject.mutateAsync({ id: projectId, data: { studioBackgroundUrl: objectPath, studioFocalX: 50, studioFocalY: 50 } });
+      setBgFocalX(50);
+      setBgFocalY(50);
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+      toast({ title: "Background photo uploaded" });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setBgUploadProgress(null);
+      if (bgPhotoFileInputRef.current) bgPhotoFileInputRef.current.value = "";
+    }
+  };
+
+  const handleClearBgPhoto = async () => {
+    await updateProject.mutateAsync({ id: projectId, data: { studioBackgroundUrl: null, studioFocalX: null, studioFocalY: null } });
+    setBgFocalX(50);
+    setBgFocalY(50);
+    queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    toast({ title: "Background photo removed" });
+  };
+
+  const handleFocalPointClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    setBgFocalX(x);
+    setBgFocalY(y);
+    await updateProject.mutateAsync({ id: projectId, data: { studioFocalX: x, studioFocalY: y } });
+    queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+  };
+
   const handleAddMeasurement = async () => {
     if (!newMeasurementLabel.trim() || !newMeasurementValue.trim()) return;
     await createMeasurement.mutateAsync({
@@ -1035,6 +1093,100 @@ export default function Editor() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Background Photo Section */}
+          <div className="p-5 border-b border-border">
+            <input
+              ref={bgPhotoFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleBgPhotoFileChange}
+              data-testid="input-bg-photo-file"
+            />
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+              <ImageIcon className="w-3 h-3 inline mr-2" />
+              Background Photo
+            </h3>
+            {!project.studioBackgroundUrl ? (
+              <Button
+                variant="outline"
+                className="w-full border-border text-sm gap-2"
+                onClick={() => bgPhotoFileInputRef.current?.click()}
+                disabled={bgUploadProgress !== null}
+                data-testid="button-upload-bg-photo"
+              >
+                <Upload className="w-4 h-4" />
+                {bgUploadProgress !== null ? `Uploading ${bgUploadProgress}%...` : "Upload Room Photo"}
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {/* Image preview with focal point picker */}
+                <div
+                  className="relative w-full rounded-sm overflow-hidden cursor-crosshair border border-border"
+                  style={{ aspectRatio: "16/9" }}
+                  onClick={handleFocalPointClick}
+                  title="Click to set focal point"
+                  data-testid="bg-photo-focal-picker"
+                >
+                  <img
+                    src={project.studioBackgroundUrl}
+                    alt="Background"
+                    className="w-full h-full object-cover pointer-events-none"
+                  />
+                  {/* Crosshair overlay */}
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${bgFocalX}%`,
+                      top: `${bgFocalY}%`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-md">
+                      <circle cx="12" cy="12" r="4" fill="white" fillOpacity="0.9" />
+                      <circle cx="12" cy="12" r="4" stroke="#C9A84C" strokeWidth="1.5" />
+                      <line x1="12" y1="2" x2="12" y2="8" stroke="white" strokeWidth="1.5" strokeOpacity="0.9" />
+                      <line x1="12" y1="16" x2="12" y2="22" stroke="white" strokeWidth="1.5" strokeOpacity="0.9" />
+                      <line x1="2" y1="12" x2="8" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.9" />
+                      <line x1="16" y1="12" x2="22" y2="12" stroke="white" strokeWidth="1.5" strokeOpacity="0.9" />
+                    </svg>
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 py-1 text-center">
+                    <span className="text-[10px] text-white/80 bg-black/40 px-2 py-0.5 rounded-full">
+                      Click to set focal point
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Focal point: {bgFocalX}% / {bgFocalY}% — the crop centers here on mobile
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs gap-1.5 border-dashed"
+                    onClick={() => bgPhotoFileInputRef.current?.click()}
+                    disabled={bgUploadProgress !== null}
+                    data-testid="button-replace-bg-photo"
+                  >
+                    <Upload className="w-3 h-3" />
+                    {bgUploadProgress !== null ? `Uploading…` : "Replace"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive"
+                    onClick={handleClearBgPhoto}
+                    data-testid="button-clear-bg-photo"
+                  >
+                    <X className="w-3 h-3" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Hotspot Section */}

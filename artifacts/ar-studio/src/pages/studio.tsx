@@ -693,9 +693,16 @@ export default function Studio() {
     );
   }
 
-  const envStyle = meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
+  const hasBgPhoto = !!(meta?.studioBackgroundUrl);
+  const envStyle = hasBgPhoto
+    ? {
+        backgroundImage: `url(${meta!.studioBackgroundUrl})`,
+        backgroundSize: "cover" as const,
+        backgroundPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
+      }
+    : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
-  const isLightBg = !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
+  const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
 
   const showSidebar = !!(

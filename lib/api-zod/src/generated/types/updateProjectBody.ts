@@ -37,4 +37,10 @@ export interface UpdateProjectBody {
   studioAccentColor?: string;
   /** @nullable */
   studioSidebarTextColor?: string | null;
+  /** @nullable */
+  studioBackgroundUrl?: string | null;
+  /** @nullable */
+  studioFocalX?: number | null;
+  /** @nullable */
+  studioFocalY?: number | null;
 }
