@@ -709,13 +709,7 @@ export default function Studio() {
   const hasBgPhoto = !!(meta?.studioBackgroundUrl);
   const bgScale = meta?.studioBackgroundScale ?? 100;
   const envStyle = hasBgPhoto
-    ? {
-        backgroundColor: "#1a1410",
-        backgroundImage: `url(${meta!.studioBackgroundUrl})`,
-        backgroundSize: bgScale <= 100 ? "cover" : `${bgScale}%`,
-        backgroundPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
-        backgroundRepeat: "no-repeat" as const,
-      }
+    ? { backgroundColor: "#1a1410" }
     : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
 
   const hasModelPlacement = meta && meta.studioModelX != null && meta.studioModelY != null && meta.studioModelSize != null;
@@ -765,8 +759,9 @@ export default function Studio() {
         }}
         data-testid="studio-page"
       >
-        <div className="flex-1 relative min-h-0">
-          {/* Background photo as <img> — immune to iOS Safari flex+min-h-0 CSS background-image bug */}
+        <div className="flex-1 relative min-h-0" style={{ overflow: "hidden" }}>
+          {/* Background photo as <img> — immune to iOS Safari flex+min-h-0 CSS background-image bug.
+              overflow:hidden on parent clips the zoomed image cleanly. */}
           {hasBgPhoto && (
             <img
               src={meta!.studioBackgroundUrl!}
@@ -776,10 +771,10 @@ export default function Studio() {
                 inset: 0,
                 width: "100%",
                 height: "100%",
-                objectFit: bgScale <= 100 ? "cover" : "none",
+                objectFit: "cover",
                 objectPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
                 transform: bgScale > 100 ? `scale(${bgScale / 100})` : undefined,
-                transformOrigin: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
+                transformOrigin: bgScale > 100 ? `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%` : undefined,
                 zIndex: 0,
                 pointerEvents: "none",
               }}
