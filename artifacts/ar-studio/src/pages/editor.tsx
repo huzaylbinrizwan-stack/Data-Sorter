@@ -636,11 +636,15 @@ export default function Editor() {
   const updateVariant = useUpdateVariant();
   const deleteVariant = useDeleteVariant();
 
-  const [hotspotMode, setHotspotMode] = useState(false);
-  const [hotspotPos, setHotspotPos] = useState({ x: 50, y: 50 });
+  const [placementMode, setPlacementMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const hotspotOverlayRef = useRef<HTMLDivElement>(null);
+  const placementOverlayRef = useRef<HTMLDivElement>(null);
   const modelViewerRef = useRef<HTMLElement>(null);
+  const [localModelX, setLocalModelX] = useState<number | null>(null);
+  const [localModelY, setLocalModelY] = useState<number | null>(null);
+  const [localModelSize, setLocalModelSize] = useState<number>(100);
+  const [localBgScale, setLocalBgScale] = useState<number>(100);
+  const bgScaleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -672,9 +676,6 @@ export default function Editor() {
 
   useEffect(() => {
     if (project) {
-      const px = (project.hotspotX + 0.5) * 100;
-      const pz = (project.hotspotZ + 0.5) * 100;
-      setHotspotPos({ x: Math.max(0, Math.min(100, px)), y: Math.max(0, Math.min(100, pz)) });
       setDefaultModelNameVal(project.defaultModelName);
       setDefaultColorNameVal(project.defaultColorName);
       setSidebarColorVal(project.studioSidebarColor ?? "#000000");
@@ -685,31 +686,55 @@ export default function Editor() {
       setSidebarTextColorVal(savedTextColor ?? "#ffffff");
       setBgFocalX(project.studioFocalX ?? 50);
       setBgFocalY(project.studioFocalY ?? 50);
+      setLocalModelX(project.studioModelX ?? null);
+      setLocalModelY(project.studioModelY ?? null);
+      setLocalModelSize(project.studioModelSize ?? 100);
+      setLocalBgScale(project.studioBackgroundScale ?? 100);
     }
   }, [project?.id]);
 
-  const handleSaveHotspot = async () => {
+  const handleSavePlacement = async () => {
     if (!project) return;
-    const hx = hotspotPos.x / 100 - 0.5;
-    const hz = hotspotPos.y / 100 - 0.5;
-    await updateProject.mutateAsync({ id: projectId, data: { hotspotX: hx, hotspotY: 0, hotspotZ: hz } });
+    await updateProject.mutateAsync({
+      id: projectId,
+      data: {
+        studioModelX: localModelX,
+        studioModelY: localModelY,
+        studioModelSize: localModelSize,
+        studioBackgroundScale: localBgScale,
+      },
+    });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
-    setHotspotMode(false);
-    toast({ title: "Hotspot saved" });
+    setPlacementMode(false);
+    toast({ title: "Placement saved" });
   };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging || !hotspotOverlayRef.current) return;
-    const rect = hotspotOverlayRef.current.getBoundingClientRect();
+  const handlePlacementClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!placementOverlayRef.current) return;
+    const rect = placementOverlayRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    setHotspotPos({ x, y });
-    if (modelViewerRef.current) {
-      const hx = x / 100 - 0.5;
-      const hz = y / 100 - 0.5;
-      modelViewerRef.current.setAttribute("camera-target", `${hx}m 0m ${hz}m`);
-    }
+    setLocalModelX(x);
+    setLocalModelY(y);
+  }, []);
+
+  const handlePlacementMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !placementOverlayRef.current) return;
+    const rect = placementOverlayRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setLocalModelX(x);
+    setLocalModelY(y);
   }, [isDragging]);
+
+  const handleBgScaleChange = (scale: number) => {
+    setLocalBgScale(scale);
+    if (bgScaleDebounceRef.current) clearTimeout(bgScaleDebounceRef.current);
+    bgScaleDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { studioBackgroundScale: scale } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 400);
+  };
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
@@ -724,11 +749,6 @@ export default function Editor() {
       hotspotZ: preset?.hotspotZ ?? 0,
     };
     await updateProject.mutateAsync({ id: projectId, data });
-    if (preset) {
-      const px = (preset.hotspotX + 0.5) * 100;
-      const pz = (preset.hotspotZ + 0.5) * 100;
-      setHotspotPos({ x: Math.max(0, Math.min(100, px)), y: Math.max(0, Math.min(100, pz)) });
-    }
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     setIsSaving(false);
   };
@@ -972,7 +992,7 @@ export default function Editor() {
     if (project?.studioBackgroundUrl) {
       return {
         backgroundImage: `url(${project.studioBackgroundUrl})`,
-        backgroundSize: "cover",
+        backgroundSize: `${localBgScale}%`,
         backgroundPosition: `${project.studioFocalX ?? 50}% ${project.studioFocalY ?? 50}%`,
       };
     }
@@ -981,6 +1001,18 @@ export default function Editor() {
     if (found.bg.includes("gradient")) return { backgroundImage: found.bg };
     return { backgroundColor: found.bg };
   };
+
+  const hasPlacement = localModelX !== null && localModelY !== null;
+  const modelViewerStyle: React.CSSProperties = hasPlacement
+    ? {
+        position: "absolute",
+        left: `${localModelX}%`,
+        top: `${localModelY}%`,
+        width: `${localModelSize}%`,
+        height: `${localModelSize}%`,
+        transform: "translate(-50%, -50%)",
+      }
+    : { width: "100%", height: "100%" };
 
   if (isLoading || !project) {
     return (
@@ -1175,6 +1207,23 @@ export default function Editor() {
                 <p className="text-[10px] text-muted-foreground/70">
                   Focal point: {bgFocalX}% / {bgFocalY}% — the crop centers here on mobile
                 </p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Zoom</Label>
+                    <span className="text-xs text-muted-foreground">{Math.round(localBgScale)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={100}
+                    max={200}
+                    step={5}
+                    value={localBgScale}
+                    onChange={(e) => handleBgScaleChange(Number(e.target.value))}
+                    className="w-full accent-primary"
+                    data-testid="slider-bg-zoom"
+                  />
+                  <p className="text-[10px] text-muted-foreground/60">Controls how zoomed-in the background photo appears</p>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -1202,28 +1251,51 @@ export default function Editor() {
             )}
           </div>
 
-          {/* Hotspot Section */}
+          {/* Placement Section */}
           <div className="p-5 border-b border-border">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">Placement</h3>
             <Button
-              variant={hotspotMode ? "default" : "outline"}
+              variant={placementMode ? "default" : "outline"}
               className="w-full border-border text-sm gap-2"
-              onClick={() => setHotspotMode(!hotspotMode)}
+              onClick={() => setPlacementMode(!placementMode)}
               data-testid="button-hotspot"
             >
               <MapPin className="w-4 h-4" />
-              {hotspotMode ? "Exit Hotspot Mode" : "Set Hotspot"}
+              {placementMode ? "Exit Placement Mode" : "Set Placement"}
             </Button>
-            {hotspotMode && (
-              <div className="mt-3 p-3 bg-primary/5 rounded-sm border border-primary/20">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Drag the dot to set product placement. Click Save when done.
-                </p>
-                <Button size="sm" className="w-full text-xs" onClick={handleSaveHotspot} data-testid="button-save-hotspot">
-                  <Check className="w-3 h-3 mr-1" /> Save Position
-                </Button>
+            <div className="mt-3 space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Model Size</Label>
+                  <span className="text-xs text-muted-foreground">{Math.round(localModelSize)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={30}
+                  max={100}
+                  step={1}
+                  value={localModelSize}
+                  onChange={(e) => setLocalModelSize(Number(e.target.value))}
+                  className="w-full accent-primary"
+                  data-testid="slider-model-size"
+                />
               </div>
-            )}
+              {placementMode && (
+                <div className="p-3 bg-primary/5 rounded-sm border border-primary/20">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Click or drag the viewport to position the model. Adjust size with the slider above.
+                  </p>
+                  <Button size="sm" className="w-full text-xs" onClick={handleSavePlacement} data-testid="button-save-hotspot">
+                    <Check className="w-3 h-3 mr-1" /> Save Position
+                  </Button>
+                </div>
+              )}
+              {!placementMode && hasPlacement && (
+                <p className="text-[10px] text-muted-foreground/60">
+                  Position: {Math.round(localModelX!)}% / {Math.round(localModelY!)}% · Size: {Math.round(localModelSize)}%
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Settings Section */}
@@ -1401,7 +1473,7 @@ export default function Editor() {
               shadow-intensity="1"
               disable-zoom={!project.isScalable || undefined}
               camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
-              style={{ width: "100%", height: "100%" }}
+              style={modelViewerStyle}
               interaction-prompt="none"
               data-testid="model-viewer"
             />
@@ -1424,12 +1496,13 @@ export default function Editor() {
             </div>
           )}
 
-          {/* Hotspot Mode Overlay — sits on top of model-viewer */}
-          {hotspotMode && (
+          {/* Placement Mode Overlay — sits on top of model-viewer */}
+          {placementMode && (
             <div
-              ref={hotspotOverlayRef}
+              ref={placementOverlayRef}
               className="absolute inset-0 cursor-crosshair select-none"
-              onMouseMove={handleMouseMove}
+              onClick={handlePlacementClick}
+              onMouseMove={handlePlacementMouseMove}
               onMouseDown={() => setIsDragging(true)}
               onMouseUp={() => setIsDragging(false)}
               onMouseLeave={() => setIsDragging(false)}
@@ -1442,18 +1515,29 @@ export default function Editor() {
                   backgroundSize: "10% 10%",
                 }}
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-primary/60 text-sm font-light tracking-widest uppercase">
-                  Drag to set placement
+              <div className="absolute inset-0 flex items-end justify-center pb-8">
+                <p className="text-primary/70 text-sm font-light tracking-widest uppercase bg-black/30 px-3 py-1 rounded-full">
+                  Click or drag to position model
                 </p>
               </div>
-              <div
-                className="absolute w-6 h-6 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ left: `${hotspotPos.x}%`, top: `${hotspotPos.y}%` }}
-              >
-                <div className="w-full h-full rounded-full bg-primary border-2 border-primary-foreground shadow-lg shadow-primary/40" />
-                <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-              </div>
+              {localModelX !== null && localModelY !== null && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: `${localModelX}%`,
+                    top: `${localModelY}%`,
+                    width: `${localModelSize}%`,
+                    height: `${localModelSize}%`,
+                    transform: "translate(-50%, -50%)",
+                    border: "2px dashed rgba(201,168,76,0.7)",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground shadow-lg"
+                  />
+                </div>
+              )}
             </div>
           )}
 

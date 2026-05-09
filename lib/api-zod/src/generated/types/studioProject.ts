@@ -42,6 +42,14 @@ export interface StudioProject {
   studioFocalX?: number | null;
   /** @nullable */
   studioFocalY?: number | null;
+  /** @nullable */
+  studioModelX?: number | null;
+  /** @nullable */
+  studioModelY?: number | null;
+  /** @nullable */
+  studioModelSize?: number | null;
+  /** @nullable */
+  studioBackgroundScale?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

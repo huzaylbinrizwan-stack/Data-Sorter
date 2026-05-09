@@ -70,6 +70,10 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     studioBackgroundUrl: project.studioBackgroundUrl ?? null,
     studioFocalX: project.studioFocalX ?? null,
     studioFocalY: project.studioFocalY ?? null,
+    studioModelX: project.studioModelX ?? null,
+    studioModelY: project.studioModelY ?? null,
+    studioModelSize: project.studioModelSize ?? null,
+    studioBackgroundScale: project.studioBackgroundScale ?? null,
   }));
 });
 
@@ -137,6 +141,10 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     studioBackgroundUrl: project.studioBackgroundUrl ?? null,
     studioFocalX: project.studioFocalX ?? null,
     studioFocalY: project.studioFocalY ?? null,
+    studioModelX: project.studioModelX ?? null,
+    studioModelY: project.studioModelY ?? null,
+    studioModelSize: project.studioModelSize ?? null,
+    studioBackgroundScale: project.studioBackgroundScale ?? null,
     materials: baseMaterials,
     variants,
   }));

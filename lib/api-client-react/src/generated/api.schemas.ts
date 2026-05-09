@@ -82,6 +82,14 @@ export interface Project {
   /** @nullable */
   studioFocalY?: number | null;
   /** @nullable */
+  studioModelX?: number | null;
+  /** @nullable */
+  studioModelY?: number | null;
+  /** @nullable */
+  studioModelSize?: number | null;
+  /** @nullable */
+  studioBackgroundScale?: number | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: string;
@@ -183,6 +191,14 @@ export interface UpdateProjectBody {
   studioFocalX?: number | null;
   /** @nullable */
   studioFocalY?: number | null;
+  /** @nullable */
+  studioModelX?: number | null;
+  /** @nullable */
+  studioModelY?: number | null;
+  /** @nullable */
+  studioModelSize?: number | null;
+  /** @nullable */
+  studioBackgroundScale?: number | null;
 }
 
 export type StudioProjectMetaEnvironment =
@@ -240,6 +256,14 @@ export interface StudioProjectMeta {
   studioFocalX?: number | null;
   /** @nullable */
   studioFocalY?: number | null;
+  /** @nullable */
+  studioModelX?: number | null;
+  /** @nullable */
+  studioModelY?: number | null;
+  /** @nullable */
+  studioModelSize?: number | null;
+  /** @nullable */
+  studioBackgroundScale?: number | null;
 }
 
 export interface ProjectMaterial {
@@ -320,6 +344,14 @@ export interface StudioProject {
   studioFocalX?: number | null;
   /** @nullable */
   studioFocalY?: number | null;
+  /** @nullable */
+  studioModelX?: number | null;
+  /** @nullable */
+  studioModelY?: number | null;
+  /** @nullable */
+  studioModelSize?: number | null;
+  /** @nullable */
+  studioBackgroundScale?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

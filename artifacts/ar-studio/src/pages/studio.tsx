@@ -697,10 +697,31 @@ export default function Studio() {
   const envStyle = hasBgPhoto
     ? {
         backgroundImage: `url(${meta!.studioBackgroundUrl})`,
-        backgroundSize: "cover" as const,
+        backgroundSize: `${meta!.studioBackgroundScale ?? 100}%`,
         backgroundPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
       }
     : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
+
+  const hasModelPlacement = meta && meta.studioModelX != null && meta.studioModelY != null && meta.studioModelSize != null;
+  const studioModelViewerStyle: React.CSSProperties = hasModelPlacement
+    ? {
+        position: "absolute",
+        left: `${meta!.studioModelX}%`,
+        top: `${meta!.studioModelY}%`,
+        width: `${meta!.studioModelSize}%`,
+        height: `${meta!.studioModelSize}%`,
+        transform: "translate(-50%, -50%)",
+        display: "block",
+        opacity: 1,
+        transition: "opacity 0.3s ease",
+      }
+    : {
+        width: "100%",
+        height: "100%",
+        display: "block",
+        opacity: 1,
+        transition: "opacity 0.3s ease",
+      };
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
@@ -756,11 +777,8 @@ export default function Studio() {
               shadow-intensity="1"
               camera-target={meta ? `${meta.hotspotX}m ${meta.hotspotY}m ${meta.hotspotZ}m` : undefined}
               style={{
-                width: "100%",
-                height: "100%",
-                display: "block",
+                ...studioModelViewerStyle,
                 opacity: displaySrc === pendingSrc ? 1 : 0.6,
-                transition: "opacity 0.3s ease",
               }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
