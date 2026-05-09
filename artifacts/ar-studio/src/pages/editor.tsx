@@ -991,9 +991,11 @@ export default function Editor() {
   const getEnvStyle = (env: string): React.CSSProperties => {
     if (project?.studioBackgroundUrl) {
       return {
+        backgroundColor: "#1a1410",
         backgroundImage: `url(${project.studioBackgroundUrl})`,
-        backgroundSize: `${localBgScale}%`,
+        backgroundSize: localBgScale <= 100 ? "cover" : `${localBgScale}%`,
         backgroundPosition: `${project.studioFocalX ?? 50}% ${project.studioFocalY ?? 50}%`,
+        backgroundRepeat: "no-repeat",
       };
     }
     const found = ENVIRONMENTS.find((e) => e.value === env);
@@ -1467,13 +1469,17 @@ export default function Editor() {
               src={project.modelUrl}
               alt={project.name}
               camera-controls
-              auto-rotate
+              {...(!hasPlacement ? { "auto-rotate": "" } : {})}
               ar
               ar-modes="webxr scene-viewer quick-look"
               shadow-intensity="1"
               disable-zoom={!project.isScalable || undefined}
               camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
-              style={modelViewerStyle}
+              style={{
+                ...modelViewerStyle,
+                ["--mv-background-color" as string]: "rgba(0,0,0,0)",
+                backgroundColor: "transparent",
+              }}
               interaction-prompt="none"
               data-testid="model-viewer"
             />

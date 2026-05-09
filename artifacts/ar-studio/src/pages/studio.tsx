@@ -694,11 +694,14 @@ export default function Studio() {
   }
 
   const hasBgPhoto = !!(meta?.studioBackgroundUrl);
+  const bgScale = meta?.studioBackgroundScale ?? 100;
   const envStyle = hasBgPhoto
     ? {
+        backgroundColor: "#1a1410",
         backgroundImage: `url(${meta!.studioBackgroundUrl})`,
-        backgroundSize: `${meta!.studioBackgroundScale ?? 100}%`,
+        backgroundSize: bgScale <= 100 ? "cover" : `${bgScale}%`,
         backgroundPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
+        backgroundRepeat: "no-repeat" as const,
       }
     : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
 
@@ -769,7 +772,7 @@ export default function Studio() {
               src={pendingSrc}
               alt={meta?.name ?? ""}
               camera-controls
-              auto-rotate
+              {...(!hasModelPlacement ? { "auto-rotate": "" } : {})}
               ar
               ar-modes="scene-viewer quick-look"
               ar-scale={meta?.isScalable ? "auto" : "fixed"}
@@ -779,6 +782,9 @@ export default function Studio() {
               style={{
                 ...studioModelViewerStyle,
                 opacity: displaySrc === pendingSrc ? 1 : 0.6,
+                // Transparent WebGL canvas so room background shows through on all devices
+                ["--mv-background-color" as string]: "rgba(0,0,0,0)",
+                backgroundColor: "transparent",
               }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
