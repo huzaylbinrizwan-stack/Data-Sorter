@@ -656,6 +656,19 @@ export default function Studio() {
     };
   }, [pendingSrc]);
 
+  useEffect(() => {
+    if (!meta?.studioBackgroundUrl) return;
+    const mv = modelViewerRef.current as HTMLElement | null;
+    if (!mv) return;
+    const applyTransparency = () => {
+      mv.style.setProperty("--mv-background-color", "rgba(0,0,0,0)");
+      mv.style.backgroundColor = "transparent";
+    };
+    applyTransparency();
+    mv.addEventListener("load", applyTransparency);
+    return () => mv.removeEventListener("load", applyTransparency);
+  }, [pendingSrc, meta?.studioBackgroundUrl]);
+
   const handlePhotoCapture = useCallback(async () => {
     const mv = modelViewerRef.current as any;
     if (!mv) return;
@@ -752,7 +765,27 @@ export default function Studio() {
         }}
         data-testid="studio-page"
       >
-        <div className="flex-1 relative min-h-0" style={hasBgPhoto ? envStyle : undefined}>
+        <div className="flex-1 relative min-h-0">
+          {/* Background photo as <img> — immune to iOS Safari flex+min-h-0 CSS background-image bug */}
+          {hasBgPhoto && (
+            <img
+              src={meta!.studioBackgroundUrl!}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: bgScale <= 100 ? "cover" : "none",
+                objectPosition: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
+                transform: bgScale > 100 ? `scale(${bgScale / 100})` : undefined,
+                transformOrigin: `${meta!.studioFocalX ?? 50}% ${meta!.studioFocalY ?? 50}%`,
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+
           <div
             style={{
               position: "absolute", top: 0, left: 0, zIndex: 10,
@@ -782,6 +815,7 @@ export default function Studio() {
               style={{
                 ...studioModelViewerStyle,
                 opacity: displaySrc === pendingSrc ? 1 : 0.6,
+                zIndex: 1,
                 ["--mv-background-color" as string]: "rgba(0,0,0,0)",
                 backgroundColor: "transparent",
               }}
