@@ -782,6 +782,8 @@ export default function Studio() {
               style={{
                 ...studioModelViewerStyle,
                 opacity: displaySrc === pendingSrc ? 1 : 0.6,
+                ["--mv-background-color" as string]: "rgba(0,0,0,0)",
+                backgroundColor: "transparent",
               }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
