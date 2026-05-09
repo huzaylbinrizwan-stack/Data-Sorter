@@ -752,7 +752,7 @@ export default function Studio() {
         }}
         data-testid="studio-page"
       >
-        <div className="flex-1 relative min-h-0">
+        <div className="flex-1 relative min-h-0" style={hasBgPhoto ? envStyle : undefined}>
           <div
             style={{
               position: "absolute", top: 0, left: 0, zIndex: 10,
@@ -782,9 +782,6 @@ export default function Studio() {
               style={{
                 ...studioModelViewerStyle,
                 opacity: displaySrc === pendingSrc ? 1 : 0.6,
-                // Transparent WebGL canvas so room background shows through on all devices
-                ["--mv-background-color" as string]: "rgba(0,0,0,0)",
-                backgroundColor: "transparent",
               }}
               interaction-prompt="none"
               data-testid="studio-model-viewer"
