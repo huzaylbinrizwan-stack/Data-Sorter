@@ -640,6 +640,7 @@ export default function Editor() {
   const [hotspotPos, setHotspotPos] = useState({ x: 50, y: 50 });
   const [isDragging, setIsDragging] = useState(false);
   const hotspotOverlayRef = useRef<HTMLDivElement>(null);
+  const modelViewerRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -703,6 +704,11 @@ export default function Editor() {
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
     setHotspotPos({ x, y });
+    if (modelViewerRef.current) {
+      const hx = x / 100 - 0.5;
+      const hz = y / 100 - 0.5;
+      modelViewerRef.current.setAttribute("camera-target", `${hx}m 0m ${hz}m`);
+    }
   }, [isDragging]);
 
   const handleEnvChange = async (env: string) => {
@@ -963,6 +969,13 @@ export default function Editor() {
   };
 
   const getEnvStyle = (env: string): React.CSSProperties => {
+    if (project?.studioBackgroundUrl) {
+      return {
+        backgroundImage: `url(${project.studioBackgroundUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: `${project.studioFocalX ?? 50}% ${project.studioFocalY ?? 50}%`,
+      };
+    }
     const found = ENVIRONMENTS.find((e) => e.value === env);
     if (!found) return { background: "#0a0a0a" };
     if (found.bg.includes("gradient")) return { backgroundImage: found.bg };
@@ -1376,42 +1389,43 @@ export default function Editor() {
 
         {/* Center — Model Viewer */}
         <main className="flex-1 relative overflow-hidden" style={getEnvStyle(project.environment)}>
-          {!hotspotMode ? (
-            project.modelUrl ? (
-              <model-viewer
-                src={project.modelUrl}
-                alt={project.name}
-                camera-controls
-                auto-rotate
-                ar
-                ar-modes="webxr scene-viewer quick-look"
-                shadow-intensity="1"
-                disable-zoom={!project.isScalable || undefined}
-                camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
-                style={{ width: "100%", height: "100%" }}
-                interaction-prompt="none"
-                data-testid="model-viewer"
-              />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center">
-                  <Box className="w-10 h-10 text-primary/40" />
-                </div>
-                <p className="text-sm text-muted-foreground font-light">
-                  Upload a .GLB or .GLTF file to preview
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => triggerUpload({ kind: "model" })}
-                  data-testid="button-upload-empty"
-                >
-                  <Upload className="w-4 h-4 mr-2" /> Add 3D Model
-                </Button>
-              </div>
-            )
+          {project.modelUrl ? (
+            <model-viewer
+              ref={modelViewerRef}
+              src={project.modelUrl}
+              alt={project.name}
+              camera-controls
+              auto-rotate
+              ar
+              ar-modes="webxr scene-viewer quick-look"
+              shadow-intensity="1"
+              disable-zoom={!project.isScalable || undefined}
+              camera-target={`${project.hotspotX}m ${project.hotspotY}m ${project.hotspotZ}m`}
+              style={{ width: "100%", height: "100%" }}
+              interaction-prompt="none"
+              data-testid="model-viewer"
+            />
           ) : (
-            /* Hotspot Mode Overlay */
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <div className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center">
+                <Box className="w-10 h-10 text-primary/40" />
+              </div>
+              <p className="text-sm text-muted-foreground font-light">
+                Upload a .GLB or .GLTF file to preview
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => triggerUpload({ kind: "model" })}
+                data-testid="button-upload-empty"
+              >
+                <Upload className="w-4 h-4 mr-2" /> Add 3D Model
+              </Button>
+            </div>
+          )}
+
+          {/* Hotspot Mode Overlay — sits on top of model-viewer */}
+          {hotspotMode && (
             <div
               ref={hotspotOverlayRef}
               className="absolute inset-0 cursor-crosshair select-none"
