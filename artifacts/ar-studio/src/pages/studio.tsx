@@ -816,6 +816,8 @@ export default function Studio() {
                 <ThreeStudioViewer
                   modelUrl={pendingSrc}
                   theme={meta!.environment as "dark-alcove" | "warm-minimal"}
+                  pedestalColor={meta!.pedestalColor}
+                  pedestalHeight={meta!.pedestalHeight}
                   onLoad={() => {
                     setLoadProgress(100);
                   }}

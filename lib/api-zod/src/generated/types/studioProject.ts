@@ -50,6 +50,17 @@ export interface StudioProject {
   studioModelSize?: number | null;
   /** @nullable */
   studioBackgroundScale?: number | null;
+  /**
+   * @nullable
+   * @pattern ^#[0-9a-fA-F]{6}$
+   */
+  pedestalColor?: string | null;
+  /**
+   * @minimum 0.01
+   * @maximum 1.5
+   * @nullable
+   */
+  pedestalHeight?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

@@ -8,6 +8,8 @@ type Theme = "dark-alcove" | "warm-minimal";
 interface ThreeStudioViewerProps {
   modelUrl: string;
   theme: Theme;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
   onLoad?: () => void;
 }
 
@@ -135,12 +137,17 @@ function createArchFrameGeometry(
 
 function DarkAlcoveScene({
   modelUrl,
+  pedestalColor,
+  pedestalHeight,
   onLoad,
 }: {
   modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalRadius, setPedestalRadius] = useState(0.4);
+  const h = pedestalHeight ?? 0.08;
 
   const floorMat = useMemo(
     () => new THREE.MeshStandardMaterial({ color: "#1c1c1e", roughness: 0.9, metalness: 0.05 }),
@@ -151,8 +158,8 @@ function DarkAlcoveScene({
     []
   );
   const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#252527", roughness: 0.7, metalness: 0.1 }),
-    []
+    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#252527", roughness: 0.7, metalness: 0.1 }),
+    [pedestalColor]
   );
   const archMat = useMemo(
     () => new THREE.MeshStandardMaterial({ color: "#141416", roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide }),
@@ -211,13 +218,13 @@ function DarkAlcoveScene({
         <primitive object={archMat} attach="material" />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[0, 0.04, 0]}>
-        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.02, 0.08, 48]} />
+      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
+        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.02, h, 48]} />
         <primitive object={pedestalMat} attach="material" />
       </mesh>
 
       <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={0.08} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+        <ModelOnPedestal url={modelUrl} pedestalTopY={h} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
       </Suspense>
     </>
   );
@@ -225,12 +232,17 @@ function DarkAlcoveScene({
 
 function WarmMinimalScene({
   modelUrl,
+  pedestalColor,
+  pedestalHeight,
   onLoad,
 }: {
   modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalSize, setPedestalSize] = useState({ w: 0.8, d: 0.8 });
+  const h = pedestalHeight ?? 0.05;
 
   const setPedestalRadius = (r: number) => {
     setPedestalSize({ w: r * 1.6, d: r * 1.6 });
@@ -249,8 +261,8 @@ function WarmMinimalScene({
     []
   );
   const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#f0ebe3", roughness: 0.6, metalness: 0 }),
-    []
+    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#f0ebe3", roughness: 0.6, metalness: 0 }),
+    [pedestalColor]
   );
 
   return (
@@ -291,19 +303,19 @@ function WarmMinimalScene({
         <primitive object={panelMat} attach="material" />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[0, 0.025, 0]}>
-        <boxGeometry args={[pedestalSize.w, 0.05, pedestalSize.d]} />
+      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
+        <boxGeometry args={[pedestalSize.w, h, pedestalSize.d]} />
         <primitive object={pedestalMat} attach="material" />
       </mesh>
 
       <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={0.05} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+        <ModelOnPedestal url={modelUrl} pedestalTopY={h} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
       </Suspense>
     </>
   );
 }
 
-export function ThreeStudioViewer({ modelUrl, theme, onLoad }: ThreeStudioViewerProps) {
+export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
 
   return (
@@ -331,10 +343,10 @@ export function ThreeStudioViewer({ modelUrl, theme, onLoad }: ThreeStudioViewer
         />
 
         {theme === "dark-alcove" && (
-          <DarkAlcoveScene modelUrl={modelUrl} onLoad={onLoad} />
+          <DarkAlcoveScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
         )}
         {theme === "warm-minimal" && (
-          <WarmMinimalScene modelUrl={modelUrl} onLoad={onLoad} />
+          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
         )}
       </Canvas>
     </div>

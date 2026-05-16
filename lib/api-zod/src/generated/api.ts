@@ -74,6 +74,11 @@ export const listProjectsResponseStudioSidebarOpacityMin = 0;
 export const listProjectsResponseStudioSidebarOpacityMax = 1;
 
 export const listProjectsResponseStudioAccentColorDefault = `#C9A84C`;
+export const listProjectsResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const listProjectsResponsePedestalHeightMin = 0.01;
+export const listProjectsResponsePedestalHeightMax = 1.5;
 
 export const ListProjectsResponseItem = zod.object({
   id: zod.number(),
@@ -120,6 +125,15 @@ export const ListProjectsResponseItem = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(listProjectsResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(listProjectsResponsePedestalHeightMin)
+    .max(listProjectsResponsePedestalHeightMax)
+    .nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -172,6 +186,11 @@ export const getProjectResponseStudioSidebarOpacityMin = 0;
 export const getProjectResponseStudioSidebarOpacityMax = 1;
 
 export const getProjectResponseStudioAccentColorDefault = `#C9A84C`;
+export const getProjectResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const getProjectResponsePedestalHeightMin = 0.01;
+export const getProjectResponsePedestalHeightMax = 1.5;
 
 export const GetProjectResponse = zod.object({
   id: zod.number(),
@@ -218,6 +237,15 @@ export const GetProjectResponse = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(getProjectResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(getProjectResponsePedestalHeightMin)
+    .max(getProjectResponsePedestalHeightMax)
+    .nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -233,6 +261,12 @@ export const UpdateProjectParams = zod.object({
 
 export const updateProjectBodyStudioSidebarOpacityMin = 0;
 export const updateProjectBodyStudioSidebarOpacityMax = 1;
+
+export const updateProjectBodyPedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const updateProjectBodyPedestalHeightMin = 0.01;
+export const updateProjectBodyPedestalHeightMax = 1.5;
 
 export const UpdateProjectBody = zod.object({
   name: zod.string().optional(),
@@ -276,6 +310,15 @@ export const UpdateProjectBody = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(updateProjectBodyPedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(updateProjectBodyPedestalHeightMin)
+    .max(updateProjectBodyPedestalHeightMax)
+    .nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -284,6 +327,11 @@ export const updateProjectResponseStudioSidebarOpacityMin = 0;
 export const updateProjectResponseStudioSidebarOpacityMax = 1;
 
 export const updateProjectResponseStudioAccentColorDefault = `#C9A84C`;
+export const updateProjectResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const updateProjectResponsePedestalHeightMin = 0.01;
+export const updateProjectResponsePedestalHeightMax = 1.5;
 
 export const UpdateProjectResponse = zod.object({
   id: zod.number(),
@@ -330,6 +378,15 @@ export const UpdateProjectResponse = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(updateProjectResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(updateProjectResponsePedestalHeightMin)
+    .max(updateProjectResponsePedestalHeightMax)
+    .nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -356,6 +413,11 @@ export const publishProjectResponseStudioSidebarOpacityMin = 0;
 export const publishProjectResponseStudioSidebarOpacityMax = 1;
 
 export const publishProjectResponseStudioAccentColorDefault = `#C9A84C`;
+export const publishProjectResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const publishProjectResponsePedestalHeightMin = 0.01;
+export const publishProjectResponsePedestalHeightMax = 1.5;
 
 export const PublishProjectResponse = zod.object({
   id: zod.number(),
@@ -402,6 +464,15 @@ export const PublishProjectResponse = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(publishProjectResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(publishProjectResponsePedestalHeightMin)
+    .max(publishProjectResponsePedestalHeightMax)
+    .nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -421,6 +492,11 @@ export const unpublishProjectResponseStudioSidebarOpacityMin = 0;
 export const unpublishProjectResponseStudioSidebarOpacityMax = 1;
 
 export const unpublishProjectResponseStudioAccentColorDefault = `#C9A84C`;
+export const unpublishProjectResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const unpublishProjectResponsePedestalHeightMin = 0.01;
+export const unpublishProjectResponsePedestalHeightMax = 1.5;
 
 export const UnpublishProjectResponse = zod.object({
   id: zod.number(),
@@ -467,6 +543,15 @@ export const UnpublishProjectResponse = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(unpublishProjectResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(unpublishProjectResponsePedestalHeightMin)
+    .max(unpublishProjectResponsePedestalHeightMax)
+    .nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -486,6 +571,11 @@ export const getStudioProjectMetaResponseStudioSidebarOpacityMin = 0;
 export const getStudioProjectMetaResponseStudioSidebarOpacityMax = 1;
 
 export const getStudioProjectMetaResponseStudioAccentColorDefault = `#C9A84C`;
+export const getStudioProjectMetaResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const getStudioProjectMetaResponsePedestalHeightMin = 0.01;
+export const getStudioProjectMetaResponsePedestalHeightMax = 1.5;
 
 export const GetStudioProjectMetaResponse = zod
   .object({
@@ -532,6 +622,15 @@ export const GetStudioProjectMetaResponse = zod
     studioModelY: zod.number().nullish(),
     studioModelSize: zod.number().nullish(),
     studioBackgroundScale: zod.number().nullish(),
+    pedestalColor: zod
+      .string()
+      .regex(getStudioProjectMetaResponsePedestalColorRegExp)
+      .nullish(),
+    pedestalHeight: zod
+      .number()
+      .min(getStudioProjectMetaResponsePedestalHeightMin)
+      .max(getStudioProjectMetaResponsePedestalHeightMax)
+      .nullish(),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -550,6 +649,11 @@ export const getStudioProjectResponseStudioSidebarOpacityMin = 0;
 export const getStudioProjectResponseStudioSidebarOpacityMax = 1;
 
 export const getStudioProjectResponseStudioAccentColorDefault = `#C9A84C`;
+export const getStudioProjectResponsePedestalColorRegExp = new RegExp(
+  "^#[0-9a-fA-F]{6}$",
+);
+export const getStudioProjectResponsePedestalHeightMin = 0.01;
+export const getStudioProjectResponsePedestalHeightMax = 1.5;
 
 export const GetStudioProjectResponse = zod.object({
   id: zod.number(),
@@ -594,6 +698,15 @@ export const GetStudioProjectResponse = zod.object({
   studioModelY: zod.number().nullish(),
   studioModelSize: zod.number().nullish(),
   studioBackgroundScale: zod.number().nullish(),
+  pedestalColor: zod
+    .string()
+    .regex(getStudioProjectResponsePedestalColorRegExp)
+    .nullish(),
+  pedestalHeight: zod
+    .number()
+    .min(getStudioProjectResponsePedestalHeightMin)
+    .max(getStudioProjectResponsePedestalHeightMax)
+    .nullish(),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -717,6 +830,10 @@ export const getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityMin 
 export const getDashboardStatsResponseRecentProjectsItemStudioSidebarOpacityMax = 1;
 
 export const getDashboardStatsResponseRecentProjectsItemStudioAccentColorDefault = `#C9A84C`;
+export const getDashboardStatsResponseRecentProjectsItemPedestalColorRegExp =
+  new RegExp("^#[0-9a-fA-F]{6}$");
+export const getDashboardStatsResponseRecentProjectsItemPedestalHeightMin = 0.01;
+export const getDashboardStatsResponseRecentProjectsItemPedestalHeightMax = 1.5;
 
 export const GetDashboardStatsResponse = zod.object({
   totalProjects: zod.number(),
@@ -774,6 +891,15 @@ export const GetDashboardStatsResponse = zod.object({
       studioModelY: zod.number().nullish(),
       studioModelSize: zod.number().nullish(),
       studioBackgroundScale: zod.number().nullish(),
+      pedestalColor: zod
+        .string()
+        .regex(getDashboardStatsResponseRecentProjectsItemPedestalColorRegExp)
+        .nullish(),
+      pedestalHeight: zod
+        .number()
+        .min(getDashboardStatsResponseRecentProjectsItemPedestalHeightMin)
+        .max(getDashboardStatsResponseRecentProjectsItemPedestalHeightMax)
+        .nullish(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),

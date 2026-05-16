@@ -776,6 +776,13 @@ components:
           type: ["number", "null"]
         studioBackgroundScale:
           type: ["number", "null"]
+        pedestalColor:
+          type: ["string", "null"]
+          pattern: '^#[0-9a-fA-F]{6}$'
+        pedestalHeight:
+          type: ["number", "null"]
+          minimum: 0.01
+          maximum: 1.5
         folderId:
           type: ["integer", "null"]
         publicSlug:
@@ -915,6 +922,13 @@ components:
           type: ["number", "null"]
         studioBackgroundScale:
           type: ["number", "null"]
+        pedestalColor:
+          type: ["string", "null"]
+          pattern: '^#[0-9a-fA-F]{6}$'
+        pedestalHeight:
+          type: ["number", "null"]
+          minimum: 0.01
+          maximum: 1.5
 
     StudioProjectMeta:
       type: object
@@ -981,6 +995,13 @@ components:
           type: ["number", "null"]
         studioBackgroundScale:
           type: ["number", "null"]
+        pedestalColor:
+          type: ["string", "null"]
+          pattern: '^#[0-9a-fA-F]{6}$'
+        pedestalHeight:
+          type: ["number", "null"]
+          minimum: 0.01
+          maximum: 1.5
       required:
         - id
         - name
@@ -1097,6 +1118,13 @@ components:
           type: ["number", "null"]
         studioBackgroundScale:
           type: ["number", "null"]
+        pedestalColor:
+          type: ["string", "null"]
+          pattern: '^#[0-9a-fA-F]{6}$'
+        pedestalHeight:
+          type: ["number", "null"]
+          minimum: 0.01
+          maximum: 1.5
         publicSlug:
           type: string
         materials:

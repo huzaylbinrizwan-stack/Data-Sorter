@@ -31,6 +31,8 @@ export const projectsTable = pgTable("projects", {
   studioModelY: real("studio_model_y"),
   studioModelSize: real("studio_model_size"),
   studioBackgroundScale: real("studio_background_scale"),
+  pedestalColor: text("pedestal_color"),
+  pedestalHeight: real("pedestal_height"),
   folderId: integer("folder_id"),
   publicSlug: text("public_slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

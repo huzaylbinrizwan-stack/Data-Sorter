@@ -664,6 +664,10 @@ export default function Editor() {
   const [sidebarTextColorVal, setSidebarTextColorVal] = useState("#ffffff");
   const [sidebarTextColorAuto, setSidebarTextColorAuto] = useState(true);
   const textColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [localPedestalColor, setLocalPedestalColor] = useState<string>("#252527");
+  const [localPedestalHeight, setLocalPedestalHeight] = useState<number>(8);
+  const pedestalColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pedestalHeightDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bgPhotoFileInputRef = useRef<HTMLInputElement>(null);
   const [bgUploadProgress, setBgUploadProgress] = useState<number | null>(null);
   const [bgFocalX, setBgFocalX] = useState<number>(50);
@@ -694,8 +698,12 @@ export default function Editor() {
       setLocalModelY(project.studioModelY ?? null);
       setLocalModelSize(project.studioModelSize ?? 100);
       setLocalBgScale(project.studioBackgroundScale ?? 100);
+      const defaultPedestalColor = project.environment === "warm-minimal" ? "#f0ebe3" : "#252527";
+      const defaultPedestalHeight = project.environment === "warm-minimal" ? 5 : 8;
+      setLocalPedestalColor(project.pedestalColor ?? defaultPedestalColor);
+      setLocalPedestalHeight(Math.round((project.pedestalHeight ?? (defaultPedestalHeight / 100)) * 100));
     }
-  }, [project?.id]);
+  }, [project?.id, project?.environment]);
 
   const handleSavePlacement = async () => {
     if (!project) return;
@@ -926,6 +934,24 @@ export default function Editor() {
     }, 300);
   };
 
+  const handlePedestalColorChange = (color: string) => {
+    setLocalPedestalColor(color);
+    if (pedestalColorDebounceRef.current) clearTimeout(pedestalColorDebounceRef.current);
+    pedestalColorDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { pedestalColor: color } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handlePedestalHeightChange = (sliderValue: number) => {
+    setLocalPedestalHeight(sliderValue);
+    if (pedestalHeightDebounceRef.current) clearTimeout(pedestalHeightDebounceRef.current);
+    pedestalHeightDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { pedestalHeight: sliderValue / 100 } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
   const handleBgPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1144,6 +1170,47 @@ export default function Editor() {
                 </button>
               ))}
             </div>
+
+            {(project.environment === "dark-alcove" || project.environment === "warm-minimal") && (
+              <div className="mt-4 pt-4 border-t border-border space-y-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Pedestal</p>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={localPedestalColor}
+                      onChange={(e) => handlePedestalColorChange(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent p-0.5"
+                      data-testid="input-pedestal-color"
+                    />
+                    <span className="text-xs text-muted-foreground font-mono">{localPedestalColor}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Height</Label>
+                    <span className="text-xs text-muted-foreground">{localPedestalHeight}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={150}
+                    step={1}
+                    value={localPedestalHeight}
+                    onChange={(e) => handlePedestalHeightChange(Number(e.target.value))}
+                    className="w-full accent-primary"
+                    data-testid="slider-pedestal-height"
+                  />
+                  <div className="flex justify-between">
+                    <span className="text-[10px] text-muted-foreground/60">Low</span>
+                    <span className="text-[10px] text-muted-foreground/60">High</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Background Photo Section — hidden until mobile rendering is fixed (Task #43) */}
