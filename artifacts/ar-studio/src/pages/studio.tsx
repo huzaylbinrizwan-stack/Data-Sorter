@@ -41,7 +41,7 @@ function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectNam
     <div
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
       style={{
-        background: "linear-gradient(135deg, #0d0d0d 0%, #1a1410 50%, #0d0d0d 100%)",
+        background: "linear-gradient(135deg, #1a0f08 0%, #0f0804 50%, #1a0f08 100%)",
         opacity,
         transition: "opacity 0.5s ease",
         pointerEvents: opacity === 0 ? "none" : "auto",
@@ -239,12 +239,20 @@ function VariationSidebar({
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? "Collapse variations" : "Expand variations"}
-        className="flex items-center justify-center backdrop-blur-md shadow-xl transition-all border-l border-y rounded-l-xl self-center shrink-0"
-        style={{ ...glassStyle, width: "22px", height: "56px" }}
+        className="flex items-center justify-center shadow-xl transition-all rounded-l-lg self-center shrink-0"
+        style={{
+          width: "18px",
+          height: "44px",
+          background: "rgba(15,10,5,0.72)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRight: "none",
+        }}
       >
         {isOpen
-          ? <ChevronLeft className={`w-3 h-3 ${subColor}`} style={subTextStyle} />
-          : <ChevronRight className={`w-3 h-3 ${subColor}`} style={subTextStyle} />}
+          ? <ChevronLeft className="w-3 h-3 text-white/55" />
+          : <ChevronRight className="w-3 h-3 text-white/55" />}
       </button>
 
       {/* Drawer panel — always mounted, slides via max-width */}
@@ -446,7 +454,7 @@ function MeasurementsOverlay({
   if (items.length === 0) return null;
 
   return (
-    <div ref={panelRef} className="absolute bottom-16 left-4" style={{ zIndex: 25 }}>
+    <div ref={panelRef} className="absolute bottom-24 left-4" style={{ zIndex: 25 }}>
       {/* Toggle button */}
       <button
         data-testid="button-measurements-toggle"
@@ -710,7 +718,7 @@ export default function Studio() {
   const bgScale = meta?.studioBackgroundScale ?? 100;
   const envStyle = hasBgPhoto
     ? { backgroundColor: "#1a1410" }
-    : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES.black) : { background: "#0a0a0a" };
+    : meta ? (ENV_STYLES[meta.environment] ?? ENV_STYLES["walls-plants"]) : ENV_STYLES["walls-plants"];
 
   const hasModelPlacement = meta && meta.studioModelX != null && meta.studioModelY != null && meta.studioModelSize != null;
   const studioModelViewerStyle: React.CSSProperties = hasModelPlacement
@@ -853,77 +861,107 @@ export default function Studio() {
           {projectSlug && (
             <MeasurementsOverlay slug={projectSlug} isLightBg={isLightBg} metaReady={!!meta} accentColor={accentColor} />
           )}
-        </div>
 
-        <footer
-          className={`flex items-center justify-between px-4 py-3 shrink-0 ${isLightBg ? "border-t border-gray-200/60" : "border-t border-white/8"}`}
-          style={{ background: "rgba(0,0,0,0.15)" }}
-        >
-          <div className="flex flex-col min-w-0">
-            {meta?.name && (
-              <p className={`text-sm font-semibold tracking-wide truncate leading-tight ${textClass}`}>
-                {meta.name}
-              </p>
-            )}
-            {meta?.companyName && (
-              <p
-                className="text-[10px] font-light tracking-widest uppercase truncate"
-                style={{ color: accentColor, opacity: 0.8 }}
-              >
-                {meta.companyName}
-              </p>
-            )}
-          </div>
-          {pendingSrc && (
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                data-testid="footer-photo-capture"
-                onClick={handlePhotoCapture}
-                title="Save photo"
-                className={`relative flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
-                  isLightBg
-                    ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                    : "bg-white/10 border-white/20 text-white/80 hover:bg-white/15"
-                }`}
-              >
-                <Camera className="w-4 h-4" />
-                <span
-                  className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none"
+          {/* Floating pill action bar */}
+          <div
+            className="absolute left-0 right-0 flex items-center justify-center px-4"
+            style={{
+              zIndex: 22,
+              pointerEvents: "none",
+              bottom: "max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))",
+            }}
+          >
+            <div
+              className="flex items-center w-full max-w-md px-4 py-2.5 rounded-2xl shadow-2xl"
+              style={{
+                background: isLightBg
+                  ? "rgba(255,255,255,0.82)"
+                  : "rgba(15,8,3,0.72)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: isLightBg
+                  ? "1px solid rgba(0,0,0,0.07)"
+                  : "1px solid rgba(255,255,255,0.07)",
+                pointerEvents: "auto",
+              }}
+            >
+              {/* Left zone: brand/product name */}
+              <div className="flex flex-col min-w-0 flex-1">
+                {meta?.name && (
+                  <p
+                    className="text-xs font-semibold tracking-wide truncate leading-tight"
+                    style={{ color: isLightBg ? "#1a1410" : "#f0ebe4" }}
+                  >
+                    {meta.name}
+                  </p>
+                )}
+                {meta?.companyName && (
+                  <p
+                    className="text-[10px] font-light tracking-widest uppercase truncate"
+                    style={{ color: accentColor, opacity: 0.8 }}
+                  >
+                    {meta.companyName}
+                  </p>
+                )}
+              </div>
+
+              {/* Center zone: camera capture */}
+              {pendingSrc && (
+                <div className="flex items-center justify-center mx-3 shrink-0">
+                  <button
+                    data-testid="footer-photo-capture"
+                    onClick={handlePhotoCapture}
+                    title="Save photo"
+                    className="relative flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90"
+                    style={{
+                      background: isLightBg ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.1)",
+                      border: isLightBg ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.12)",
+                      color: isLightBg ? "#1a1410" : "rgba(255,255,255,0.8)",
+                    }}
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span
+                      className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none"
+                      style={{
+                        background: accentColor,
+                        color: "#000",
+                        opacity: savedFeedback ? 1 : 0,
+                        transition: "opacity 0.25s ease",
+                      }}
+                    >
+                      Saved!
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Right zone: AR pill button */}
+              {pendingSrc && (
+                <button
+                  data-testid="footer-view-in-ar"
+                  onClick={() => {
+                    if (isDesktop) {
+                      setShowQrModal(true);
+                    } else {
+                      arButtonRef.current?.click();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-full text-sm font-semibold transition-all active:scale-95 shrink-0"
                   style={{
-                    background: accentColor,
-                    color: "#000",
-                    opacity: savedFeedback ? 1 : 0,
-                    transition: "opacity 0.25s ease",
+                    background: "#1a1410",
+                    color: "#f5f0ea",
+                    padding: "0.55rem 1.1rem",
+                    letterSpacing: "0.02em",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
                   }}
                 >
-                  Saved!
-                </span>
-              </button>
-
-              <button
-                data-testid="footer-view-in-ar"
-                onClick={() => {
-                  if (isDesktop) {
-                    setShowQrModal(true);
-                  } else {
-                    arButtonRef.current?.click();
-                  }
-                }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-wide shadow-lg transition-all active:scale-95 ${
-                  isLightBg
-                    ? "bg-gray-900 text-white hover:bg-gray-700 shadow-black/30"
-                    : ""
-                }`}
-                style={{
-                  letterSpacing: "0.04em",
-                  ...(!isLightBg ? { background: accentColor, color: "#000" } : {}),
-                }}
-              >
-                View in AR
-              </button>
+                  Place in Your Space
+                  <span style={{ fontSize: "0.7rem", opacity: 0.85 }}>✦</span>
+                </button>
+              )}
             </div>
-          )}
-        </footer>
+          </div>
+        </div>
       </div>
 
       {showQrModal && (
