@@ -706,7 +706,7 @@ export default function Studio() {
     );
   }
 
-  const hasBgPhoto = false;
+  const hasBgPhoto = false; // TODO: restore to !!(meta?.studioBackgroundUrl) once mobile rendering is confirmed (Task #43)
   const bgScale = meta?.studioBackgroundScale ?? 100;
   const envStyle = hasBgPhoto
     ? { backgroundColor: "#1a1410" }

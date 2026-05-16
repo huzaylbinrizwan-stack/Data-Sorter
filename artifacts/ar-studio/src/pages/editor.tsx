@@ -62,6 +62,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const PHOTO_BG_ENABLED = false; // TODO: re-enable once room photo renders correctly on real iOS/Android (Task #43)
+
 const ENVIRONMENTS = [
   { value: "black", label: "Simple Black", bg: "#0a0a0a", desc: "Pure black backdrop", hotspotX: 0, hotspotY: 0, hotspotZ: 0 },
   { value: "white", label: "Simple White", bg: "#fafafa", desc: "Pure white backdrop", hotspotX: 0, hotspotY: 0, hotspotZ: 0 },
@@ -1142,8 +1144,8 @@ export default function Editor() {
             </div>
           </div>
 
-          {/* Background Photo Section — hidden until mobile rendering is fixed */}
-          {false && (
+          {/* Background Photo Section — hidden until mobile rendering is fixed (Task #43) */}
+          {PHOTO_BG_ENABLED && (
           <div className="p-5 border-b border-border">
             <input
               ref={bgPhotoFileInputRef}
