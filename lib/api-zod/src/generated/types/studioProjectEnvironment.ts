@@ -17,4 +17,6 @@ export const StudioProjectEnvironment = {
   "walls-plants": "walls-plants",
   "dark-alcove": "dark-alcove",
   "warm-minimal": "warm-minimal",
+  "studio-grey": "studio-grey",
+  "natural-arch": "natural-arch",
 } as const;

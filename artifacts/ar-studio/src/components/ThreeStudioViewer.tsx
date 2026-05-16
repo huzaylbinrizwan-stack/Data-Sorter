@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-type Theme = "dark-alcove" | "warm-minimal";
+type Theme = "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch";
 
 interface ThreeStudioViewerProps {
   modelUrl: string;
@@ -150,11 +150,11 @@ function DarkAlcoveScene({
   const h = pedestalHeight ?? 0.08;
 
   const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#1c1c1e", roughness: 0.9, metalness: 0.05 }),
+    () => new THREE.MeshStandardMaterial({ color: "#6e6a66", roughness: 0.9, metalness: 0.05 }),
     []
   );
   const wallMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#1a1a1c", roughness: 0.85, metalness: 0.05 }),
+    () => new THREE.MeshStandardMaterial({ color: "#787470", roughness: 0.85, metalness: 0.05 }),
     []
   );
   const pedestalMat = useMemo(
@@ -162,7 +162,7 @@ function DarkAlcoveScene({
     [pedestalColor]
   );
   const archMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#141416", roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide }),
+    () => new THREE.MeshStandardMaterial({ color: "#5a5653", roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide }),
     []
   );
 
@@ -173,11 +173,11 @@ function DarkAlcoveScene({
 
   return (
     <>
-      <ambientLight intensity={0.35} color="#c8d8f0" />
+      <ambientLight intensity={0.55} color="#c8d8f0" />
       <directionalLight
         position={[-2, 6, 3]}
-        intensity={3.5}
-        color="#ddeeff"
+        intensity={5.0}
+        color="#eef4ff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0005}
@@ -197,23 +197,27 @@ function DarkAlcoveScene({
         castShadow={false}
       />
 
+      {/* Floor — widened to 14×14 */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[8, 8]} />
+        <planeGeometry args={[14, 14]} />
         <primitive object={floorMat} attach="material" />
       </mesh>
 
-      <mesh receiveShadow position={[0, 2.5, -2.5]}>
-        <boxGeometry args={[8, 5, 0.1]} />
+      {/* Back wall — pushed to z=-6, 14 wide */}
+      <mesh receiveShadow position={[0, 2.5, -6]}>
+        <boxGeometry args={[14, 5, 0.1]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
-      <mesh receiveShadow position={[-3, 2.5, 0]}>
-        <boxGeometry args={[0.1, 5, 5]} />
+      {/* Left side wall — pushed to x=-7 */}
+      <mesh receiveShadow position={[-7, 2.5, -3]}>
+        <boxGeometry args={[0.1, 5, 12]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
-      <mesh receiveShadow position={[3, 2.5, 0]}>
-        <boxGeometry args={[0.1, 5, 5]} />
+      {/* Right side wall — pushed to x=+7 */}
+      <mesh receiveShadow position={[7, 2.5, -3]}>
+        <boxGeometry args={[0.1, 5, 12]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
@@ -293,15 +297,15 @@ function WarmMinimalScene({
         <primitive object={floorMat} attach="material" />
       </mesh>
 
-      {/* Back wall — pushed back for more depth */}
+      {/* Back wall */}
       <mesh receiveShadow position={[0, 2.5, -3.5]}>
         <boxGeometry args={[10, 5, 0.1]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
-      {/* Ceiling */}
-      <mesh receiveShadow position={[0, 3, 0]}>
-        <boxGeometry args={[10, 0.08, 10]} />
+      {/* Ceiling — raised to y=5.5 */}
+      <mesh receiveShadow position={[0, 5.5, 0]}>
+        <boxGeometry args={[12, 0.08, 12]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
@@ -345,6 +349,315 @@ function WarmMinimalScene({
   );
 }
 
+const FLUTING_RIB_COUNT = 16;
+
+function FlutingRibs({ zPos }: { zPos: number }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+    const positions: number[] = [];
+    for (let i = 0; i < 22; i++) {
+      positions.push(-1.3 + i * (2.6 / 21));
+    }
+    const filtered = positions.slice(3, 19);
+    const matrix = new THREE.Matrix4();
+    filtered.forEach((x, idx) => {
+      matrix.makeTranslation(x, 1.8, zPos);
+      meshRef.current!.setMatrixAt(idx, matrix);
+    });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [zPos]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, FLUTING_RIB_COUNT]}>
+      <boxGeometry args={[0.07, 3.6, 0.09]} />
+      <meshStandardMaterial color="#d0c4a8" roughness={0.85} />
+    </instancedMesh>
+  );
+}
+
+function GreyStudioScene({
+  modelUrl,
+  pedestalColor,
+  pedestalHeight,
+  onLoad,
+}: {
+  modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  onLoad?: () => void;
+}) {
+  const [pedestalRadius, setPedestalRadius] = useState(0.4);
+  const pedestalTopY = 0.12;
+
+  const floorMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#8a8480", roughness: 0.9, metalness: 0 }),
+    []
+  );
+  const mainMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#8a8480", roughness: 0.85, metalness: 0 }),
+    []
+  );
+  const darkerMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#7e7a76", roughness: 0.88, metalness: 0 }),
+    []
+  );
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#8a8480", roughness: 0.7, metalness: 0 }),
+    [pedestalColor]
+  );
+  const shadeMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e8e0d0", roughness: 0.5, metalness: 0, emissive: "#fff8e0", emissiveIntensity: 0.3, side: THREE.DoubleSide }),
+    []
+  );
+  const potMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#7e7a76", roughness: 0.8, metalness: 0 }),
+    []
+  );
+  const plantMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#4a5040", roughness: 0.9, metalness: 0 }),
+    []
+  );
+
+  const leftArchGeo = useMemo(
+    () => createArchFrameGeometry(2.2, 3.8, 1.1, 1.6, 0.32),
+    []
+  );
+  const rightArchGeo = useMemo(
+    () => createArchFrameGeometry(1.6, 2.8, 0.9, 1.1, 0.32),
+    []
+  );
+
+  return (
+    <>
+      <ambientLight intensity={0.5} color="#e8e0d8" />
+      <directionalLight
+        position={[2, 6, 2]}
+        intensity={2.2}
+        color="#fff8f0"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+        shadow-camera-near={0.1}
+        shadow-camera-far={20}
+      />
+      <hemisphereLight args={["#ccc8c0", "#a0988e", 0.4]} />
+      <pointLight position={[-0.7, 1.5, -1.3]} intensity={1.5} color="#fff8e0" distance={2.5} />
+
+      {/* Floor */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[12, 12]} />
+        <primitive object={floorMat} attach="material" />
+      </mesh>
+
+      {/* Stage disc platform */}
+      <mesh castShadow receiveShadow position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[1.6, 1.6, 0.12, 64]} />
+        <primitive object={darkerMat} attach="material" />
+      </mesh>
+
+      {/* Left arch panel */}
+      <mesh castShadow receiveShadow position={[-1.05, 0, -1.9]}>
+        <primitive object={leftArchGeo} attach="geometry" />
+        <primitive object={mainMat} attach="material" />
+      </mesh>
+
+      {/* Right arch panel */}
+      <mesh castShadow receiveShadow position={[0.9, 0, -1.9]}>
+        <primitive object={rightArchGeo} attach="geometry" />
+        <primitive object={darkerMat} attach="material" />
+      </mesh>
+
+      {/* Left niche ledge */}
+      <mesh castShadow receiveShadow position={[-1.3, 0.09, -1.5]}>
+        <boxGeometry args={[0.9, 0.18, 0.7]} />
+        <primitive object={darkerMat} attach="material" />
+      </mesh>
+
+      {/* Floor lamp — base */}
+      <mesh castShadow receiveShadow position={[-0.7, 0.02, -1.3]}>
+        <boxGeometry args={[0.14, 0.04, 0.14]} />
+        <primitive object={darkerMat} attach="material" />
+      </mesh>
+      {/* Floor lamp — stem */}
+      <mesh castShadow receiveShadow position={[-0.7, 0.77, -1.3]}>
+        <cylinderGeometry args={[0.022, 0.022, 1.5, 12]} />
+        <primitive object={darkerMat} attach="material" />
+      </mesh>
+      {/* Floor lamp — shade (cone, wider at bottom) */}
+      <mesh castShadow position={[-0.7, 1.68, -1.3]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.22, 0.38, 24, 1, true]} />
+        <primitive object={shadeMat} attach="material" />
+      </mesh>
+
+      {/* Plant pot */}
+      <mesh castShadow receiveShadow position={[-1.3, 0.18 + 0.065, -1.55]}>
+        <cylinderGeometry args={[0.1, 0.085, 0.13, 20]} />
+        <primitive object={potMat} attach="material" />
+      </mesh>
+      {/* Plant bush */}
+      <mesh castShadow receiveShadow position={[-1.3, 0.18 + 0.2, -1.55]}>
+        <sphereGeometry args={[0.12, 12, 10]} />
+        <primitive object={plantMat} attach="material" />
+      </mesh>
+
+      <Suspense fallback={null}>
+        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+      </Suspense>
+    </>
+  );
+}
+
+function NaturalArchScene({
+  modelUrl,
+  pedestalColor,
+  pedestalHeight,
+  onLoad,
+}: {
+  modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  onLoad?: () => void;
+}) {
+  const [pedestalRadius, setPedestalRadius] = useState(0.35);
+  const pedestalTopY = 0.24;
+
+  const floorMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#d4c8b0", roughness: 0.9, metalness: 0 }),
+    []
+  );
+  const wallMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#c8b898", roughness: 0.9, metalness: 0, side: THREE.FrontSide }),
+    []
+  );
+  const flutedArchMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#d0c4a8", roughness: 0.88, metalness: 0 }),
+    []
+  );
+  const stoneArchMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#b0aaa0", roughness: 0.95, metalness: 0 }),
+    []
+  );
+  const blockMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#cfc3a5", roughness: 0.9, metalness: 0 }),
+    []
+  );
+  const boulderMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#cec9c0", roughness: 0.95, metalness: 0 }),
+    []
+  );
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#d0c4a8", roughness: 0.85, metalness: 0 }),
+    [pedestalColor]
+  );
+
+  const flutedArchGeo = useMemo(
+    () => createArchFrameGeometry(2.8, 3.6, 1.6, 1.8, 0.18),
+    []
+  );
+  const stoneArchGeo = useMemo(
+    () => createArchFrameGeometry(2.2, 2.9, 1.3, 1.4, 0.12),
+    []
+  );
+
+  const r1 = pedestalRadius * 1.8;
+  const r2 = pedestalRadius * 1.1;
+  const r3 = pedestalRadius * 0.7;
+
+  return (
+    <>
+      <ambientLight intensity={0.55} color="#fff0e0" />
+      <directionalLight
+        position={[3, 6, 2]}
+        intensity={2.8}
+        color="#ffe8b0"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+        shadow-camera-near={0.1}
+        shadow-camera-far={20}
+      />
+      <hemisphereLight args={["#f8ead8", "#c8b890", 0.35]} />
+
+      {/* Floor */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[12, 12]} />
+        <primitive object={floorMat} attach="material" />
+      </mesh>
+
+      {/* Back wall */}
+      <mesh receiveShadow position={[0, 2.0, -4.5]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[12, 5]} />
+        <primitive object={wallMat} attach="material" />
+      </mesh>
+
+      {/* Large fluted arch panel — back centre */}
+      <mesh castShadow receiveShadow position={[0, 0, -3.8]}>
+        <primitive object={flutedArchGeo} attach="geometry" />
+        <primitive object={flutedArchMat} attach="material" />
+      </mesh>
+
+      {/* Fluting ribs on the fluted arch panel */}
+      <FlutingRibs zPos={-3.575} />
+
+      {/* Stone arch panel — in front of fluted arch */}
+      <mesh castShadow receiveShadow position={[0, 0, -2.8]}>
+        <primitive object={stoneArchGeo} attach="geometry" />
+        <primitive object={stoneArchMat} attach="material" />
+      </mesh>
+
+      {/* Tall rectangular block — left */}
+      <mesh castShadow receiveShadow position={[-1.3, 0.925, -1.2]}>
+        <boxGeometry args={[0.46, 1.85, 0.46]} />
+        <primitive object={blockMat} attach="material" />
+      </mesh>
+
+      {/* Large boulder — right */}
+      <mesh castShadow receiveShadow position={[1.5, 0.28, -0.9]} scale={[0.75, 0.55, 0.65]}>
+        <icosahedronGeometry args={[0.5, 1]} />
+        <primitive object={boulderMat} attach="material" />
+      </mesh>
+
+      {/* Smaller boulder — right */}
+      <mesh castShadow receiveShadow position={[1.85, 0.19, -0.3]} scale={[0.5, 0.38, 0.48]}>
+        <icosahedronGeometry args={[0.5, 1]} />
+        <primitive object={boulderMat} attach="material" />
+      </mesh>
+
+      {/* Stacked pedestal — layer 1 (base) */}
+      <mesh castShadow receiveShadow position={[0, 0.04, 0]}>
+        <cylinderGeometry args={[r1, r1 * 1.02, 0.08, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+
+      {/* Stacked pedestal — layer 2 (middle) */}
+      <mesh castShadow receiveShadow position={[0, 0.13, 0]}>
+        <cylinderGeometry args={[r2, r2 * 1.02, 0.10, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+
+      {/* Stacked pedestal — layer 3 (top) */}
+      <mesh castShadow receiveShadow position={[0, 0.21, 0]}>
+        <cylinderGeometry args={[r3, r3 * 1.02, 0.06, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+
+      <Suspense fallback={null}>
+        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+      </Suspense>
+    </>
+  );
+}
+
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
 
@@ -380,6 +693,12 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         )}
         {theme === "warm-minimal" && (
           <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+        )}
+        {theme === "studio-grey" && (
+          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+        )}
+        {theme === "natural-arch" && (
+          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
         )}
       </Canvas>
     </div>
