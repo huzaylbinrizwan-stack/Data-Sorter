@@ -173,24 +173,28 @@ function DarkAlcoveScene({
 
   return (
     <>
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={0.35} color="#c8d8f0" />
+      <directionalLight
+        position={[-2, 6, 3]}
+        intensity={3.5}
+        color="#ddeeff"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+        shadow-camera-near={0.1}
+        shadow-camera-far={20}
+      />
       <spotLight
         position={[1.5, 4, 2]}
         angle={0.35}
         penumbra={0.6}
-        intensity={60}
+        intensity={20}
         color="#fff5e0"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0005}
-      />
-      <rectAreaLight
-        position={[-2, 1.5, -1.5]}
-        width={1.5}
-        height={2}
-        intensity={1.2}
-        color="#ffb347"
-        rotation={[0, Math.PI / 4, 0]}
+        castShadow={false}
       />
 
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
@@ -283,23 +287,49 @@ function WarmMinimalScene({
         shadow-camera-far={20}
       />
 
+      {/* Floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[10, 10]} />
         <primitive object={floorMat} attach="material" />
       </mesh>
 
-      <mesh receiveShadow position={[0, 2.5, -2.5]}>
+      {/* Back wall — pushed back for more depth */}
+      <mesh receiveShadow position={[0, 2.5, -3.5]}>
         <boxGeometry args={[10, 5, 0.1]} />
         <primitive object={wallMat} attach="material" />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[-2.2, 1.5, -1]}>
-        <boxGeometry args={[0.25, 3, 1.2]} />
+      {/* Ceiling */}
+      <mesh receiveShadow position={[0, 3, 0]}>
+        <boxGeometry args={[10, 0.08, 10]} />
+        <primitive object={wallMat} attach="material" />
+      </mesh>
+
+      {/* Horizontal wall rail / panel band on back wall */}
+      <mesh castShadow receiveShadow position={[0, 1.8, -3.44]}>
+        <boxGeometry args={[9, 0.06, 0.08]} />
         <primitive object={panelMat} attach="material" />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[2.2, 1.5, -1]}>
-        <boxGeometry args={[0.25, 3, 1.2]} />
+      {/* Left column — base plinth */}
+      <mesh castShadow receiveShadow position={[-2.2, 0.35, -1.5]}>
+        <boxGeometry args={[0.55, 0.7, 2.0]} />
+        <primitive object={panelMat} attach="material" />
+      </mesh>
+      {/* Left column — tall pilaster */}
+      <mesh castShadow receiveShadow position={[-2.2, 2.0, -1.5]}>
+        <boxGeometry args={[0.38, 2.6, 1.6]} />
+        <primitive object={panelMat} attach="material" />
+      </mesh>
+
+      {/* Right column — base plinth */}
+      <mesh castShadow receiveShadow position={[2.2, 0.35, -1.5]}>
+        <boxGeometry args={[0.55, 0.7, 2.0]} />
+        <primitive object={panelMat} attach="material" />
+      </mesh>
+      {/* Right column — tall pilaster */}
+      <mesh castShadow receiveShadow position={[2.2, 2.0, -1.5]}>
+        <boxGeometry args={[0.38, 2.6, 1.6]} />
         <primitive object={panelMat} attach="material" />
       </mesh>
 
@@ -338,7 +368,10 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           dampingFactor={0.08}
           minDistance={1}
           maxDistance={7}
+          minPolarAngle={Math.PI * 0.1}
           maxPolarAngle={Math.PI / 2 - 0.05}
+          minAzimuthAngle={-Math.PI * 0.55}
+          maxAzimuthAngle={Math.PI * 0.55}
           target={[0, 0.4, 0]}
         />
 

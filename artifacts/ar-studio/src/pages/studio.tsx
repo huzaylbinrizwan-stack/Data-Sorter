@@ -812,17 +812,46 @@ export default function Studio() {
 
           {pendingSrc ? (
             isThreeTheme ? (
-              <Suspense fallback={null}>
-                <ThreeStudioViewer
-                  modelUrl={pendingSrc}
-                  theme={meta!.environment as "dark-alcove" | "warm-minimal"}
-                  pedestalColor={meta!.pedestalColor}
-                  pedestalHeight={meta!.pedestalHeight}
-                  onLoad={() => {
-                    setLoadProgress(100);
+              <>
+                <Suspense fallback={null}>
+                  <ThreeStudioViewer
+                    modelUrl={pendingSrc}
+                    theme={meta!.environment as "dark-alcove" | "warm-minimal"}
+                    pedestalColor={meta!.pedestalColor}
+                    pedestalHeight={meta!.pedestalHeight}
+                    onLoad={() => {
+                      setLoadProgress(100);
+                    }}
+                  />
+                </Suspense>
+                {/* Hidden model-viewer purely for AR session launch */}
+                <model-viewer
+                  ref={modelViewerRef}
+                  src={pendingSrc}
+                  alt={meta?.name ?? ""}
+                  ar
+                  ar-modes="scene-viewer quick-look"
+                  ar-scale={meta?.isScalable ? "auto" : "fixed"}
+                  style={{
+                    position: "absolute",
+                    width: "1px",
+                    height: "1px",
+                    opacity: 0,
+                    pointerEvents: "none",
+                    top: 0,
+                    left: 0,
+                    zIndex: 0,
                   }}
-                />
-              </Suspense>
+                >
+                  <button
+                    ref={arButtonRef}
+                    slot="ar-button"
+                    data-testid="button-view-in-ar"
+                    aria-hidden="true"
+                    style={{ display: "none" }}
+                  />
+                </model-viewer>
+              </>
             ) : (
             <model-viewer
               ref={modelViewerRef}
@@ -957,8 +986,8 @@ export default function Studio() {
                 </div>
               )}
 
-              {/* Right zone: AR pill button — hidden for Three.js themes */}
-              {pendingSrc && !isThreeTheme && (
+              {/* Right zone: AR pill button — visible for all environments */}
+              {pendingSrc && (
                 <button
                   data-testid="footer-view-in-ar"
                   onClick={() => {
