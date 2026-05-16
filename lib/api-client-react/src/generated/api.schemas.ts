@@ -37,6 +37,8 @@ export const ProjectEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
 
 export type ProjectType = (typeof ProjectType)[keyof typeof ProjectType];
@@ -105,6 +107,8 @@ export const CreateProjectBodyEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
 
 export type CreateProjectBodyType =
@@ -146,6 +150,8 @@ export const UpdateProjectBodyEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
 
 export type UpdateProjectBodyType =
@@ -210,6 +216,8 @@ export const StudioProjectMetaEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
 
 export type StudioProjectMetaType =
@@ -302,6 +310,8 @@ export const StudioProjectEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
 
 export type StudioProjectType =

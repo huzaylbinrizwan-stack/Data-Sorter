@@ -727,7 +727,7 @@ components:
           type: boolean
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal]
         hotspotX:
           type: number
         hotspotY:
@@ -826,7 +826,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal]
         hotspotX:
           type: number
         hotspotY:
@@ -867,7 +867,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal]
         hotspotX:
           type: number
         hotspotY:
@@ -930,7 +930,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal]
         hotspotX:
           type: number
         hotspotY:
@@ -1048,7 +1048,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal]
         hotspotX:
           type: number
         hotspotY:

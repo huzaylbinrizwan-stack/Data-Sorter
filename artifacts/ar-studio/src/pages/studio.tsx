@@ -1,4 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+const ThreeStudioViewer = lazy(() =>
+  import("../components/ThreeStudioViewer").then((m) => ({ default: m.ThreeStudioViewer }))
+);
 import { useParams } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -18,6 +21,8 @@ const ENV_STYLES: Record<string, React.CSSProperties> = {
   "luxury-home": { backgroundImage: "radial-gradient(ellipse at 30% 70%, #2d1b0e 0%, #0f0804 100%)" },
   "classic-luxury": { backgroundImage: "linear-gradient(135deg, #0d1b2a 0%, #1a2332 50%, #2d1b0e 100%)" },
   "walls-plants": { backgroundImage: "radial-gradient(ellipse at 70% 30%, #e8e0d4 0%, #c4b8a8 100%)" },
+  "dark-alcove": { background: "#111113" },
+  "warm-minimal": { background: "#cfc7ba" },
 };
 
 const ENV_TEXT: Record<string, string> = {
@@ -26,6 +31,8 @@ const ENV_TEXT: Record<string, string> = {
   "luxury-home": "text-white",
   "classic-luxury": "text-white",
   "walls-plants": "text-gray-800",
+  "dark-alcove": "text-white",
+  "warm-minimal": "text-gray-800",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -740,8 +747,9 @@ export default function Studio() {
         opacity: 1,
         transition: "opacity 0.3s ease",
       };
+  const isThreeTheme = !!meta && (meta.environment === "dark-alcove" || meta.environment === "warm-minimal");
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
-  const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants");
+  const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants" || meta.environment === "warm-minimal");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
 
   const showSidebar = !!(
@@ -803,6 +811,17 @@ export default function Studio() {
           />
 
           {pendingSrc ? (
+            isThreeTheme ? (
+              <Suspense fallback={null}>
+                <ThreeStudioViewer
+                  modelUrl={pendingSrc}
+                  theme={meta!.environment as "dark-alcove" | "warm-minimal"}
+                  onLoad={() => {
+                    setLoadProgress(100);
+                  }}
+                />
+              </Suspense>
+            ) : (
             <model-viewer
               ref={modelViewerRef}
               src={pendingSrc}
@@ -833,6 +852,7 @@ export default function Studio() {
                 style={{ display: "none" }}
               />
             </model-viewer>
+            )
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
               <div className={`w-20 h-20 rounded-full border-2 border-dashed flex items-center justify-center ${isLightBg ? "border-gray-300" : "border-white/20"}`}>
@@ -905,8 +925,8 @@ export default function Studio() {
                 )}
               </div>
 
-              {/* Center zone: camera capture */}
-              {pendingSrc && (
+              {/* Center zone: camera capture — hidden for Three.js themes (no modelViewerRef to capture from) */}
+              {pendingSrc && !isThreeTheme && (
                 <div className="flex items-center justify-center mx-3 shrink-0">
                   <button
                     data-testid="footer-photo-capture"
@@ -935,8 +955,8 @@ export default function Studio() {
                 </div>
               )}
 
-              {/* Right zone: AR pill button */}
-              {pendingSrc && (
+              {/* Right zone: AR pill button — hidden for Three.js themes */}
+              {pendingSrc && !isThreeTheme && (
                 <button
                   data-testid="footer-view-in-ar"
                   onClick={() => {

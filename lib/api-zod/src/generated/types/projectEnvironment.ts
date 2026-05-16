@@ -15,4 +15,6 @@ export const ProjectEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
+  "dark-alcove": "dark-alcove",
+  "warm-minimal": "warm-minimal",
 } as const;
