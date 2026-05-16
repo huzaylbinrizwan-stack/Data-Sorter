@@ -706,7 +706,7 @@ export default function Studio() {
     );
   }
 
-  const hasBgPhoto = !!(meta?.studioBackgroundUrl);
+  const hasBgPhoto = false;
   const bgScale = meta?.studioBackgroundScale ?? 100;
   const envStyle = hasBgPhoto
     ? { backgroundColor: "#1a1410" }

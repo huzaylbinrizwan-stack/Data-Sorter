@@ -1142,7 +1142,8 @@ export default function Editor() {
             </div>
           </div>
 
-          {/* Background Photo Section */}
+          {/* Background Photo Section — hidden until mobile rendering is fixed */}
+          {false && (
           <div className="p-5 border-b border-border">
             <input
               ref={bgPhotoFileInputRef}
@@ -1252,6 +1253,7 @@ export default function Editor() {
               </div>
             )}
           </div>
+          )}
 
           {/* Placement Section */}
           <div className="p-5 border-b border-border">
