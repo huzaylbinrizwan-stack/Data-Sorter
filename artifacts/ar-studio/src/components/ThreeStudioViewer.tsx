@@ -1,9 +1,9 @@
 import { Suspense, useRef, useEffect, useState, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import * as THREE from "three";
 
-type Theme = "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch";
+type Theme = "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch" | "mirrored-hall";
 
 interface ThreeStudioViewerProps {
   modelUrl: string;
@@ -24,9 +24,9 @@ function CameraIntro({ onDone }: { onDone: () => void }) {
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
-  const startAzimuth = (-65 * Math.PI) / 180;
+  const startAzimuth = (-85 * Math.PI) / 180;
   const endAzimuth = 0;
-  const startElevation = (25 * Math.PI) / 180;
+  const startElevation = (38 * Math.PI) / 180;
   const endElevation = (15 * Math.PI) / 180;
   const radius = 3.2;
 
@@ -41,8 +41,8 @@ function CameraIntro({ onDone }: { onDone: () => void }) {
 
   useFrame((_state, delta) => {
     if (doneRef.current) return;
-    progressRef.current = Math.min(progressRef.current + delta / 2.5, 1);
-    const t = 1 - Math.pow(1 - progressRef.current, 3);
+    progressRef.current = Math.min(progressRef.current + delta / 4.0, 1);
+    const t = 1 - Math.pow(1 - progressRef.current, 5);
 
     const azimuth = lerp(startAzimuth, endAzimuth, t);
     const elevation = lerp(startElevation, endElevation, t);
@@ -101,7 +101,7 @@ function ModelOnPedestal({
   }, [gltf.scene, url, pedestalTopY]);
 
   return (
-    <group>
+    <group rotation={[0, Math.PI, 0]}>
       <primitive object={gltf.scene} />
     </group>
   );
@@ -658,14 +658,88 @@ function NaturalArchScene({
   );
 }
 
+function MirroredHallScene({
+  modelUrl,
+  onLoad,
+}: {
+  modelUrl: string;
+  onLoad?: () => void;
+}) {
+  const [pedestalRadius, setPedestalRadius] = useState(0.7);
+  const pedestalTopY = 0.12;
+
+  const floorMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.05, metalness: 0.8, opacity: 0.35, transparent: true }),
+    []
+  );
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#f5f2ee", roughness: 0.15, metalness: 0.6 }),
+    []
+  );
+
+  const clampedRadius = Math.max(pedestalRadius * 1.3, 0.7);
+
+  return (
+    <>
+      <Environment files="/envs/mirrored-hall.exr" background backgroundBlurriness={0.0} />
+      <ambientLight intensity={0.2} />
+      <directionalLight
+        position={[2, 5, 3]}
+        intensity={1.2}
+        color="#fff8f0"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+        shadow-camera-near={0.1}
+        shadow-camera-far={20}
+      />
+
+      {/* Large semi-transparent reflective floor plane */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[10, 10]} />
+        <primitive object={floorMat} attach="material" />
+      </mesh>
+
+      {/* Circular marble platform */}
+      <mesh castShadow receiveShadow position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[clampedRadius, clampedRadius * 1.01, 0.12, 64]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+
+      <Suspense fallback={null}>
+        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+      </Suspense>
+    </>
+  );
+}
+
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+
+  useGLTF.preload(modelUrl);
+
+  useEffect(() => {
+    setModelReady(false);
+    setIntroDone(false);
+  }, [modelUrl, theme]);
+
+  const handleModelLoad = () => {
+    setModelReady(true);
+    onLoad?.();
+  };
+
+  const isMirroredHall = theme === "mirrored-hall";
 
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
       <Canvas
         shadows
-        camera={{ fov: 45, near: 0.1, far: 50, position: [0, 1.2, 3.2] }}
+        camera={{ fov: 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
         gl={{
           antialias: true,
           outputColorSpace: THREE.SRGBColorSpace,
@@ -674,7 +748,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         }}
         style={{ background: "transparent" }}
       >
-        <CameraIntro onDone={() => setIntroDone(true)} />
+        {modelReady && <CameraIntro key={modelUrl} onDone={() => setIntroDone(true)} />}
         <OrbitControls
           enabled={introDone}
           enableDamping
@@ -683,22 +757,24 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           maxDistance={7}
           minPolarAngle={Math.PI * 0.1}
           maxPolarAngle={Math.PI / 2 - 0.05}
-          minAzimuthAngle={-Math.PI * 0.55}
-          maxAzimuthAngle={Math.PI * 0.55}
+          {...(!isMirroredHall ? { minAzimuthAngle: -Math.PI * 0.55, maxAzimuthAngle: Math.PI * 0.55 } : {})}
           target={[0, 0.4, 0]}
         />
 
         {theme === "dark-alcove" && (
-          <DarkAlcoveScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+          <DarkAlcoveScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
         {theme === "warm-minimal" && (
-          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
         {theme === "studio-grey" && (
-          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
         {theme === "natural-arch" && (
-          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={onLoad} />
+          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
+        )}
+        {theme === "mirrored-hall" && (
+          <MirroredHallScene modelUrl={modelUrl} onLoad={handleModelLoad} />
         )}
       </Canvas>
     </div>

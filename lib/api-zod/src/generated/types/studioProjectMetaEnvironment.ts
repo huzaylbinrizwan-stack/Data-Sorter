@@ -19,4 +19,5 @@ export const StudioProjectMetaEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "mirrored-hall": "mirrored-hall",
 } as const;

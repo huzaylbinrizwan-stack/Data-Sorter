@@ -74,6 +74,7 @@ const ENVIRONMENTS = [
   { value: "warm-minimal", label: "Warm Minimal", bg: "radial-gradient(ellipse at 40% 60%, #ddd3c5 0%, #c8bfb2 100%)", desc: "Beige Japandi showroom", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "studio-grey", label: "Grey Studio", bg: "radial-gradient(ellipse at 50% 40%, #9a9490 0%, #7e7a76 100%)", desc: "Medium grey arch backdrop with stage", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "natural-arch", label: "Natural Arch", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b0 0%, #c8b898 100%)", desc: "Warm sandy room with stone arches", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
+  { value: "mirrored-hall", label: "Mirrored Hall", bg: "#1a1612", desc: "Classical mirrored hall HDRI panorama", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
 ];
 
 const LANGUAGES = [
@@ -752,7 +753,7 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
-    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "dark-alcove", "warm-minimal", "studio-grey", "natural-arch"] as const;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "dark-alcove", "warm-minimal", "studio-grey", "natural-arch", "mirrored-hall"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
     const preset = ENVIRONMENTS.find(e => e.value === env);

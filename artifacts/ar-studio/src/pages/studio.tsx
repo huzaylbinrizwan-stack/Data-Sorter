@@ -25,6 +25,7 @@ const ENV_STYLES: Record<string, React.CSSProperties> = {
   "warm-minimal": { background: "#cfc7ba" },
   "studio-grey": { background: "#8a8480" },
   "natural-arch": { background: "#c8b898" },
+  "mirrored-hall": { background: "#1a1612" },
 };
 
 const ENV_TEXT: Record<string, string> = {
@@ -37,6 +38,7 @@ const ENV_TEXT: Record<string, string> = {
   "warm-minimal": "text-gray-800",
   "studio-grey": "text-white",
   "natural-arch": "text-gray-800",
+  "mirrored-hall": "text-white",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -751,7 +753,7 @@ export default function Studio() {
         opacity: 1,
         transition: "opacity 0.3s ease",
       };
-  const isThreeTheme = !!meta && (meta.environment === "dark-alcove" || meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch");
+  const isThreeTheme = !!meta && (meta.environment === "dark-alcove" || meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch" || meta.environment === "mirrored-hall");
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants" || meta.environment === "warm-minimal");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
@@ -820,7 +822,7 @@ export default function Studio() {
                 <Suspense fallback={null}>
                   <ThreeStudioViewer
                     modelUrl={pendingSrc}
-                    theme={meta!.environment as "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch"}
+                    theme={meta!.environment as "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch" | "mirrored-hall"}
                     pedestalColor={meta!.pedestalColor}
                     pedestalHeight={meta!.pedestalHeight}
                     onLoad={() => {

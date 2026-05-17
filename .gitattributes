@@ -1,1 +1,2 @@
+artifacts/ar-studio/public/envs/mirrored-hall.exr filter=lfs diff=lfs merge=lfs -text
 attached_assets/mirrored_hall_4k_1779021459545.exr filter=lfs diff=lfs merge=lfs -text
