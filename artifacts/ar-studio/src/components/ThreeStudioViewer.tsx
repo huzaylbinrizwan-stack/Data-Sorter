@@ -1,6 +1,6 @@
 import { Suspense, useRef, useEffect, useState, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 type Theme = "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch" | "mirrored-hall";
@@ -660,59 +660,86 @@ function NaturalArchScene({
 
 function MirroredHallScene({
   modelUrl,
+  pedestalColor,
+  pedestalHeight,
   onLoad,
 }: {
   modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalRadius, setPedestalRadius] = useState(0.7);
-  const pedestalTopY = 0.12;
+
+  const resolvedPedestalColor = pedestalColor ?? "#f8f5f0";
+  const resolvedPedestalHeight = pedestalHeight ?? 0.12;
 
   const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.05, metalness: 0.8, opacity: 0.35, transparent: true }),
+    () => new THREE.MeshStandardMaterial({ color: "#ede9e2", roughness: 0.6, metalness: 0 }),
     []
   );
   const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#f5f2ee", roughness: 0.15, metalness: 0.6 }),
+    () => new THREE.MeshStandardMaterial({ color: resolvedPedestalColor, roughness: 0.1, metalness: 0.5 }),
+    [resolvedPedestalColor]
+  );
+  const backWallMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e8e4de", roughness: 0.8, metalness: 0 }),
+    []
+  );
+  const coveMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#eceae6", roughness: 0.8, metalness: 0 }),
     []
   );
 
   const clampedRadius = Math.max(pedestalRadius * 1.3, 0.7);
+  const pedestalHalfH = resolvedPedestalHeight / 2;
 
   return (
     <>
-      <color attach="background" args={["#1c1c1e"]} />
-      <Environment preset="studio" background />
-      <ambientLight intensity={0.2} />
+      <color attach="background" args={["#f2f0ed"]} />
+      <ambientLight intensity={0.7} color="#ffffff" />
       <directionalLight
-        position={[2, 5, 3]}
-        intensity={1.2}
+        position={[-3, 6, 4]}
+        intensity={2.8}
         color="#fff8f0"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0005}
-        shadow-camera-left={-4}
-        shadow-camera-right={4}
-        shadow-camera-top={4}
-        shadow-camera-bottom={-4}
+        shadow-camera-left={-5}
+        shadow-camera-right={5}
+        shadow-camera-top={5}
+        shadow-camera-bottom={-5}
         shadow-camera-near={0.1}
         shadow-camera-far={20}
       />
+      <directionalLight position={[4, 4, -2]} intensity={1.2} color="#f0f4ff" />
 
-      {/* Large semi-transparent reflective floor plane */}
+      {/* Floor */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[10, 10]} />
+        <planeGeometry args={[12, 12]} />
         <primitive object={floorMat} attach="material" />
       </mesh>
 
-      {/* Circular marble platform */}
-      <mesh castShadow receiveShadow position={[0, 0.06, 0]}>
-        <cylinderGeometry args={[clampedRadius, clampedRadius * 1.01, 0.12, 64]} />
+      {/* Back wall */}
+      <mesh receiveShadow position={[0, 3, -4]}>
+        <boxGeometry args={[12, 6, 0.1]} />
+        <primitive object={backWallMat} attach="material" />
+      </mesh>
+
+      {/* Cove transition — angled strip at floor/wall junction */}
+      <mesh receiveShadow position={[0, 0.25, -3.5]} rotation={[-Math.PI / 4, 0, 0]}>
+        <boxGeometry args={[12, 0.5, 1.5]} />
+        <primitive object={coveMat} attach="material" />
+      </mesh>
+
+      {/* Pedestal */}
+      <mesh castShadow receiveShadow position={[0, pedestalHalfH, 0]}>
+        <cylinderGeometry args={[clampedRadius, clampedRadius * 1.01, resolvedPedestalHeight, 64]} />
         <primitive object={pedestalMat} attach="material" />
       </mesh>
 
       <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+        <ModelOnPedestal url={modelUrl} pedestalTopY={resolvedPedestalHeight} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
       </Suspense>
     </>
   );
@@ -775,7 +802,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
         {theme === "mirrored-hall" && (
-          <MirroredHallScene modelUrl={modelUrl} onLoad={handleModelLoad} />
+          <MirroredHallScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
       </Canvas>
     </div>
