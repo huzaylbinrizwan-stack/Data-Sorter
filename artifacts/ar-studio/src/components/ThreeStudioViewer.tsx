@@ -681,7 +681,10 @@ function MirroredHallScene({
 
   return (
     <>
-      <Environment files="/envs/mirrored-hall.exr" background backgroundBlurriness={0.0} />
+      <color attach="background" args={["#1a1612"]} />
+      <Suspense fallback={null}>
+        <Environment files={`${import.meta.env.BASE_URL}envs/mirrored-hall.exr`} background backgroundBlurriness={0.0} />
+      </Suspense>
       <ambientLight intensity={0.2} />
       <directionalLight
         position={[2, 5, 3]}
