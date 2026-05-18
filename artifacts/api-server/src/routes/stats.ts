@@ -3,6 +3,16 @@ import { eq, count, desc, sql } from "drizzle-orm";
 import { db, projectsTable } from "@workspace/db";
 import { GetDashboardStatsResponse } from "@workspace/api-zod";
 
+const LEGACY_ENV_MAP: Record<string, string> = {
+  "dark-alcove": "black",
+  "mirrored-hall": "black",
+};
+
+function normEnv(env: string | null | undefined): string {
+  if (!env) return "black";
+  return LEGACY_ENV_MAP[env] ?? env;
+}
+
 const router: IRouter = Router();
 
 router.get("/stats/dashboard", async (req, res): Promise<void> => {
@@ -33,7 +43,7 @@ router.get("/stats/dashboard", async (req, res): Promise<void> => {
     totalProjects: totals?.totalProjects ?? 0,
     liveARs: totals?.liveARs ?? 0,
     avgLoadSpeedMs: Math.round(avgLoadSpeedMs),
-    recentProjects,
+    recentProjects: recentProjects.map((p) => ({ ...p, environment: normEnv(p.environment) })),
     projectsByEnvironment: envCounts.map((e) => ({
       environment: e.environment,
       count: e.count,

@@ -727,7 +727,7 @@ components:
           type: boolean
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal, studio-grey, natural-arch, mirrored-hall]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
         hotspotX:
           type: number
         hotspotY:
@@ -833,7 +833,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal, studio-grey, natural-arch, mirrored-hall]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
         hotspotX:
           type: number
         hotspotY:
@@ -874,7 +874,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal, studio-grey, natural-arch, mirrored-hall]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
         hotspotX:
           type: number
         hotspotY:
@@ -944,7 +944,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal, studio-grey, natural-arch, mirrored-hall]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
         hotspotX:
           type: number
         hotspotY:
@@ -1069,7 +1069,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, dark-alcove, warm-minimal, studio-grey, natural-arch, mirrored-hall]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
         hotspotX:
           type: number
         hotspotY:

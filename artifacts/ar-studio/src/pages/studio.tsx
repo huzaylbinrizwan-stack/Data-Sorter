@@ -21,11 +21,9 @@ const ENV_STYLES: Record<string, React.CSSProperties> = {
   "luxury-home": { backgroundImage: "radial-gradient(ellipse at 30% 70%, #2d1b0e 0%, #0f0804 100%)" },
   "classic-luxury": { backgroundImage: "linear-gradient(135deg, #0d1b2a 0%, #1a2332 50%, #2d1b0e 100%)" },
   "walls-plants": { backgroundImage: "radial-gradient(ellipse at 70% 30%, #e8e0d4 0%, #c4b8a8 100%)" },
-  "dark-alcove": { background: "#111113" },
   "warm-minimal": { background: "#cfc7ba" },
   "studio-grey": { background: "#8a8480" },
   "natural-arch": { background: "#c8b898" },
-  "mirrored-hall": { background: "#1a1612" },
 };
 
 const ENV_TEXT: Record<string, string> = {
@@ -34,11 +32,9 @@ const ENV_TEXT: Record<string, string> = {
   "luxury-home": "text-white",
   "classic-luxury": "text-white",
   "walls-plants": "text-gray-800",
-  "dark-alcove": "text-white",
   "warm-minimal": "text-gray-800",
   "studio-grey": "text-white",
   "natural-arch": "text-gray-800",
-  "mirrored-hall": "text-white",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -753,7 +749,7 @@ export default function Studio() {
         opacity: 1,
         transition: "opacity 0.3s ease",
       };
-  const isThreeTheme = !!meta && (meta.environment === "dark-alcove" || meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch" || meta.environment === "mirrored-hall");
+  const isThreeTheme = !!meta && (meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch");
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants" || meta.environment === "warm-minimal");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
@@ -822,7 +818,7 @@ export default function Studio() {
                 <Suspense fallback={null}>
                   <ThreeStudioViewer
                     modelUrl={pendingSrc}
-                    theme={meta!.environment as "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch" | "mirrored-hall"}
+                    theme={meta!.environment as "warm-minimal" | "studio-grey" | "natural-arch"}
                     pedestalColor={meta!.pedestalColor}
                     pedestalHeight={meta!.pedestalHeight}
                     onLoad={() => {

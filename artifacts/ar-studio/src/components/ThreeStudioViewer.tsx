@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-type Theme = "dark-alcove" | "warm-minimal" | "studio-grey" | "natural-arch" | "mirrored-hall";
+type Theme = "warm-minimal" | "studio-grey" | "natural-arch";
 
 interface ThreeStudioViewerProps {
   modelUrl: string;
@@ -133,109 +133,6 @@ function createArchFrameGeometry(
   shape.holes.push(hole);
 
   return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
-}
-
-function DarkAlcoveScene({
-  modelUrl,
-  pedestalColor,
-  pedestalHeight,
-  onLoad,
-}: {
-  modelUrl: string;
-  pedestalColor?: string | null;
-  pedestalHeight?: number | null;
-  onLoad?: () => void;
-}) {
-  const [pedestalRadius, setPedestalRadius] = useState(0.4);
-  const h = pedestalHeight ?? 0.08;
-
-  const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#6e6a66", roughness: 0.9, metalness: 0.05 }),
-    []
-  );
-  const wallMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#787470", roughness: 0.85, metalness: 0.05 }),
-    []
-  );
-  const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#252527", roughness: 0.7, metalness: 0.1 }),
-    [pedestalColor]
-  );
-  const archMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#5a5653", roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide }),
-    []
-  );
-
-  const archGeo = useMemo(
-    () => createArchFrameGeometry(6, 4.5, 2.6, 1.8, 0.18),
-    []
-  );
-
-  return (
-    <>
-      <ambientLight intensity={0.55} color="#c8d8f0" />
-      <directionalLight
-        position={[-2, 6, 3]}
-        intensity={5.0}
-        color="#eef4ff"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0005}
-        shadow-camera-left={-4}
-        shadow-camera-right={4}
-        shadow-camera-top={4}
-        shadow-camera-bottom={-4}
-        shadow-camera-near={0.1}
-        shadow-camera-far={20}
-      />
-      <spotLight
-        position={[1.5, 4, 2]}
-        angle={0.35}
-        penumbra={0.6}
-        intensity={20}
-        color="#fff5e0"
-        castShadow={false}
-      />
-
-      {/* Floor — widened to 14×14 */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[14, 14]} />
-        <primitive object={floorMat} attach="material" />
-      </mesh>
-
-      {/* Back wall — pushed to z=-6, 14 wide */}
-      <mesh receiveShadow position={[0, 2.5, -6]}>
-        <boxGeometry args={[14, 5, 0.1]} />
-        <primitive object={wallMat} attach="material" />
-      </mesh>
-
-      {/* Left side wall — pushed to x=-7 */}
-      <mesh receiveShadow position={[-7, 2.5, -3]}>
-        <boxGeometry args={[0.1, 5, 12]} />
-        <primitive object={wallMat} attach="material" />
-      </mesh>
-
-      {/* Right side wall — pushed to x=+7 */}
-      <mesh receiveShadow position={[7, 2.5, -3]}>
-        <boxGeometry args={[0.1, 5, 12]} />
-        <primitive object={wallMat} attach="material" />
-      </mesh>
-
-      <mesh castShadow position={[0, 0, 1.5]}>
-        <primitive object={archGeo} attach="geometry" />
-        <primitive object={archMat} attach="material" />
-      </mesh>
-
-      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
-        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.02, h, 48]} />
-        <primitive object={pedestalMat} attach="material" />
-      </mesh>
-
-      <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={h} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
-      </Suspense>
-    </>
-  );
 }
 
 function WarmMinimalScene({
@@ -658,93 +555,6 @@ function NaturalArchScene({
   );
 }
 
-function MirroredHallScene({
-  modelUrl,
-  pedestalColor,
-  pedestalHeight,
-  onLoad,
-}: {
-  modelUrl: string;
-  pedestalColor?: string | null;
-  pedestalHeight?: number | null;
-  onLoad?: () => void;
-}) {
-  const [pedestalRadius, setPedestalRadius] = useState(0.7);
-
-  const resolvedPedestalColor = pedestalColor ?? "#f8f5f0";
-  const resolvedPedestalHeight = pedestalHeight ?? 0.12;
-
-  const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#ede9e2", roughness: 0.6, metalness: 0 }),
-    []
-  );
-  const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: resolvedPedestalColor, roughness: 0.1, metalness: 0.5 }),
-    [resolvedPedestalColor]
-  );
-  const backWallMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#e8e4de", roughness: 0.8, metalness: 0 }),
-    []
-  );
-  const coveMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#eceae6", roughness: 0.8, metalness: 0 }),
-    []
-  );
-
-  const clampedRadius = Math.max(pedestalRadius * 1.3, 0.7);
-  const pedestalHalfH = resolvedPedestalHeight / 2;
-
-  return (
-    <>
-      <color attach="background" args={["#f2f0ed"]} />
-      <ambientLight intensity={0.7} color="#ffffff" />
-      <directionalLight
-        position={[-3, 6, 4]}
-        intensity={2.8}
-        color="#fff8f0"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0005}
-        shadow-camera-left={-5}
-        shadow-camera-right={5}
-        shadow-camera-top={5}
-        shadow-camera-bottom={-5}
-        shadow-camera-near={0.1}
-        shadow-camera-far={20}
-      />
-      <directionalLight position={[4, 4, -2]} intensity={1.2} color="#f0f4ff" />
-
-      {/* Floor */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[12, 12]} />
-        <primitive object={floorMat} attach="material" />
-      </mesh>
-
-      {/* Back wall */}
-      <mesh receiveShadow position={[0, 3, -4]}>
-        <boxGeometry args={[12, 6, 0.1]} />
-        <primitive object={backWallMat} attach="material" />
-      </mesh>
-
-      {/* Cove transition — angled strip at floor/wall junction */}
-      <mesh receiveShadow position={[0, 0.25, -3.5]} rotation={[-Math.PI / 4, 0, 0]}>
-        <boxGeometry args={[12, 0.5, 1.5]} />
-        <primitive object={coveMat} attach="material" />
-      </mesh>
-
-      {/* Pedestal */}
-      <mesh castShadow receiveShadow position={[0, pedestalHalfH, 0]}>
-        <cylinderGeometry args={[clampedRadius, clampedRadius * 1.01, resolvedPedestalHeight, 64]} />
-        <primitive object={pedestalMat} attach="material" />
-      </mesh>
-
-      <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={resolvedPedestalHeight} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
-      </Suspense>
-    </>
-  );
-}
-
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   const [modelReady, setModelReady] = useState(false);
@@ -760,8 +570,6 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     setModelReady(true);
     onLoad?.();
   };
-
-  const isMirroredHall = theme === "mirrored-hall";
 
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
@@ -785,13 +593,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           maxDistance={7}
           minPolarAngle={Math.PI * 0.1}
           maxPolarAngle={Math.PI / 2 - 0.05}
-          {...(!isMirroredHall ? { minAzimuthAngle: -Math.PI * 0.55, maxAzimuthAngle: Math.PI * 0.55 } : {})}
+          minAzimuthAngle={-Math.PI * 0.55}
+          maxAzimuthAngle={Math.PI * 0.55}
           target={[0, 0.4, 0]}
         />
 
-        {theme === "dark-alcove" && (
-          <DarkAlcoveScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
-        )}
         {theme === "warm-minimal" && (
           <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
@@ -800,9 +606,6 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         )}
         {theme === "natural-arch" && (
           <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
-        )}
-        {theme === "mirrored-hall" && (
-          <MirroredHallScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
         )}
       </Canvas>
     </div>

@@ -15,9 +15,7 @@ export const UpdateProjectBodyEnvironment = {
   "luxury-home": "luxury-home",
   "classic-luxury": "classic-luxury",
   "walls-plants": "walls-plants",
-  "dark-alcove": "dark-alcove",
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
-  "mirrored-hall": "mirrored-hall",
 } as const;

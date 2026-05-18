@@ -70,11 +70,9 @@ const ENVIRONMENTS = [
   { value: "luxury-home", label: "Luxury Home", bg: "radial-gradient(ellipse at 30% 70%, #2d1b0e 0%, #0f0804 100%)", desc: "Warm walnut tones", hotspotX: -0.05, hotspotY: 0.1, hotspotZ: 0.05 },
   { value: "classic-luxury", label: "Classic Luxury", bg: "linear-gradient(135deg, #0d1b2a 0%, #1a2332 50%, #2d1b0e 100%)", desc: "Deep navy to charcoal", hotspotX: 0, hotspotY: 0.05, hotspotZ: -0.05 },
   { value: "walls-plants", label: "Walls & Plants", bg: "radial-gradient(ellipse at 70% 30%, #e8e0d4 0%, #c4b8a8 100%)", desc: "Soft cream with botanics", hotspotX: 0.05, hotspotY: 0, hotspotZ: 0.1 },
-  { value: "dark-alcove", label: "Dark Alcove", bg: "radial-gradient(ellipse at 50% 40%, #2a2a2c 0%, #111113 100%)", desc: "Charcoal room with spotlight", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "warm-minimal", label: "Warm Minimal", bg: "radial-gradient(ellipse at 40% 60%, #ddd3c5 0%, #c8bfb2 100%)", desc: "Beige Japandi showroom", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "studio-grey", label: "Grey Studio", bg: "radial-gradient(ellipse at 50% 40%, #9a9490 0%, #7e7a76 100%)", desc: "Medium grey arch backdrop with stage", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "natural-arch", label: "Natural Arch", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b0 0%, #c8b898 100%)", desc: "Warm sandy room with stone arches", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
-  { value: "mirrored-hall", label: "Mirrored Hall", bg: "#1a1612", desc: "Classical mirrored hall HDRI panorama", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
 ];
 
 const LANGUAGES = [
@@ -753,7 +751,7 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
-    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "dark-alcove", "warm-minimal", "studio-grey", "natural-arch", "mirrored-hall"] as const;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
     const preset = ENVIRONMENTS.find(e => e.value === env);
@@ -1174,7 +1172,7 @@ export default function Editor() {
               ))}
             </div>
 
-            {(project.environment === "dark-alcove" || project.environment === "warm-minimal") && (
+            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch") && (
               <div className="mt-4 pt-4 border-t border-border space-y-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Pedestal</p>
 

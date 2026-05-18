@@ -24,6 +24,20 @@ import {
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
 
+const LEGACY_ENV_MAP: Record<string, string> = {
+  "dark-alcove": "black",
+  "mirrored-hall": "black",
+};
+
+function normEnv(env: string | null | undefined): string {
+  if (!env) return "black";
+  return LEGACY_ENV_MAP[env] ?? env;
+}
+
+function normProject<T extends { environment: string }>(p: T): T {
+  return { ...p, environment: normEnv(p.environment) };
+}
+
 const router: IRouter = Router();
 
 export const studioRouter: IRouter = Router();
@@ -51,7 +65,7 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     name: project.name,
     companyName: project.companyName,
     modelUrl: project.modelUrl,
-    environment: project.environment,
+    environment: normEnv(project.environment),
     hotspotX: project.hotspotX,
     hotspotY: project.hotspotY,
     hotspotZ: project.hotspotZ,
@@ -124,7 +138,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     name: project.name,
     companyName: project.companyName,
     modelUrl: project.modelUrl,
-    environment: project.environment,
+    environment: normEnv(project.environment),
     hotspotX: project.hotspotX,
     hotspotY: project.hotspotY,
     hotspotZ: project.hotspotZ,
@@ -196,7 +210,7 @@ router.get("/projects", async (req, res): Promise<void> => {
       .where(isNull(projectsTable.folderId))
       .orderBy(projectsTable.createdAt);
   }
-  res.json(ListProjectsResponse.parse(projects));
+  res.json(ListProjectsResponse.parse(projects.map(normProject)));
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
@@ -223,7 +237,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       publicSlug,
     })
     .returning();
-  res.status(201).json(GetProjectResponse.parse(project));
+  res.status(201).json(GetProjectResponse.parse(normProject(project)));
 });
 
 router.get("/projects/:id", async (req, res): Promise<void> => {
@@ -240,7 +254,7 @@ router.get("/projects/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(GetProjectResponse.parse(project));
+  res.json(GetProjectResponse.parse(normProject(project)));
 });
 
 router.patch("/projects/:id", async (req, res): Promise<void> => {
@@ -263,7 +277,7 @@ router.patch("/projects/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(UpdateProjectResponse.parse(project));
+  res.json(UpdateProjectResponse.parse(normProject(project)));
 });
 
 router.delete("/projects/:id", async (req, res): Promise<void> => {
@@ -291,7 +305,7 @@ router.post("/projects/:id/publish", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(PublishProjectResponse.parse(project));
+  res.json(PublishProjectResponse.parse(normProject(project)));
 });
 
 router.post("/projects/:id/unpublish", async (req, res): Promise<void> => {
@@ -309,7 +323,7 @@ router.post("/projects/:id/unpublish", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(UnpublishProjectResponse.parse(project));
+  res.json(UnpublishProjectResponse.parse(normProject(project)));
 });
 
 export default router;
