@@ -62,4 +62,6 @@ export interface UpdateProjectBody {
    * @nullable
    */
   pedestalHeight?: number | null;
+  /** @nullable */
+  modelRotationY?: number | null;
 }

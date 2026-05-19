@@ -3,13 +3,14 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-type Theme = "warm-minimal" | "studio-grey" | "natural-arch";
+type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room";
 
 interface ThreeStudioViewerProps {
   modelUrl: string;
   theme: Theme;
   pedestalColor?: string | null;
   pedestalHeight?: number | null;
+  modelRotationY?: number | null;
   onLoad?: () => void;
 }
 
@@ -17,7 +18,15 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-function CameraIntro({ onDone }: { onDone: () => void }) {
+function CameraIntro({
+  onDone,
+  radius = 3.2,
+  lookTarget = [0, 0.4, 0] as [number, number, number],
+}: {
+  onDone: () => void;
+  radius?: number;
+  lookTarget?: [number, number, number];
+}) {
   const { camera } = useThree();
   const progressRef = useRef(0);
   const doneRef = useRef(false);
@@ -28,7 +37,6 @@ function CameraIntro({ onDone }: { onDone: () => void }) {
   const endAzimuth = 0;
   const startElevation = (38 * Math.PI) / 180;
   const endElevation = (15 * Math.PI) / 180;
-  const radius = 3.2;
 
   useEffect(() => {
     camera.position.set(
@@ -36,7 +44,7 @@ function CameraIntro({ onDone }: { onDone: () => void }) {
       radius * Math.sin(startElevation),
       radius * Math.cos(startElevation) * Math.cos(startAzimuth)
     );
-    camera.lookAt(0, 0.4, 0);
+    camera.lookAt(...lookTarget);
   }, []);
 
   useFrame((_state, delta) => {
@@ -52,7 +60,7 @@ function CameraIntro({ onDone }: { onDone: () => void }) {
       radius * Math.sin(elevation),
       radius * Math.cos(elevation) * Math.cos(azimuth)
     );
-    camera.lookAt(0, 0.4, 0);
+    camera.lookAt(...lookTarget);
 
     if (progressRef.current >= 1) {
       doneRef.current = true;
@@ -67,11 +75,13 @@ function ModelOnPedestal({
   url,
   pedestalTopY,
   setPedestalRadius,
+  rotationY,
   onLoad,
 }: {
   url: string;
   pedestalTopY: number;
   setPedestalRadius: (r: number) => void;
+  rotationY?: number | null;
   onLoad?: () => void;
 }) {
   const gltf = useGLTF(url);
@@ -101,7 +111,7 @@ function ModelOnPedestal({
   }, [gltf.scene, url, pedestalTopY]);
 
   return (
-    <group rotation={[0, Math.PI, 0]}>
+    <group rotation={[0, ((rotationY ?? 180) * Math.PI) / 180, 0]}>
       <primitive object={gltf.scene} />
     </group>
   );
@@ -209,11 +219,13 @@ function WarmMinimalScene({
   modelUrl,
   pedestalColor,
   pedestalHeight,
+  modelRotationY,
   onLoad,
 }: {
   modelUrl: string;
   pedestalColor?: string | null;
   pedestalHeight?: number | null;
+  modelRotationY?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalRadius, setPedestalRadius] = useState(0.4);
@@ -430,6 +442,7 @@ function WarmMinimalScene({
             url={modelUrl}
             pedestalTopY={pedestalTopY}
             setPedestalRadius={setPedestalRadius}
+            rotationY={modelRotationY}
             onLoad={onLoad}
           />
         </Suspense>
@@ -470,11 +483,13 @@ function GreyStudioScene({
   modelUrl,
   pedestalColor,
   pedestalHeight,
+  modelRotationY,
   onLoad,
 }: {
   modelUrl: string;
   pedestalColor?: string | null;
   pedestalHeight?: number | null;
+  modelRotationY?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalRadius, setPedestalRadius] = useState(0.4);
@@ -596,7 +611,7 @@ function GreyStudioScene({
       </mesh>
 
       <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} rotationY={modelRotationY} onLoad={onLoad} />
       </Suspense>
     </>
   );
@@ -606,11 +621,13 @@ function NaturalArchScene({
   modelUrl,
   pedestalColor,
   pedestalHeight,
+  modelRotationY,
   onLoad,
 }: {
   modelUrl: string;
   pedestalColor?: string | null;
   pedestalHeight?: number | null;
+  modelRotationY?: number | null;
   onLoad?: () => void;
 }) {
   const [pedestalRadius, setPedestalRadius] = useState(0.35);
@@ -741,17 +758,121 @@ function NaturalArchScene({
       </mesh>
 
       <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
+        <ModelOnPedestal url={modelUrl} pedestalTopY={pedestalTopY} setPedestalRadius={setPedestalRadius} rotationY={modelRotationY} onLoad={onLoad} />
       </Suspense>
     </>
   );
 }
 
-export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, onLoad }: ThreeStudioViewerProps) {
+
+function DuplexRoomScene({
+  modelUrl,
+  pedestalColor,
+  pedestalHeight,
+  modelRotationY,
+  onLoad,
+}: {
+  modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  modelRotationY?: number | null;
+  onLoad?: () => void;
+}) {
+  const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/duplex.glb`);
+  const [pedestalRadius, setPedestalRadius] = useState(0.35);
+
+  // Auto-centre using the floor mesh as anchor, not the overall Box3.
+  // The Backdrop / exterior elements extend below the real floor, so using the
+  // overall Box3.min.y would push the scene too high and leave the pedestal
+  // stranded beneath the room. We find the "Floor" mesh and use its bounds.
+  const roomPosition = useMemo<[number, number, number]>(() => {
+    scene.updateWorldMatrix(true, true);
+
+    // Prefer the floor mesh for the most accurate ground-level Y.
+    let floorBox: THREE.Box3 | null = null;
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh && child.name.toLowerCase().includes("floor")) {
+        const b = new THREE.Box3().setFromObject(child);
+        if (!floorBox || b.min.y < floorBox.min.y) floorBox = b;
+      }
+    });
+
+    if (floorBox) {
+      const fb = floorBox as THREE.Box3;
+      const cx = fb.getCenter(new THREE.Vector3());
+      return [-cx.x, -fb.min.y, -cx.z];
+    }
+
+    // Fallback: use the overall box (original behaviour for other models).
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = box.getCenter(new THREE.Vector3());
+    return [-center.x, -box.min.y, -center.z];
+  }, [scene]);
+
+  useEffect(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  const pColor = pedestalColor ?? "#d4cfc8";
+  const pHeight = pedestalHeight ?? 0;
+  // When pHeight is 0 the user wants the model placed directly on the floor
+  // with no visible platform at all.
+  const showPedestal = pHeight > 0.001;
+  const pedestalTopY = showPedestal ? 0.28 + pHeight : 0;
+
+  // XZ offset that places the pedestal on the grey carpet in the centre of the room.
+  const CARPET_X = 0;
+  const CARPET_Z = -2.5;
+
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6, metalness: 0.05 }),
+    [pColor]
+  );
+
+  return (
+    <>
+      {/* Position derived at runtime via Box3 to handle the model's combined root rotations */}
+      <primitive object={scene} position={roomPosition} scale={[1.15, 1.15, 1.15]} />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[2, 4, 2]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
+      {/* base cylinder */}
+      <mesh position={[CARPET_X, 0.14, CARPET_Z]} castShadow receiveShadow visible={showPedestal}>
+        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+      {/* top cylinder */}
+      <mesh position={[CARPET_X, 0.28 + pHeight / 2, CARPET_Z]} castShadow receiveShadow visible={showPedestal}>
+        <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+      <Suspense fallback={null}>
+        <group position={[CARPET_X, 0, CARPET_Z]}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={pedestalTopY}
+            setPedestalRadius={setPedestalRadius}
+            rotationY={modelRotationY}
+            onLoad={onLoad}
+          />
+        </group>
+      </Suspense>
+    </>
+  );
+}
+
+export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   const [modelReady, setModelReady] = useState(false);
 
   useGLTF.preload(modelUrl);
+  if (theme === "duplex-room") {
+    useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`);
+  }
 
   useEffect(() => {
     setModelReady(false);
@@ -774,30 +895,57 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.35,
         }}
-        style={{ background: theme === "warm-minimal" ? "#a8c4d2" : "transparent" }}
+        style={{
+          background: theme === "warm-minimal" ? "#a8c4d2"
+            : theme === "duplex-room" ? "#b0a898"
+            : "transparent"
+        }}
       >
-        {modelReady && <CameraIntro key={modelUrl} onDone={() => setIntroDone(true)} />}
-        <OrbitControls
-          enabled={introDone}
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={1}
-          maxDistance={8}
-          minPolarAngle={Math.PI * 0.08}
-          maxPolarAngle={Math.PI / 2 - 0.05}
-          minAzimuthAngle={-Math.PI * 0.65}
-          maxAzimuthAngle={Math.PI * 0.65}
-          target={[0, 0.4, 0]}
-        />
+        {modelReady && (
+          <CameraIntro
+            key={modelUrl}
+            onDone={() => setIntroDone(true)}
+            radius={theme === "duplex-room" ? 5.0 : 3.2}
+            lookTarget={theme === "duplex-room" ? [0, 0.4, -2.5] : [0, 0.4, 0]}
+          />
+        )}
+        {theme === "duplex-room" ? (
+          <OrbitControls
+            enabled={introDone}
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={0.8}
+            maxDistance={5.0}
+            minPolarAngle={Math.PI * 0.08}
+            maxPolarAngle={Math.PI * 0.48}
+            target={[0, 0.4, -2.5]}
+          />
+        ) : (
+          <OrbitControls
+            enabled={introDone}
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={1}
+            maxDistance={8}
+            minPolarAngle={Math.PI * 0.08}
+            maxPolarAngle={Math.PI / 2 - 0.05}
+            minAzimuthAngle={-Math.PI * 0.65}
+            maxAzimuthAngle={Math.PI * 0.65}
+            target={[0, 0.4, 0]}
+          />
+        )}
 
         {theme === "warm-minimal" && (
-          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
+          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
         )}
         {theme === "studio-grey" && (
-          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
+          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
         )}
         {theme === "natural-arch" && (
-          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} onLoad={handleModelLoad} />
+          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+        )}
+        {theme === "duplex-room" && (
+          <DuplexRoomScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
         )}
       </Canvas>
     </div>

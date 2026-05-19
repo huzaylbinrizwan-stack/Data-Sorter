@@ -63,6 +63,8 @@ export interface Project {
    */
   pedestalHeight?: number | null;
   /** @nullable */
+  modelRotationY?: number | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: Date;

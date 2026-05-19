@@ -90,6 +90,7 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     studioBackgroundScale: project.studioBackgroundScale ?? null,
     pedestalColor: project.pedestalColor ?? null,
     pedestalHeight: project.pedestalHeight ?? null,
+    modelRotationY: project.modelRotationY ?? null,
   }));
 });
 
@@ -163,6 +164,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     studioBackgroundScale: project.studioBackgroundScale ?? null,
     pedestalColor: project.pedestalColor ?? null,
     pedestalHeight: project.pedestalHeight ?? null,
+    modelRotationY: project.modelRotationY ?? null,
     materials: baseMaterials,
     variants,
   }));
@@ -266,6 +268,14 @@ router.patch("/projects/:id", async (req, res): Promise<void> => {
   const parsed = UpdateProjectBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  // Drizzle throws "No values to set" if every field in the body was stripped
+  // by Zod (e.g. all-undefined body). Return the current record in that case.
+  if (Object.keys(parsed.data).length === 0) {
+    const [current] = await db.select().from(projectsTable).where(eq(projectsTable.id, params.data.id));
+    if (!current) { res.status(404).json({ error: "Project not found" }); return; }
+    res.json(UpdateProjectResponse.parse(normProject(current)));
     return;
   }
   const [project] = await db

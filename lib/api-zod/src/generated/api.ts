@@ -96,6 +96,7 @@ export const ListProjectsResponseItem = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -135,6 +136,7 @@ export const ListProjectsResponseItem = zod.object({
     .min(listProjectsResponsePedestalHeightMin)
     .max(listProjectsResponsePedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -160,6 +162,7 @@ export const CreateProjectBody = zod.object({
       "warm-minimal",
       "studio-grey",
       "natural-arch",
+      "duplex-room",
     ])
     .optional(),
   hotspotX: zod.number().optional(),
@@ -210,6 +213,7 @@ export const GetProjectResponse = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -286,6 +290,7 @@ export const UpdateProjectBody = zod.object({
       "warm-minimal",
       "studio-grey",
       "natural-arch",
+      "duplex-room",
     ])
     .optional(),
   hotspotX: zod.number().optional(),
@@ -323,6 +328,7 @@ export const UpdateProjectBody = zod.object({
     .min(updateProjectBodyPedestalHeightMin)
     .max(updateProjectBodyPedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -353,6 +359,7 @@ export const UpdateProjectResponse = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -392,6 +399,7 @@ export const UpdateProjectResponse = zod.object({
     .min(updateProjectResponsePedestalHeightMin)
     .max(updateProjectResponsePedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -440,6 +448,7 @@ export const PublishProjectResponse = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -479,6 +488,7 @@ export const PublishProjectResponse = zod.object({
     .min(publishProjectResponsePedestalHeightMin)
     .max(publishProjectResponsePedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -520,6 +530,7 @@ export const UnpublishProjectResponse = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -559,6 +570,7 @@ export const UnpublishProjectResponse = zod.object({
     .min(unpublishProjectResponsePedestalHeightMin)
     .max(unpublishProjectResponsePedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -599,6 +611,7 @@ export const GetStudioProjectMetaResponse = zod
       "warm-minimal",
       "studio-grey",
       "natural-arch",
+      "duplex-room",
     ]),
     hotspotX: zod.number(),
     hotspotY: zod.number(),
@@ -639,6 +652,7 @@ export const GetStudioProjectMetaResponse = zod
       .min(getStudioProjectMetaResponsePedestalHeightMin)
       .max(getStudioProjectMetaResponsePedestalHeightMax)
       .nullish(),
+    modelRotationY: zod.number().nullish(),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -677,6 +691,7 @@ export const GetStudioProjectResponse = zod.object({
     "warm-minimal",
     "studio-grey",
     "natural-arch",
+    "duplex-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -716,6 +731,7 @@ export const GetStudioProjectResponse = zod.object({
     .min(getStudioProjectResponsePedestalHeightMin)
     .max(getStudioProjectResponsePedestalHeightMax)
     .nullish(),
+  modelRotationY: zod.number().nullish(),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -865,6 +881,7 @@ export const GetDashboardStatsResponse = zod.object({
         "warm-minimal",
         "studio-grey",
         "natural-arch",
+        "duplex-room",
       ]),
       hotspotX: zod.number(),
       hotspotY: zod.number(),
@@ -910,6 +927,7 @@ export const GetDashboardStatsResponse = zod.object({
         .min(getDashboardStatsResponseRecentProjectsItemPedestalHeightMin)
         .max(getDashboardStatsResponseRecentProjectsItemPedestalHeightMax)
         .nullish(),
+      modelRotationY: zod.number().nullish(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),

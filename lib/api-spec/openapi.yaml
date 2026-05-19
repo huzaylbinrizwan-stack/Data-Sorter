@@ -727,7 +727,7 @@ components:
           type: boolean
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
         hotspotX:
           type: number
         hotspotY:
@@ -783,6 +783,8 @@ components:
           type: ["number", "null"]
           minimum: 0.01
           maximum: 1.5
+        modelRotationY:
+          type: ["number", "null"]
         folderId:
           type: ["integer", "null"]
         publicSlug:
@@ -833,7 +835,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
         hotspotX:
           type: number
         hotspotY:
@@ -874,7 +876,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
         hotspotX:
           type: number
         hotspotY:
@@ -929,6 +931,8 @@ components:
           type: ["number", "null"]
           minimum: 0.01
           maximum: 1.5
+        modelRotationY:
+          type: ["number", "null"]
 
     StudioProjectMeta:
       type: object
@@ -944,7 +948,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
         hotspotX:
           type: number
         hotspotY:
@@ -1002,6 +1006,8 @@ components:
           type: ["number", "null"]
           minimum: 0.01
           maximum: 1.5
+        modelRotationY:
+          type: ["number", "null"]
       required:
         - id
         - name
@@ -1069,7 +1075,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
         hotspotX:
           type: number
         hotspotY:
@@ -1125,6 +1131,8 @@ components:
           type: ["number", "null"]
           minimum: 0.01
           maximum: 1.5
+        modelRotationY:
+          type: ["number", "null"]
         publicSlug:
           type: string
         materials:

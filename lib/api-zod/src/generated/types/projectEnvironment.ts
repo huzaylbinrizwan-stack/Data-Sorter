@@ -18,4 +18,5 @@ export const ProjectEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;

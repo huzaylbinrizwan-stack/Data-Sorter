@@ -73,6 +73,7 @@ const ENVIRONMENTS = [
   { value: "warm-minimal", label: "Warm Minimal", bg: "radial-gradient(ellipse at 40% 60%, #ddd3c5 0%, #c8bfb2 100%)", desc: "Beige Japandi showroom", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "studio-grey", label: "Grey Studio", bg: "radial-gradient(ellipse at 50% 40%, #9a9490 0%, #7e7a76 100%)", desc: "Medium grey arch backdrop with stage", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "natural-arch", label: "Natural Arch", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b0 0%, #c8b898 100%)", desc: "Warm sandy room with stone arches", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
+  { value: "duplex-room", label: "Duplex Room", bg: "radial-gradient(ellipse at 50% 40%, #c8b898 0%, #8a7a6a 100%)", desc: "Architectural room with staircase", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
 ];
 
 const LANGUAGES = [
@@ -667,8 +668,10 @@ export default function Editor() {
   const textColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [localPedestalColor, setLocalPedestalColor] = useState<string>("#252527");
   const [localPedestalHeight, setLocalPedestalHeight] = useState<number>(8);
+  const [localModelRotationY, setLocalModelRotationY] = useState<number>(180);
   const pedestalColorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pedestalHeightDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelRotationYDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bgPhotoFileInputRef = useRef<HTMLInputElement>(null);
   const [bgUploadProgress, setBgUploadProgress] = useState<number | null>(null);
   const [bgFocalX, setBgFocalX] = useState<number>(50);
@@ -699,10 +702,13 @@ export default function Editor() {
       setLocalModelY(project.studioModelY ?? null);
       setLocalModelSize(project.studioModelSize ?? 100);
       setLocalBgScale(project.studioBackgroundScale ?? 100);
-      const defaultPedestalColor = project.environment === "warm-minimal" ? "#f0ebe3" : "#252527";
-      const defaultPedestalHeight = project.environment === "warm-minimal" ? 5 : 8;
+      const defaultPedestalColor = project.environment === "warm-minimal" ? "#f0ebe3"
+        : project.environment === "duplex-room" ? "#d4cfc8"
+        : "#252527";
+      const defaultPedestalHeight = (project.environment === "warm-minimal" || project.environment === "duplex-room") ? 5 : 8;
       setLocalPedestalColor(project.pedestalColor ?? defaultPedestalColor);
       setLocalPedestalHeight(Math.round((project.pedestalHeight ?? (defaultPedestalHeight / 100)) * 100));
+      setLocalModelRotationY(project.modelRotationY != null ? Math.round(project.modelRotationY) : 180);
     }
   }, [project?.id, project?.environment]);
 
@@ -751,7 +757,7 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
-    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch"] as const;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch", "duplex-room"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
     const preset = ENVIRONMENTS.find(e => e.value === env);
@@ -948,7 +954,18 @@ export default function Editor() {
     setLocalPedestalHeight(sliderValue);
     if (pedestalHeightDebounceRef.current) clearTimeout(pedestalHeightDebounceRef.current);
     pedestalHeightDebounceRef.current = setTimeout(async () => {
-      await updateProject.mutateAsync({ id: projectId, data: { pedestalHeight: sliderValue / 100 } });
+      const heightValue = sliderValue === 0 ? null : sliderValue / 100;
+      await updateProject.mutateAsync({ id: projectId, data: { pedestalHeight: heightValue } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    }, 300);
+  };
+
+  const handleModelRotationYChange = (degrees: number) => {
+    const clamped = ((degrees % 360) + 360) % 360;
+    setLocalModelRotationY(clamped);
+    if (modelRotationYDebounceRef.current) clearTimeout(modelRotationYDebounceRef.current);
+    modelRotationYDebounceRef.current = setTimeout(async () => {
+      await updateProject.mutateAsync({ id: projectId, data: { modelRotationY: clamped } });
       queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     }, 300);
   };
@@ -1172,7 +1189,7 @@ export default function Editor() {
               ))}
             </div>
 
-            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch") && (
+            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch" || project.environment === "duplex-room") && (
               <div className="mt-4 pt-4 border-t border-border space-y-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Pedestal</p>
 
@@ -1197,7 +1214,7 @@ export default function Editor() {
                   </div>
                   <input
                     type="range"
-                    min={1}
+                    min={0}
                     max={150}
                     step={1}
                     value={localPedestalHeight}
@@ -1206,9 +1223,41 @@ export default function Editor() {
                     data-testid="slider-pedestal-height"
                   />
                   <div className="flex justify-between">
-                    <span className="text-[10px] text-muted-foreground/60">Low</span>
+                    <span className="text-[10px] text-muted-foreground/60">Off (floor)</span>
                     <span className="text-[10px] text-muted-foreground/60">High</span>
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Model Face</Label>
+                    <span className="text-xs text-muted-foreground font-mono">{localModelRotationY}°</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[0, 90, 180, 270].map((deg) => (
+                      <button
+                        key={deg}
+                        onClick={() => handleModelRotationYChange(deg)}
+                        className={`flex-1 text-xs py-1 rounded border transition-colors ${
+                          localModelRotationY === deg
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 text-muted-foreground border-border hover:bg-muted"
+                        }`}
+                      >
+                        {deg}°
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={359}
+                    step={1}
+                    value={localModelRotationY}
+                    onChange={(e) => handleModelRotationYChange(Number(e.target.value))}
+                    className="w-full accent-primary"
+                    data-testid="slider-model-rotation-y"
+                  />
                 </div>
               </div>
             )}

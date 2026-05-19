@@ -40,6 +40,7 @@ export const ProjectEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;
 
 export type ProjectType = (typeof ProjectType)[keyof typeof ProjectType];
@@ -122,6 +123,7 @@ export const CreateProjectBodyEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;
 
 export type CreateProjectBodyType =
@@ -166,6 +168,7 @@ export const UpdateProjectBodyEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;
 
 export type UpdateProjectBodyType =
@@ -244,6 +247,7 @@ export const StudioProjectMetaEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;
 
 export type StudioProjectMetaType =
@@ -350,6 +354,7 @@ export const StudioProjectEnvironment = {
   "warm-minimal": "warm-minimal",
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
+  "duplex-room": "duplex-room",
 } as const;
 
 export type StudioProjectType =
