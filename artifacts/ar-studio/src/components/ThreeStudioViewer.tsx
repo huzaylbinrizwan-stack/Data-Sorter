@@ -135,6 +135,76 @@ function createArchFrameGeometry(
   return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
 }
 
+function makeFloorTileTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#cfc4a8";
+  ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = "#b4a890";
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i <= 4; i++) {
+    const pos = i * 128;
+    ctx.beginPath();
+    ctx.moveTo(pos, 0);
+    ctx.lineTo(pos, size);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, pos);
+    ctx.lineTo(size, pos);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 6);
+  return tex;
+}
+
+function makeStuccoTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ece6d8";
+  ctx.fillRect(0, 0, size, size);
+  const rng = (min: number, max: number) => min + Math.random() * (max - min);
+  for (let i = 0; i < 300; i++) {
+    const x = rng(0, size);
+    const y = rng(0, size);
+    const rx = rng(2, 9);
+    const ry = rng(2, 9);
+    const alpha = rng(0.04, 0.10);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#3a2e20";
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, rng(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  for (let i = 0; i < 80; i++) {
+    const x = rng(0, size);
+    const y = rng(0, size);
+    const rx = rng(2, 7);
+    const ry = rng(2, 7);
+    const alpha = rng(0.05, 0.08);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, rng(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 3);
+  return tex;
+}
+
 function WarmMinimalScene({
   modelUrl,
   pedestalColor,
@@ -146,102 +216,224 @@ function WarmMinimalScene({
   pedestalHeight?: number | null;
   onLoad?: () => void;
 }) {
-  const [pedestalSize, setPedestalSize] = useState({ w: 0.8, d: 0.8 });
+  const [pedestalRadius, setPedestalRadius] = useState(0.4);
   const h = pedestalHeight ?? 0.05;
+  const pedestalTopY = 0.28 + h;
 
-  const setPedestalRadius = (r: number) => {
-    setPedestalSize({ w: r * 1.6, d: r * 1.6 });
-  };
+  const floorTex = useMemo(() => makeFloorTileTexture(), []);
+  const stuccoTex = useMemo(() => makeStuccoTexture(), []);
 
   const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#e8ddd0", roughness: 0.85, metalness: 0 }),
+    () => new THREE.MeshStandardMaterial({ color: "#cfc4a8", map: floorTex, roughness: 0.9, metalness: 0 }),
+    [floorTex]
+  );
+
+  const stuccoBase = useMemo(() => ({
+    map: stuccoTex,
+    roughness: 0.95,
+    metalness: 0,
+  }), [stuccoTex]);
+
+  const leftPierMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e8e2d6", ...stuccoBase }),
+    [stuccoBase]
+  );
+  const rightPierMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#ece6dc", ...stuccoBase }),
+    [stuccoBase]
+  );
+  const farPierMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e4ddd2", ...stuccoBase }),
+    [stuccoBase]
+  );
+
+  const backWallStucco = useMemo(() => {
+    const t = stuccoTex.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 2);
+    t.needsUpdate = true;
+    return t;
+  }, [stuccoTex]);
+  const backWallMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#f0ebdf", map: backWallStucco, roughness: 0.95, metalness: 0 }),
+    [backWallStucco]
+  );
+
+  const sideWallMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#e6e0d4", ...stuccoBase }),
+    [stuccoBase]
+  );
+
+  const plinthMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#d8d0bc", roughness: 0.75, metalness: 0 }),
     []
   );
-  const wallMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#ddd3c5", roughness: 0.9, metalness: 0 }),
-    []
-  );
-  const panelMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#ccc2b4", roughness: 0.8, metalness: 0 }),
-    []
-  );
+
   const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#f0ebe3", roughness: 0.6, metalness: 0 }),
+    () => new THREE.MeshStandardMaterial({ color: pedestalColor ?? "#ddd6c6", roughness: 0.75, metalness: 0 }),
     [pedestalColor]
   );
 
+  const vaseMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#9a4e1c", roughness: 0.85, metalness: 0 }),
+    []
+  );
+
+  const branchMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#2c1a0a", roughness: 0.9, metalness: 0 }),
+    []
+  );
+
+  const vasePoints = useMemo(() => [
+    new THREE.Vector2(0.06, 0),
+    new THREE.Vector2(0.10, 0.04),
+    new THREE.Vector2(0.20, 0.18),
+    new THREE.Vector2(0.23, 0.35),
+    new THREE.Vector2(0.21, 0.50),
+    new THREE.Vector2(0.15, 0.62),
+    new THREE.Vector2(0.10, 0.68),
+    new THREE.Vector2(0.08, 0.72),
+    new THREE.Vector2(0.09, 0.76),
+    new THREE.Vector2(0.07, 0.80),
+  ], []);
+
+  const vaseGeo = useMemo(() => new THREE.LatheGeometry(vasePoints, 32), [vasePoints]);
+
+  const branches = useMemo(() => [
+    { len: 1.3, yRot: 0.2,  xRot: -0.55 },
+    { len: 1.0, yRot: 1.1,  xRot: -0.45 },
+    { len: 0.85, yRot: 2.3, xRot: -0.38 },
+    { len: 0.7, yRot: 4.0,  xRot: -0.50 },
+  ], []);
+
+  const subBranches = useMemo(() => [
+    { len: 0.4, yRot: 0.2 + 0.6,  xRot: -0.55 - 0.3, baseLen: 1.3, branchIdx: 0 },
+    { len: 0.35, yRot: 2.3 - 0.5, xRot: -0.38 - 0.25, baseLen: 0.85, branchIdx: 2 },
+  ], []);
+
   return (
     <>
-      <ambientLight intensity={0.4} color="#fff8ef" />
+      <color attach="background" args={["#a8c4d2"]} />
+
       <directionalLight
-        position={[-3, 5, 2]}
-        intensity={2.5}
-        color="#ffe8c0"
+        position={[-5, 12, 4]}
+        intensity={5.5}
+        color="#fff4d0"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0003}
-        shadow-camera-left={-4}
-        shadow-camera-right={4}
-        shadow-camera-top={4}
-        shadow-camera-bottom={-4}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
         shadow-camera-near={0.1}
-        shadow-camera-far={20}
+        shadow-camera-far={30}
       />
+      <hemisphereLight args={["#b8d0e4", "#c4b290", 0.75]} />
 
-      {/* Floor */}
+      {/* Floor — travertine tile */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <planeGeometry args={[10, 10]} />
+        <planeGeometry args={[14, 14]} />
         <primitive object={floorMat} attach="material" />
       </mesh>
 
+      {/* Left pier */}
+      <mesh castShadow receiveShadow position={[-2.7, 4.0, -2.3]}>
+        <boxGeometry args={[1.1, 8.0, 0.85]} />
+        <primitive object={leftPierMat} attach="material" />
+      </mesh>
+
+      {/* Right pier */}
+      <mesh castShadow receiveShadow position={[2.3, 3.75, -2.5]}>
+        <boxGeometry args={[1.0, 7.5, 0.85]} />
+        <primitive object={rightPierMat} attach="material" />
+      </mesh>
+
+      {/* Far-back right pier */}
+      <mesh castShadow receiveShadow position={[3.9, 3.25, -4.1]}>
+        <boxGeometry args={[0.85, 6.5, 0.8]} />
+        <primitive object={farPierMat} attach="material" />
+      </mesh>
+
       {/* Back wall */}
-      <mesh receiveShadow position={[0, 2.5, -3.5]}>
-        <boxGeometry args={[10, 5, 0.1]} />
-        <primitive object={wallMat} attach="material" />
+      <mesh receiveShadow position={[0, 1.9, -5.2]}>
+        <boxGeometry args={[12, 3.8, 0.15]} />
+        <primitive object={backWallMat} attach="material" />
       </mesh>
 
-      {/* Ceiling — raised to y=5.5 */}
-      <mesh receiveShadow position={[0, 5.5, 0]}>
-        <boxGeometry args={[12, 0.08, 12]} />
-        <primitive object={wallMat} attach="material" />
+      {/* Left side enclosure wall */}
+      <mesh castShadow receiveShadow position={[-4.6, 2.75, -2.0]}>
+        <boxGeometry args={[0.18, 5.5, 10]} />
+        <primitive object={sideWallMat} attach="material" />
       </mesh>
 
-      {/* Horizontal wall rail / panel band on back wall */}
-      <mesh castShadow receiveShadow position={[0, 1.8, -3.44]}>
-        <boxGeometry args={[9, 0.06, 0.08]} />
-        <primitive object={panelMat} attach="material" />
+      {/* Stepped plinth — lower step */}
+      <mesh receiveShadow position={[0, 0.07, -1.0]}>
+        <boxGeometry args={[3.8, 0.14, 2.4]} />
+        <primitive object={plinthMat} attach="material" />
       </mesh>
 
-      {/* Left column — base plinth */}
-      <mesh castShadow receiveShadow position={[-2.2, 0.35, -1.5]}>
-        <boxGeometry args={[0.55, 0.7, 2.0]} />
-        <primitive object={panelMat} attach="material" />
-      </mesh>
-      {/* Left column — tall pilaster */}
-      <mesh castShadow receiveShadow position={[-2.2, 2.0, -1.5]}>
-        <boxGeometry args={[0.38, 2.6, 1.6]} />
-        <primitive object={panelMat} attach="material" />
+      {/* Stepped plinth — upper step */}
+      <mesh castShadow receiveShadow position={[0, 0.20, -1.1]}>
+        <boxGeometry args={[2.6, 0.13, 1.8]} />
+        <primitive object={plinthMat} attach="material" />
       </mesh>
 
-      {/* Right column — base plinth */}
-      <mesh castShadow receiveShadow position={[2.2, 0.35, -1.5]}>
-        <boxGeometry args={[0.55, 0.7, 2.0]} />
-        <primitive object={panelMat} attach="material" />
-      </mesh>
-      {/* Right column — tall pilaster */}
-      <mesh castShadow receiveShadow position={[2.2, 2.0, -1.5]}>
-        <boxGeometry args={[0.38, 2.6, 1.6]} />
-        <primitive object={panelMat} attach="material" />
-      </mesh>
-
-      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
-        <boxGeometry args={[pedestalSize.w, h, pedestalSize.d]} />
+      {/* Product pedestal cylinder */}
+      <mesh castShadow receiveShadow position={[0, 0.28 + h / 2, -1.1]}>
+        <cylinderGeometry args={[pedestalRadius, pedestalRadius, h, 48]} />
         <primitive object={pedestalMat} attach="material" />
       </mesh>
 
-      <Suspense fallback={null}>
-        <ModelOnPedestal url={modelUrl} pedestalTopY={h} setPedestalRadius={setPedestalRadius} onLoad={onLoad} />
-      </Suspense>
+      {/* Terracotta amphora vase */}
+      <mesh castShadow position={[-1.8, 0, -0.4]}>
+        <primitive object={vaseGeo} attach="geometry" />
+        <primitive object={vaseMat} attach="material" />
+      </mesh>
+
+      {/* Bare branches from vase top */}
+      {branches.map((b, i) => (
+        <mesh
+          key={i}
+          castShadow
+          position={[-1.8, 0.82 + b.len * Math.cos(-b.xRot) / 2, -0.4]}
+          rotation={[b.xRot, b.yRot, 0]}
+        >
+          <cylinderGeometry args={[0.012, 0.006, b.len, 6]} />
+          <primitive object={branchMat} attach="material" />
+        </mesh>
+      ))}
+
+      {/* Sub-branches */}
+      {subBranches.map((sb, i) => {
+        const parent = branches[sb.branchIdx];
+        const along = sb.baseLen * 0.55;
+        const ox = Math.sin(parent.yRot) * Math.sin(-parent.xRot) * along;
+        const oy = Math.cos(-parent.xRot) * along;
+        const oz = Math.cos(parent.yRot) * Math.sin(-parent.xRot) * along;
+        return (
+          <mesh
+            key={i}
+            castShadow
+            position={[-1.8 + ox, 0.82 + oy, -0.4 + oz]}
+            rotation={[sb.xRot, sb.yRot, 0]}
+          >
+            <cylinderGeometry args={[0.005, 0.009, sb.len, 6]} />
+            <primitive object={branchMat} attach="material" />
+          </mesh>
+        );
+      })}
+
+      <group position={[0, 0, -1.1]}>
+        <Suspense fallback={null}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={pedestalTopY}
+            setPedestalRadius={setPedestalRadius}
+            onLoad={onLoad}
+          />
+        </Suspense>
+      </group>
     </>
   );
 }
@@ -580,9 +772,9 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           antialias: true,
           outputColorSpace: THREE.SRGBColorSpace,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.1,
+          toneMappingExposure: 1.35,
         }}
-        style={{ background: "transparent" }}
+        style={{ background: theme === "warm-minimal" ? "#a8c4d2" : "transparent" }}
       >
         {modelReady && <CameraIntro key={modelUrl} onDone={() => setIntroDone(true)} />}
         <OrbitControls
@@ -590,11 +782,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           enableDamping
           dampingFactor={0.08}
           minDistance={1}
-          maxDistance={7}
-          minPolarAngle={Math.PI * 0.1}
+          maxDistance={8}
+          minPolarAngle={Math.PI * 0.08}
           maxPolarAngle={Math.PI / 2 - 0.05}
-          minAzimuthAngle={-Math.PI * 0.55}
-          maxAzimuthAngle={Math.PI * 0.55}
+          minAzimuthAngle={-Math.PI * 0.65}
+          maxAzimuthAngle={Math.PI * 0.65}
           target={[0, 0.4, 0]}
         />
 
