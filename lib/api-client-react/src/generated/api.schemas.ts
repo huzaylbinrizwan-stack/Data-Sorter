@@ -41,6 +41,7 @@ export const ProjectEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;
 
 export type ProjectType = (typeof ProjectType)[keyof typeof ProjectType];
@@ -105,6 +106,8 @@ export interface Project {
    */
   pedestalHeight?: number | null;
   /** @nullable */
+  modelRotationY?: number | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: string;
@@ -124,6 +127,7 @@ export const CreateProjectBodyEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;
 
 export type CreateProjectBodyType =
@@ -169,6 +173,7 @@ export const UpdateProjectBodyEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;
 
 export type UpdateProjectBodyType =
@@ -233,6 +238,8 @@ export interface UpdateProjectBody {
    * @nullable
    */
   pedestalHeight?: number | null;
+  /** @nullable */
+  modelRotationY?: number | null;
 }
 
 export type StudioProjectMetaEnvironment =
@@ -248,6 +255,7 @@ export const StudioProjectMetaEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;
 
 export type StudioProjectMetaType =
@@ -313,6 +321,8 @@ export interface StudioProjectMeta {
    * @nullable
    */
   pedestalHeight?: number | null;
+  /** @nullable */
+  modelRotationY?: number | null;
 }
 
 export interface ProjectMaterial {
@@ -355,6 +365,7 @@ export const StudioProjectEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;
 
 export type StudioProjectType =
@@ -416,6 +427,8 @@ export interface StudioProject {
    * @nullable
    */
   pedestalHeight?: number | null;
+  /** @nullable */
+  modelRotationY?: number | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];

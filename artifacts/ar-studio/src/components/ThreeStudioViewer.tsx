@@ -1,9 +1,23 @@
 import { Suspense, useRef, useEffect, useState, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room";
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+
+type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1";
+
+interface SceneProps {
+  modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  modelRotationY?: number | null;
+  onLoad?: () => void;
+  onPlatformDetected?: (pos: { x: number; y: number; z: number; radius: number }) => void;
+}
 
 interface ThreeStudioViewerProps {
   modelUrl: string;
@@ -865,9 +879,116 @@ function DuplexRoomScene({
   );
 }
 
+function RoomMap1Scene({ modelUrl, pedestalColor, pedestalHeight, modelRotationY, onLoad, onPlatformDetected }: SceneProps) {
+  const gltf = useLoader(GLTFLoader, `${import.meta.env.BASE_URL}models/room-map-1.glb`, (loader) => {
+    (loader as GLTFLoader).setDRACOLoader(dracoLoader);
+  });
+  const scene = gltf.scene;
+  const [pedestalRadius, setPedestalRadius] = useState(0.5);
+  const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
+
+  useEffect(() => {
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    const platform = scene.getObjectByName("ar-platform") ?? scene.getObjectByName("ar-platfc");
+    if (platform) {
+      platform.updateWorldMatrix(true, true);
+      const box = new THREE.Box3().setFromObject(platform);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      box.getCenter(center);
+      box.getSize(size);
+
+      const topY = center.y + size.y / 2;
+      const radius = Math.max(size.x, size.z) / 2 * 0.85;
+
+      setPlatPos({ x: center.x, y: topY, z: center.z });
+      setPedestalRadius(Math.max(radius, 0.25));
+      onPlatformDetected?.({ x: center.x, y: topY, z: center.z, radius: Math.max(radius, 0.25) });
+    }
+  }, [scene]);
+
+  const pColor = pedestalColor ?? "#d4cfc8";
+  const pHeight = pedestalHeight ?? 0.05;
+  const baseY = platPos ? platPos.y : 0;
+  const pedestalTopY = baseY + 0.28 + pHeight;
+
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6, metalness: 0.05 }),
+    [pColor]
+  );
+
+  const platX = platPos?.x ?? 0;
+  const platZ = platPos?.z ?? 0;
+
+  return (
+    <>
+      <primitive object={scene} />
+
+      {/* Sky / bounce fill */}
+      <hemisphereLight args={["#c8dff0", "#d4c8a8", 0.9]} />
+
+      {/* Soft ambient so shadows aren't pitch black */}
+      <ambientLight intensity={0.55} color="#fff8f0" />
+
+      {/* Primary window: bright daylight shaft from upper-left */}
+      <directionalLight
+        position={[platX - 6, 8, platZ - 2]}
+        intensity={3.5}
+        color="#fff5e0"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0003}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-8}
+        shadow-camera-near={0.1}
+        shadow-camera-far={30}
+      />
+
+      {/* Secondary window: softer fill from opposite side */}
+      <directionalLight
+        position={[platX + 5, 6, platZ + 3]}
+        intensity={1.2}
+        color="#e8f4ff"
+      />
+
+      <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
+        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+      <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
+        <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+
+      <Suspense fallback={null}>
+        <group position={[platX, 0, platZ]}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={pedestalTopY}
+            setPedestalRadius={setPedestalRadius}
+            rotationY={modelRotationY}
+            onLoad={onLoad}
+          />
+        </group>
+      </Suspense>
+    </>
+  );
+}
+
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   const [modelReady, setModelReady] = useState(false);
+  const [platformTarget, setPlatformTarget] = useState<[number, number, number]>([0, 0.4, 0]);
 
   useGLTF.preload(modelUrl);
   if (theme === "duplex-room") {
@@ -877,11 +998,16 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
   useEffect(() => {
     setModelReady(false);
     setIntroDone(false);
+    setPlatformTarget([0, 0.4, 0]);
   }, [modelUrl, theme]);
 
   const handleModelLoad = () => {
     setModelReady(true);
     onLoad?.();
+  };
+
+  const handlePlatformDetected = (pos: { x: number; y: number; z: number; radius: number }) => {
+    setPlatformTarget([pos.x, pos.y, pos.z]);
   };
 
   return (
@@ -898,6 +1024,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         style={{
           background: theme === "warm-minimal" ? "#a8c4d2"
             : theme === "duplex-room" ? "#b0a898"
+            : theme === "room-map-1" ? "#c8c0b4"
             : "transparent"
         }}
       >
@@ -905,20 +1032,24 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           <CameraIntro
             key={modelUrl}
             onDone={() => setIntroDone(true)}
-            radius={theme === "duplex-room" ? 5.0 : 3.2}
-            lookTarget={theme === "duplex-room" ? [0, 0.4, -2.5] : [0, 0.4, 0]}
+            radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : 3.2}
+            lookTarget={
+              theme === "duplex-room" ? [0, 0.4, -2.5]
+              : theme === "room-map-1" ? platformTarget
+              : [0, 0.4, 0]
+            }
           />
         )}
-        {theme === "duplex-room" ? (
+        {(theme === "duplex-room" || theme === "room-map-1") ? (
           <OrbitControls
             enabled={introDone}
             enableDamping
             dampingFactor={0.08}
-            minDistance={0.8}
-            maxDistance={5.0}
+            minDistance={0.6}
+            maxDistance={theme === "duplex-room" ? 5.0 : 3.5}
             minPolarAngle={Math.PI * 0.08}
             maxPolarAngle={Math.PI * 0.48}
-            target={[0, 0.4, -2.5]}
+            target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
           />
         ) : (
           <OrbitControls
@@ -946,6 +1077,16 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         )}
         {theme === "duplex-room" && (
           <DuplexRoomScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+        )}
+        {theme === "room-map-1" && (
+          <RoomMap1Scene
+            modelUrl={modelUrl}
+            pedestalColor={pedestalColor}
+            pedestalHeight={pedestalHeight}
+            modelRotationY={modelRotationY}
+            onLoad={handleModelLoad}
+            onPlatformDetected={handlePlatformDetected}
+          />
         )}
       </Canvas>
     </div>

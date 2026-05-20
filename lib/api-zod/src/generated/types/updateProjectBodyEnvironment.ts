@@ -19,4 +19,5 @@ export const UpdateProjectBodyEnvironment = {
   "studio-grey": "studio-grey",
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
+  "room-map-1": "room-map-1",
 } as const;

@@ -727,7 +727,7 @@ components:
           type: boolean
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room, room-map-1]
         hotspotX:
           type: number
         hotspotY:
@@ -835,7 +835,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room, room-map-1]
         hotspotX:
           type: number
         hotspotY:
@@ -876,7 +876,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room, room-map-1]
         hotspotX:
           type: number
         hotspotY:
@@ -948,7 +948,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room, room-map-1]
         hotspotX:
           type: number
         hotspotY:
@@ -1075,7 +1075,7 @@ components:
           type: ["string", "null"]
         environment:
           type: string
-          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room]
+          enum: [black, white, luxury-home, classic-luxury, walls-plants, warm-minimal, studio-grey, natural-arch, duplex-room, room-map-1]
         hotspotX:
           type: number
         hotspotY:

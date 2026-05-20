@@ -74,6 +74,7 @@ const ENVIRONMENTS = [
   { value: "studio-grey", label: "Grey Studio", bg: "radial-gradient(ellipse at 50% 40%, #9a9490 0%, #7e7a76 100%)", desc: "Medium grey arch backdrop with stage", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "natural-arch", label: "Natural Arch", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b0 0%, #c8b898 100%)", desc: "Warm sandy room with stone arches", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "duplex-room", label: "Duplex Room", bg: "radial-gradient(ellipse at 50% 40%, #c8b898 0%, #8a7a6a 100%)", desc: "Architectural room with staircase", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
+  { value: "room-map-1", label: "Room Map 1", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b4 0%, #a89880 100%)", desc: "Custom architectural room with auto-detected product platform", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
 ];
 
 const LANGUAGES = [
@@ -703,9 +704,9 @@ export default function Editor() {
       setLocalModelSize(project.studioModelSize ?? 100);
       setLocalBgScale(project.studioBackgroundScale ?? 100);
       const defaultPedestalColor = project.environment === "warm-minimal" ? "#f0ebe3"
-        : project.environment === "duplex-room" ? "#d4cfc8"
+        : (project.environment === "duplex-room" || project.environment === "room-map-1") ? "#d4cfc8"
         : "#252527";
-      const defaultPedestalHeight = (project.environment === "warm-minimal" || project.environment === "duplex-room") ? 5 : 8;
+      const defaultPedestalHeight = (project.environment === "warm-minimal" || project.environment === "duplex-room" || project.environment === "room-map-1") ? 5 : 8;
       setLocalPedestalColor(project.pedestalColor ?? defaultPedestalColor);
       setLocalPedestalHeight(Math.round((project.pedestalHeight ?? (defaultPedestalHeight / 100)) * 100));
       setLocalModelRotationY(project.modelRotationY != null ? Math.round(project.modelRotationY) : 180);
@@ -757,7 +758,7 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
-    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch", "duplex-room"] as const;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch", "duplex-room", "room-map-1"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
     const preset = ENVIRONMENTS.find(e => e.value === env);
@@ -1189,7 +1190,7 @@ export default function Editor() {
               ))}
             </div>
 
-            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch" || project.environment === "duplex-room") && (
+            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch" || project.environment === "duplex-room" || project.environment === "room-map-1") && (
               <div className="mt-4 pt-4 border-t border-border space-y-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Pedestal</p>
 
