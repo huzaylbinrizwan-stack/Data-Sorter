@@ -8,6 +8,57 @@ import * as THREE from "three";
 const DRACO_PATH = `${import.meta.env.BASE_URL}draco/`;
 
 // ---------------------------------------------------------------------------
+// Signed-URL resolver
+//
+// The API server stores model files in GCS behind an authenticated proxy.
+// Fetching via /api/storage/objects/… redirect (302) breaks on iPhone Safari
+// because the Replit dev proxy rewrites the Location header, routing it back
+// to the Replit domain instead of storage.googleapis.com.
+//
+// Fix: use ?format=url to get the signed GCS URL as JSON, then pass the real
+// GCS URL directly to useGLTF so the browser fetches from GCS with no proxy
+// in the way.  The cache is module-level so it survives re-renders.
+// ---------------------------------------------------------------------------
+const _resolvedUrlCache = new Map<string, string>();
+const _resolvedUrlPending = new Map<string, Promise<void>>();
+
+/** Returns whether a given URL needs server-side resolution */
+function isStorageApiUrl(url: string): boolean {
+  return url.startsWith("/api/storage/objects/") || url.startsWith("/api/storage/public-objects/");
+}
+
+/**
+ * Suspense-compatible hook.  If `url` is a storage API path it fetches the
+ * signed GCS URL via ?format=url before returning — suspending the component
+ * until the fetch completes.  Non-storage URLs are returned as-is.
+ */
+function useResolvedStorageUrl(url: string): string {
+  if (!isStorageApiUrl(url)) return url;
+
+  const cached = _resolvedUrlCache.get(url);
+  if (cached) return cached;
+
+  let pending = _resolvedUrlPending.get(url);
+  if (!pending) {
+    pending = fetch(`${url}?format=url`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to resolve signed URL for ${url}: ${r.status}`);
+        return r.json() as Promise<{ url: string }>;
+      })
+      .then(({ url: signed }) => {
+        _resolvedUrlCache.set(url, signed);
+        _resolvedUrlPending.delete(url);
+      })
+      .catch((err) => {
+        _resolvedUrlPending.delete(url);
+        throw err;
+      });
+    _resolvedUrlPending.set(url, pending);
+  }
+  throw pending; // Suspense — component re-renders once promise resolves
+}
+
+// ---------------------------------------------------------------------------
 // Device tier detection
 // "low"  = mobile (phone/tablet) or WebGL-limited device → no antialias, no shadows, dpr capped at 1
 // "mid"  = mid-range laptop/desktop                     → no antialias, smaller shadows, dpr ≤ 1.5
@@ -186,7 +237,8 @@ function ModelOnPedestal({
   rotationY?: number | null;
   onLoad?: () => void;
 }) {
-  const gltf = useGLTF(url, DRACO_PATH);
+  const resolvedUrl = useResolvedStorageUrl(url);
+  const gltf = useGLTF(resolvedUrl, DRACO_PATH);
 
   useEffect(() => {
     if (!gltf.scene) return;
@@ -1099,7 +1151,8 @@ function CustomRoomModel({
   onLoad?: () => void;
   onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
 }) {
-  const { scene } = useGLTF(roomGlbUrl, DRACO_PATH);
+  const resolvedRoomGlbUrl = useResolvedStorageUrl(roomGlbUrl);
+  const { scene } = useGLTF(resolvedRoomGlbUrl, DRACO_PATH);
   const [pedestalRadius, setPedestalRadius] = useState(0.5);
   const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
   const [roomBoundsInfo, setRoomBoundsInfo] = useState<{
@@ -1287,7 +1340,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
 
   // Kick off parallel preloads before the Canvas even mounts.
   // useGLTF.preload is a no-op if the asset is already cached.
-  useGLTF.preload(modelUrl, DRACO_PATH);
+  // Skip API storage URLs — those require async URL resolution (useResolvedStorageUrl)
+  // before they can be preloaded; the Suspense boundary handles them instead.
+  if (!isStorageApiUrl(modelUrl)) {
+    useGLTF.preload(modelUrl, DRACO_PATH);
+  }
   useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`, DRACO_PATH);
   useGLTF.preload(`${import.meta.env.BASE_URL}models/room-map-1.glb`, DRACO_PATH);
 

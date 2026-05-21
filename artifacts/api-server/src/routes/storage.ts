@@ -64,6 +64,10 @@ storagePublicRouter.get("/storage/public-objects/*filePath", async (req: Request
       res.status(404).json({ error: "File not found" });
       return;
     }
+    if (req.query.format === "url") {
+      res.json({ url: signedUrl });
+      return;
+    }
     res.redirect(302, signedUrl);
   } catch (error) {
     req.log.error({ err: error }, "Error serving public object");
@@ -158,6 +162,10 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
     }
 
     const signedUrl = await objectStorageService.getObjectEntityDownloadURL(objectPath);
+    if (req.query.format === "url") {
+      res.json({ url: signedUrl });
+      return;
+    }
     res.redirect(302, signedUrl);
   } catch (error) {
     if (error instanceof ObjectNotFoundError) {
