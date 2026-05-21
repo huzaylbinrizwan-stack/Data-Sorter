@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { Readable } from "stream";
 import { like, or, and, eq } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
@@ -59,16 +60,23 @@ storagePublicRouter.get("/storage/public-objects/*filePath", async (req: Request
   try {
     const raw = req.params.filePath;
     const filePath = Array.isArray(raw) ? raw.join("/") : raw;
-    const signedUrl = await objectStorageService.getPublicObjectDownloadURL(filePath);
-    if (!signedUrl) {
+    const file = await objectStorageService.searchPublicObject(filePath);
+    if (!file) {
       res.status(404).json({ error: "File not found" });
       return;
     }
-    if (req.query.format === "url") {
-      res.json({ url: signedUrl });
-      return;
+
+    const response = await objectStorageService.downloadObject(file);
+
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
     }
-    res.redirect(302, signedUrl);
   } catch (error) {
     req.log.error({ err: error }, "Error serving public object");
     res.status(500).json({ error: "Failed to serve public object" });
@@ -161,12 +169,18 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
       }
     }
 
-    const signedUrl = await objectStorageService.getObjectEntityDownloadURL(objectPath);
-    if (req.query.format === "url") {
-      res.json({ url: signedUrl });
-      return;
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const response = await objectStorageService.downloadObject(objectFile);
+
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
     }
-    res.redirect(302, signedUrl);
   } catch (error) {
     if (error instanceof ObjectNotFoundError) {
       req.log.warn({ err: error }, "Object not found");
