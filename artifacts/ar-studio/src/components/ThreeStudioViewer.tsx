@@ -8,6 +8,33 @@ import * as THREE from "three";
 const DRACO_PATH = `${import.meta.env.BASE_URL}draco/`;
 
 // ---------------------------------------------------------------------------
+// GLTF companion-file URL interceptor
+//
+// .gltf files (non-binary) reference external companion files (binary buffers,
+// textures) via URIs.  When the URI is a root-absolute path like "/UUID" or a
+// deeply-relative path like "../../../../UUID", Three.js resolves it to the
+// domain root: https://DOMAIN/UUID — which has no handler and returns 404.
+//
+// We intercept these in Three.js's LoadingManager BEFORE fetch is called,
+// normalise the URL (so ".." traversals are resolved), detect the UUID-like
+// single-segment pattern, and reroute through the storage API.
+// ---------------------------------------------------------------------------
+THREE.DefaultLoadingManager.setURLModifier((url) => {
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.origin !== window.location.origin) return url;
+    // After normalisation a companion file ends up as a single path segment
+    // containing only hex digits and hyphens (UUID or partial-UUID shape).
+    if (/^\/[0-9a-f][0-9a-f-]{18,34}[0-9a-f]$/i.test(parsed.pathname)) {
+      return `/api/storage/objects/uploads${parsed.pathname}`;
+    }
+  } catch {
+    // ignore unparseable URLs
+  }
+  return url;
+});
+
+// ---------------------------------------------------------------------------
 // Device tier detection
 // "low"  = mobile (phone/tablet) or WebGL-limited device → no antialias, no shadows, dpr capped at 1
 // "mid"  = mid-range laptop/desktop                     → no antialias, smaller shadows, dpr ≤ 1.5
@@ -1285,9 +1312,13 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     : tier === "mid" ? Math.min(window.devicePixelRatio, 1.5)
     : 1;
 
-  // Kick off parallel preloads before the Canvas even mounts.
-  // useGLTF.preload is a no-op if the asset is already cached.
-  useGLTF.preload(modelUrl, DRACO_PATH);
+  // Kick off parallel preloads for static room assets before the Canvas mounts.
+  // NOTE: modelUrl (API storage) is intentionally NOT preloaded here.
+  // Preloading dynamic API URLs can produce unhandled promise rejections when
+  // the model has external companion files (e.g. .gltf + .bin) whose URIs
+  // need the URL interceptor above — which isn't guaranteed to run before the
+  // preload fires.  The component-level useGLTF inside the Canvas handles the
+  // model load, and any failure is caught by the WebGLErrorBoundary there.
   useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`, DRACO_PATH);
   useGLTF.preload(`${import.meta.env.BASE_URL}models/room-map-1.glb`, DRACO_PATH);
 

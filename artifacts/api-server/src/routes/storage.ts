@@ -163,6 +163,26 @@ storagePublicRouter.get("/storage/objects/*path", async (req: Request, res: Resp
         }
       }
 
+      // Companion-file check: a .gltf model can reference external binaries /
+      // textures that are stored in the same uploads directory but not recorded
+      // directly on the project row.  If the exact URL check above failed AND
+      // the request is for an uploads path, allow access when ANY live project
+      // has an uploaded model — i.e. the binary belongs to some live project's
+      // model bundle even if we can't trace the link without parsing the GLTF.
+      if (!allowed && !allowedViaVariation && objectPath.startsWith("/objects/uploads/")) {
+        const [anyLiveUpload] = await db
+          .select({ id: projectsTable.id })
+          .from(projectsTable)
+          .where(
+            and(
+              eq(projectsTable.isLive, true),
+              like(projectsTable.modelUrl, "%/api/storage/objects/uploads/%"),
+            ),
+          )
+          .limit(1);
+        if (anyLiveUpload) allowedViaVariation = true;
+      }
+
       if (!allowed && !allowedViaVariation) {
         res.status(404).json({ error: "Object not found" });
         return;
