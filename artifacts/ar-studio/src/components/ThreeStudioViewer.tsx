@@ -1,12 +1,11 @@
 import { Suspense, useRef, useEffect, useState, useMemo, Component } from "react";
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+// Local Draco decoder — avoids the cold DNS+TLS+download round-trip to gstatic.com
+// Files are copied from three/examples/jsm/libs/draco/ into public/draco/ at build time.
+const DRACO_PATH = `${import.meta.env.BASE_URL}draco/`;
 
 // ---------------------------------------------------------------------------
 // Device tier detection
@@ -158,6 +157,19 @@ function CameraIntro({
     }
   });
 
+  return null;
+}
+
+// Fires onFirstFrame on the very first rendered animation frame — used to
+// detect when the Canvas has started drawing so the loading overlay can be removed.
+function FirstFrameDetector({ onFirstFrame }: { onFirstFrame: () => void }) {
+  const fired = useRef(false);
+  useFrame(() => {
+    if (!fired.current) {
+      fired.current = true;
+      onFirstFrame();
+    }
+  });
   return null;
 }
 
@@ -956,10 +968,7 @@ function DuplexRoomScene({
 }
 
 function RoomMap1Scene({ modelUrl, pedestalColor, pedestalHeight, modelRotationY, onLoad, onPlatformDetected }: SceneProps) {
-  const gltf = useLoader(GLTFLoader, `${import.meta.env.BASE_URL}models/room-map-1.glb`, (loader) => {
-    (loader as GLTFLoader).setDRACOLoader(dracoLoader);
-  });
-  const scene = gltf.scene;
+  const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/room-map-1.glb`, DRACO_PATH);
   const [pedestalRadius, setPedestalRadius] = useState(0.5);
   const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
 
@@ -1090,10 +1099,7 @@ function CustomRoomModel({
   onLoad?: () => void;
   onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
 }) {
-  const gltf = useLoader(GLTFLoader, roomGlbUrl, (loader) => {
-    (loader as GLTFLoader).setDRACOLoader(dracoLoader);
-  });
-  const scene = gltf.scene;
+  const { scene } = useGLTF(roomGlbUrl, DRACO_PATH);
   const [pedestalRadius, setPedestalRadius] = useState(0.5);
   const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
   const [roomBoundsInfo, setRoomBoundsInfo] = useState<{
@@ -1266,6 +1272,9 @@ function CustomRoomScene({
 
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, roomGlbUrl, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
+  // roomReady = Canvas has painted its first frame → hide the blocking overlay
+  // modelReady = product model has fully loaded → start camera intro
+  const [roomReady, setRoomReady] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [platformTarget, setPlatformTarget] = useState<[number, number, number]>([0, 0.4, 0]);
   const [roomMaxDist, setRoomMaxDist] = useState(3.0);
@@ -1276,12 +1285,14 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     : tier === "mid" ? Math.min(window.devicePixelRatio, 1.5)
     : 1;
 
+  // Kick off parallel preloads before the Canvas even mounts.
+  // useGLTF.preload is a no-op if the asset is already cached.
   useGLTF.preload(modelUrl);
-  if (theme === "duplex-room") {
-    useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`);
-  }
+  useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`);
+  useGLTF.preload(`${import.meta.env.BASE_URL}models/room-map-1.glb`, DRACO_PATH);
 
   useEffect(() => {
+    setRoomReady(false);
     setModelReady(false);
     setIntroDone(false);
     setPlatformTarget([0, 0.4, 0]);
@@ -1322,8 +1333,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
 
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
-      {/* Loading overlay — visible until the scene reports it has finished loading */}
-      {!modelReady && (
+      {/* Phase 1 overlay: covers the Canvas until the first frame is drawn.
+          Hides as soon as the WebGL canvas starts painting — the room appears.
+          Phase 2: once room is visible but model is still loading, a subtle
+          bottom hint replaces the full-screen block. */}
+      {!roomReady && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -1337,6 +1351,29 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
             animation: "spin 0.8s linear infinite",
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+      {/* Phase 2: room is visible, product model still loading */}
+      {roomReady && !modelReady && (
+        <div style={{
+          position: "absolute", bottom: 16, left: 0, right: 0, zIndex: 1,
+          display: "flex", justifyContent: "center", pointerEvents: "none",
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            background: "rgba(0,0,0,0.45)", borderRadius: 20,
+            padding: "5px 14px",
+          }}>
+            <div style={{
+              width: 12, height: 12, borderRadius: "50%",
+              border: "1.5px solid rgba(255,255,255,0.2)",
+              borderTopColor: "rgba(255,255,255,0.7)",
+              animation: "spin 0.8s linear infinite",
+            }} />
+            <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, letterSpacing: "0.02em" }}>
+              Loading model…
+            </span>
+          </div>
         </div>
       )}
 
@@ -1361,6 +1398,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           style={{ background: bgColor }}
         >
           <ShadowConfig tier={tier} />
+          <FirstFrameDetector onFirstFrame={() => setRoomReady(true)} />
 
           {modelReady && (
             <CameraIntro
