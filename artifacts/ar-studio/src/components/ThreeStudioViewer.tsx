@@ -186,7 +186,7 @@ function ModelOnPedestal({
   rotationY?: number | null;
   onLoad?: () => void;
 }) {
-  const gltf = useGLTF(url);
+  const gltf = useGLTF(url, DRACO_PATH);
 
   useEffect(() => {
     if (!gltf.scene) return;
@@ -880,7 +880,7 @@ function DuplexRoomScene({
   modelRotationY?: number | null;
   onLoad?: () => void;
 }) {
-  const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/duplex.glb`);
+  const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/duplex.glb`, DRACO_PATH);
   const [pedestalRadius, setPedestalRadius] = useState(0.35);
 
   // Auto-centre using the floor mesh as anchor, not the overall Box3.
@@ -1287,8 +1287,8 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
 
   // Kick off parallel preloads before the Canvas even mounts.
   // useGLTF.preload is a no-op if the asset is already cached.
-  useGLTF.preload(modelUrl);
-  useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`);
+  useGLTF.preload(modelUrl, DRACO_PATH);
+  useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`, DRACO_PATH);
   useGLTF.preload(`${import.meta.env.BASE_URL}models/room-map-1.glb`, DRACO_PATH);
 
   useEffect(() => {
