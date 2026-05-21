@@ -1148,8 +1148,10 @@ function CustomRoomModel({
 
   const pColor = pedestalColor ?? "#d4cfc8";
   const pHeight = pedestalHeight ?? 0.05;
+  // pedestalHeight === 0 (or very close) means "no pedestal" — model sits flush on ar-platform
+  const showPedestal = pHeight > 0.001;
   const baseY = platPos ? platPos.y : 0;
-  const pedestalTopY = baseY + 0.28 + pHeight;
+  const pedestalTopY = showPedestal ? baseY + 0.28 + pHeight : baseY;
   const platX = platPos?.x ?? 0;
   const platZ = platPos?.z ?? 0;
 
@@ -1179,14 +1181,18 @@ function CustomRoomModel({
         shadow-camera-far={30}
       />
       <directionalLight position={[platX + 5, 6, platZ + 3]} intensity={1.2} color="#e8f4ff" />
-      <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
-        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
-        <primitive object={pedestalMat} attach="material" />
-      </mesh>
-      <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
-        <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
-        <primitive object={pedestalMat} attach="material" />
-      </mesh>
+      {showPedestal && (
+        <>
+          <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
+            <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
+            <primitive object={pedestalMat} attach="material" />
+          </mesh>
+          <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
+            <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
+            <primitive object={pedestalMat} attach="material" />
+          </mesh>
+        </>
+      )}
       <Suspense fallback={null}>
         <group position={[platX, 0, platZ]}>
           <ModelOnPedestal

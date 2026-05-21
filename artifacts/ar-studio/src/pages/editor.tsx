@@ -1249,6 +1249,16 @@ export default function Editor() {
                 {project.roomGlbUrl && !isRoomGlbUploading && (
                   <p className="text-[10px] text-green-600 text-center">Room loaded ✓</p>
                 )}
+                <div className="flex items-center justify-between pt-1">
+                  <Label className="text-xs text-muted-foreground">Show platform pedestal</Label>
+                  <Switch
+                    checked={(project.pedestalHeight ?? 0) > 0.001}
+                    onCheckedChange={async (checked) => {
+                      await updateProject.mutateAsync({ id: projectId, data: { pedestalHeight: checked ? 0.05 : 0 } });
+                      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+                    }}
+                  />
+                </div>
               </div>
             )}
 
