@@ -48,7 +48,10 @@ function getDeviceTier(): DeviceTier {
     /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
     ) || navigator.maxTouchPoints > 1;
-  if (isMobile) return "low";
+  if (isMobile) {
+    console.log("[AR Studio] DeviceTier=low ua=" + navigator.userAgent.slice(0, 80));
+    return "low";
+  }
 
   // Probe WebGL for max texture size as a proxy for GPU capability
   try {
@@ -202,6 +205,16 @@ function CameraIntro({
 
 // Fires onFirstFrame on the very first rendered animation frame — used to
 // detect when the Canvas has started drawing so the loading overlay can be removed.
+function CameraFovSetter({ fov }: { fov: number }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.fov = fov;
+    cam.updateProjectionMatrix();
+  }, [fov]);
+  return null;
+}
+
 function FirstFrameDetector({ onFirstFrame }: { onFirstFrame: () => void }) {
   const fired = useRef(false);
   useFrame(() => {
@@ -1375,8 +1388,22 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     </div>
   );
 
+  const mobileRadius = theme === "duplex-room" ? 9.0 : theme === "room-map-1" ? 6.5 : 7.0;
+  const activeRadius = tier === "low" ? mobileRadius : (theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : 3.2);
+
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
+      {import.meta.env.DEV && (
+        <div style={{
+          position: "absolute", top: 6, left: 6, zIndex: 99,
+          background: tier === "low" ? "rgba(0,180,0,0.85)" : "rgba(180,0,0,0.85)",
+          color: "#fff", fontSize: 11, fontFamily: "monospace",
+          padding: "3px 7px", borderRadius: 6, pointerEvents: "none",
+          lineHeight: 1.4,
+        }}>
+          tier={tier} r={activeRadius} fov={tier === "low" ? 65 : 45}
+        </div>
+      )}
       {/* Phase 1 overlay: covers the Canvas until the first frame is drawn.
           Hides as soon as the WebGL canvas starts painting — the room appears.
           Phase 2: once room is visible but model is still loading, a subtle
@@ -1425,7 +1452,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         <Canvas
           shadows={tier !== "low"}
           dpr={dpr}
-          camera={{ fov: tier === "low" ? 60 : 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
+          camera={{ fov: tier === "low" ? 65 : 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
           gl={{
             antialias: tier === "high",
             outputColorSpace: THREE.SRGBColorSpace,
@@ -1441,6 +1468,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           }}
           style={{ background: bgColor }}
         >
+          <CameraFovSetter fov={tier === "low" ? 65 : 45} />
           <ShadowConfig tier={tier} />
           <FirstFrameDetector onFirstFrame={() => setRoomReady(true)} />
 
@@ -1450,10 +1478,10 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
               onDone={() => setIntroDone(true)}
               skip={!threeIntroEnabled}
               radius={
-                theme === "duplex-room" ? (tier === "low" ? 6.5 : 5.0)
-                : theme === "room-map-1" ? (tier === "low" ? 4.8 : 3.5)
-                : theme === "custom-room" ? roomMaxDist * (tier === "low" ? 0.9 : 0.75)
-                : (tier === "low" ? 4.5 : 3.2)
+                theme === "duplex-room" ? (tier === "low" ? 9.0 : 5.0)
+                : theme === "room-map-1" ? (tier === "low" ? 6.5 : 3.5)
+                : theme === "custom-room" ? roomMaxDist * (tier === "low" ? 1.1 : 0.75)
+                : (tier === "low" ? 7.0 : 3.2)
               }
               lookTarget={
                 theme === "duplex-room" ? [0, 0.4, -2.5]
@@ -1468,7 +1496,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
               enableDamping
               dampingFactor={0.08}
               minDistance={0.6}
-              maxDistance={theme === "duplex-room" ? (tier === "low" ? 6.5 : 5.0) : (tier === "low" ? 4.8 : 3.5)}
+              maxDistance={theme === "duplex-room" ? (tier === "low" ? 9.0 : 5.0) : (tier === "low" ? 6.5 : 3.5)}
               minPolarAngle={Math.PI * 0.08}
               maxPolarAngle={Math.PI * 0.48}
               target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
