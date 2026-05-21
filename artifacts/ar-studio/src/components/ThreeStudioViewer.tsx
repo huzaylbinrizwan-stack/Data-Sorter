@@ -48,10 +48,7 @@ function getDeviceTier(): DeviceTier {
     /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
     ) || navigator.maxTouchPoints > 1;
-  if (isMobile) {
-    console.log("[AR Studio] DeviceTier=low ua=" + navigator.userAgent.slice(0, 80));
-    return "low";
-  }
+  if (isMobile) return "low";
 
   // Probe WebGL for max texture size as a proxy for GPU capability
   try {
@@ -1388,22 +1385,8 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     </div>
   );
 
-  const mobileRadius = theme === "duplex-room" ? 9.0 : theme === "room-map-1" ? 6.5 : 7.0;
-  const activeRadius = tier === "low" ? mobileRadius : (theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : 3.2);
-
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
-      {import.meta.env.DEV && (
-        <div style={{
-          position: "absolute", top: 6, left: 6, zIndex: 99,
-          background: tier === "low" ? "rgba(0,180,0,0.85)" : "rgba(180,0,0,0.85)",
-          color: "#fff", fontSize: 11, fontFamily: "monospace",
-          padding: "3px 7px", borderRadius: 6, pointerEvents: "none",
-          lineHeight: 1.4,
-        }}>
-          tier={tier} r={activeRadius} fov={tier === "low" ? 65 : 45}
-        </div>
-      )}
       {/* Phase 1 overlay: covers the Canvas until the first frame is drawn.
           Hides as soon as the WebGL canvas starts painting — the room appears.
           Phase 2: once room is visible but model is still loading, a subtle
