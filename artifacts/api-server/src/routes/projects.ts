@@ -91,6 +91,7 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     pedestalColor: project.pedestalColor ?? null,
     pedestalHeight: project.pedestalHeight ?? null,
     modelRotationY: project.modelRotationY ?? null,
+    roomGlbUrl: project.roomGlbUrl ?? null,
   }));
 });
 
@@ -165,6 +166,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     pedestalColor: project.pedestalColor ?? null,
     pedestalHeight: project.pedestalHeight ?? null,
     modelRotationY: project.modelRotationY ?? null,
+    roomGlbUrl: project.roomGlbUrl ?? null,
     materials: baseMaterials,
     variants,
   }));

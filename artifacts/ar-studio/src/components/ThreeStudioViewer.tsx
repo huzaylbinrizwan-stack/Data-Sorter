@@ -8,7 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
 
-type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1";
+type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1" | "custom-room";
 
 interface SceneProps {
   modelUrl: string;
@@ -25,6 +25,7 @@ interface ThreeStudioViewerProps {
   pedestalColor?: string | null;
   pedestalHeight?: number | null;
   modelRotationY?: number | null;
+  roomGlbUrl?: string | null;
   onLoad?: () => void;
 }
 
@@ -985,10 +986,206 @@ function RoomMap1Scene({ modelUrl, pedestalColor, pedestalHeight, modelRotationY
   );
 }
 
-export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, onLoad }: ThreeStudioViewerProps) {
+function RoomBoundsGuard({ bounds }: {
+  bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number };
+}) {
+  const { camera } = useThree();
+  useFrame(() => {
+    camera.position.x = Math.max(bounds.minX, Math.min(bounds.maxX, camera.position.x));
+    camera.position.y = Math.max(bounds.minY, Math.min(bounds.maxY, camera.position.y));
+    camera.position.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, camera.position.z));
+  });
+  return null;
+}
+
+function CustomRoomModel({
+  roomGlbUrl,
+  modelUrl,
+  pedestalColor,
+  pedestalHeight,
+  modelRotationY,
+  onLoad,
+  onRoomLoaded,
+}: {
+  roomGlbUrl: string;
+  modelUrl: string;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  modelRotationY?: number | null;
+  onLoad?: () => void;
+  onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
+}) {
+  const gltf = useLoader(GLTFLoader, roomGlbUrl, (loader) => {
+    (loader as GLTFLoader).setDRACOLoader(dracoLoader);
+  });
+  const scene = gltf.scene;
+  const [pedestalRadius, setPedestalRadius] = useState(0.5);
+  const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [roomBoundsInfo, setRoomBoundsInfo] = useState<{
+    minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!scene) return;
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    scene.updateWorldMatrix(true, true);
+    const roomBox = new THREE.Box3().setFromObject(scene);
+    const roomSize = roomBox.getSize(new THREE.Vector3());
+    const roomCenter = roomBox.getCenter(new THREE.Vector3());
+    const maxDist = Math.max(Math.min(roomSize.x, roomSize.z) / 2 - 0.8, 1.5);
+
+    setRoomBoundsInfo({
+      minX: roomBox.min.x + 0.3,
+      maxX: roomBox.max.x - 0.3,
+      minY: roomBox.min.y + 0.05,
+      maxY: roomBox.max.y - 0.3,
+      minZ: roomBox.min.z + 0.3,
+      maxZ: roomBox.max.z - 0.3,
+    });
+
+    const platform = scene.getObjectByName("ar-platform") ?? scene.getObjectByName("ar-platfc");
+    let platX = roomCenter.x;
+    let platY = roomBox.min.y;
+    let platZ = roomCenter.z;
+
+    if (platform) {
+      platform.updateWorldMatrix(true, true);
+      const box = new THREE.Box3().setFromObject(platform);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      box.getCenter(center);
+      box.getSize(size);
+      platX = center.x;
+      platY = center.y + size.y / 2;
+      platZ = center.z;
+      setPedestalRadius(Math.max(Math.max(size.x, size.z) / 2 * 0.85, 0.25));
+    }
+
+    setPlatPos({ x: platX, y: platY, z: platZ });
+    onRoomLoaded?.({ platformTarget: [platX, platY + 0.4, platZ], maxDist });
+  }, [scene]);
+
+  const pColor = pedestalColor ?? "#d4cfc8";
+  const pHeight = pedestalHeight ?? 0.05;
+  const baseY = platPos ? platPos.y : 0;
+  const pedestalTopY = baseY + 0.28 + pHeight;
+  const platX = platPos?.x ?? 0;
+  const platZ = platPos?.z ?? 0;
+
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6, metalness: 0.05 }),
+    [pColor]
+  );
+
+  return (
+    <>
+      <primitive object={scene} />
+      {roomBoundsInfo && <RoomBoundsGuard bounds={roomBoundsInfo} />}
+      <hemisphereLight args={["#c8dff0", "#d4c8a8", 0.9]} />
+      <ambientLight intensity={0.55} color="#fff8f0" />
+      <directionalLight
+        position={[platX - 6, 8, platZ - 2]}
+        intensity={3.5}
+        color="#fff5e0"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0003}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-8}
+        shadow-camera-near={0.1}
+        shadow-camera-far={30}
+      />
+      <directionalLight position={[platX + 5, 6, platZ + 3]} intensity={1.2} color="#e8f4ff" />
+      <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
+        <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+      <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
+        <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
+        <primitive object={pedestalMat} attach="material" />
+      </mesh>
+      <Suspense fallback={null}>
+        <group position={[platX, 0, platZ]}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={pedestalTopY}
+            setPedestalRadius={setPedestalRadius}
+            rotationY={modelRotationY}
+            onLoad={onLoad}
+          />
+        </group>
+      </Suspense>
+    </>
+  );
+}
+
+function CustomRoomScene({
+  modelUrl,
+  roomGlbUrl,
+  pedestalColor,
+  pedestalHeight,
+  modelRotationY,
+  onLoad,
+  onRoomLoaded,
+}: {
+  modelUrl: string;
+  roomGlbUrl?: string | null;
+  pedestalColor?: string | null;
+  pedestalHeight?: number | null;
+  modelRotationY?: number | null;
+  onLoad?: () => void;
+  onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
+}) {
+  if (!roomGlbUrl) {
+    return (
+      <>
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[2, 5, 2]} intensity={1.5} castShadow />
+        <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          <meshStandardMaterial color="#c8c0b4" roughness={0.9} />
+        </mesh>
+        <Suspense fallback={null}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={0.33}
+            setPedestalRadius={() => {}}
+            rotationY={modelRotationY}
+            onLoad={onLoad}
+          />
+        </Suspense>
+      </>
+    );
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <CustomRoomModel
+        roomGlbUrl={roomGlbUrl}
+        modelUrl={modelUrl}
+        pedestalColor={pedestalColor}
+        pedestalHeight={pedestalHeight}
+        modelRotationY={modelRotationY}
+        onLoad={onLoad}
+        onRoomLoaded={onRoomLoaded}
+      />
+    </Suspense>
+  );
+}
+
+export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, roomGlbUrl, onLoad }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [platformTarget, setPlatformTarget] = useState<[number, number, number]>([0, 0.4, 0]);
+  const [roomMaxDist, setRoomMaxDist] = useState(3.0);
 
   useGLTF.preload(modelUrl);
   if (theme === "duplex-room") {
@@ -999,7 +1196,8 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     setModelReady(false);
     setIntroDone(false);
     setPlatformTarget([0, 0.4, 0]);
-  }, [modelUrl, theme]);
+    setRoomMaxDist(3.0);
+  }, [modelUrl, theme, roomGlbUrl]);
 
   const handleModelLoad = () => {
     setModelReady(true);
@@ -1008,6 +1206,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
 
   const handlePlatformDetected = (pos: { x: number; y: number; z: number; radius: number }) => {
     setPlatformTarget([pos.x, pos.y, pos.z]);
+  };
+
+  const handleRoomLoaded = (info: { platformTarget: [number, number, number]; maxDist: number }) => {
+    setPlatformTarget(info.platformTarget);
+    setRoomMaxDist(info.maxDist);
   };
 
   return (
@@ -1025,6 +1228,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           background: theme === "warm-minimal" ? "#a8c4d2"
             : theme === "duplex-room" ? "#b0a898"
             : theme === "room-map-1" ? "#c8c0b4"
+            : theme === "custom-room" ? "#c0b8b0"
             : "transparent"
         }}
       >
@@ -1032,10 +1236,10 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
           <CameraIntro
             key={modelUrl}
             onDone={() => setIntroDone(true)}
-            radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : 3.2}
+            radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : theme === "custom-room" ? roomMaxDist * 0.75 : 3.2}
             lookTarget={
               theme === "duplex-room" ? [0, 0.4, -2.5]
-              : theme === "room-map-1" ? platformTarget
+              : (theme === "room-map-1" || theme === "custom-room") ? platformTarget
               : [0, 0.4, 0]
             }
           />
@@ -1050,6 +1254,17 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
             minPolarAngle={Math.PI * 0.08}
             maxPolarAngle={Math.PI * 0.48}
             target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
+          />
+        ) : theme === "custom-room" ? (
+          <OrbitControls
+            enabled={introDone}
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={0.6}
+            maxDistance={roomMaxDist}
+            minPolarAngle={Math.PI * 0.04}
+            maxPolarAngle={Math.PI * 0.45}
+            target={platformTarget}
           />
         ) : (
           <OrbitControls
@@ -1086,6 +1301,17 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
             modelRotationY={modelRotationY}
             onLoad={handleModelLoad}
             onPlatformDetected={handlePlatformDetected}
+          />
+        )}
+        {theme === "custom-room" && (
+          <CustomRoomScene
+            modelUrl={modelUrl}
+            roomGlbUrl={roomGlbUrl}
+            pedestalColor={pedestalColor}
+            pedestalHeight={pedestalHeight}
+            modelRotationY={modelRotationY}
+            onLoad={handleModelLoad}
+            onRoomLoaded={handleRoomLoaded}
           />
         )}
       </Canvas>

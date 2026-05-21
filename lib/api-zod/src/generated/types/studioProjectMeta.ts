@@ -65,4 +65,6 @@ export interface StudioProjectMeta {
   pedestalHeight?: number | null;
   /** @nullable */
   modelRotationY?: number | null;
+  /** @nullable */
+  roomGlbUrl?: string | null;
 }

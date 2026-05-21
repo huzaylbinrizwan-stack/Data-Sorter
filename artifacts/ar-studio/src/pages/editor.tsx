@@ -75,6 +75,7 @@ const ENVIRONMENTS = [
   { value: "natural-arch", label: "Natural Arch", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b0 0%, #c8b898 100%)", desc: "Warm sandy room with stone arches", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "duplex-room", label: "Duplex Room", bg: "radial-gradient(ellipse at 50% 40%, #c8b898 0%, #8a7a6a 100%)", desc: "Architectural room with staircase", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
   { value: "room-map-1", label: "Room Map 1", bg: "radial-gradient(ellipse at 50% 40%, #d4c8b4 0%, #a89880 100%)", desc: "Custom architectural room with auto-detected product platform", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
+  { value: "custom-room", label: "Your Own Room", bg: "radial-gradient(ellipse at 50% 40%, #c8beb4 0%, #9a8a7a 100%)", desc: "Upload any GLB room — name platform ar-platform for auto-placement", hotspotX: 0, hotspotY: 0.4, hotspotZ: 0 },
 ];
 
 const LANGUAGES = [
@@ -89,6 +90,7 @@ const LANGUAGES = [
 
 type UploadTarget =
   | { kind: "model" }
+  | { kind: "roomGlb" }
   | { kind: "materialModel"; materialId: number }
   | { kind: "materialThumb"; materialId: number }
   | { kind: "variantModel"; variantId: number }
@@ -653,7 +655,10 @@ export default function Editor() {
   const [localBgScale, setLocalBgScale] = useState<number>(100);
   const bgScaleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const roomGlbInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isRoomGlbUploading, setIsRoomGlbUploading] = useState(false);
+  const [roomGlbProgress, setRoomGlbProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<UploadTarget>({ kind: "model" });
   const [showVariations, setShowVariations] = useState(false);
@@ -704,9 +709,9 @@ export default function Editor() {
       setLocalModelSize(project.studioModelSize ?? 100);
       setLocalBgScale(project.studioBackgroundScale ?? 100);
       const defaultPedestalColor = project.environment === "warm-minimal" ? "#f0ebe3"
-        : (project.environment === "duplex-room" || project.environment === "room-map-1") ? "#d4cfc8"
+        : (project.environment === "duplex-room" || project.environment === "room-map-1" || project.environment === "custom-room") ? "#d4cfc8"
         : "#252527";
-      const defaultPedestalHeight = (project.environment === "warm-minimal" || project.environment === "duplex-room" || project.environment === "room-map-1") ? 5 : 8;
+      const defaultPedestalHeight = (project.environment === "warm-minimal" || project.environment === "duplex-room" || project.environment === "room-map-1" || project.environment === "custom-room") ? 5 : 8;
       setLocalPedestalColor(project.pedestalColor ?? defaultPedestalColor);
       setLocalPedestalHeight(Math.round((project.pedestalHeight ?? (defaultPedestalHeight / 100)) * 100));
       setLocalModelRotationY(project.modelRotationY != null ? Math.round(project.modelRotationY) : 180);
@@ -758,7 +763,7 @@ export default function Editor() {
 
   const handleEnvChange = async (env: string) => {
     if (!project) return;
-    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch", "duplex-room", "room-map-1"] as const;
+    const validEnvs = ["black", "white", "luxury-home", "classic-luxury", "walls-plants", "warm-minimal", "studio-grey", "natural-arch", "duplex-room", "room-map-1", "custom-room"] as const;
     if (!validEnvs.includes(env as (typeof validEnvs)[number])) return;
     setIsSaving(true);
     const preset = ENVIRONMENTS.find(e => e.value === env);
@@ -771,6 +776,37 @@ export default function Editor() {
     await updateProject.mutateAsync({ id: projectId, data });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     setIsSaving(false);
+  };
+
+  const handleRoomGlbFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !project) return;
+    setIsRoomGlbUploading(true);
+    setRoomGlbProgress(0);
+    try {
+      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+        data: { name: file.name, size: file.size, contentType: "model/gltf-binary" },
+      });
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) setRoomGlbProgress(Math.round((ev.loaded / ev.total) * 100));
+      };
+      await new Promise<void>((resolve, reject) => {
+        xhr.open("PUT", uploadURL);
+        xhr.setRequestHeader("Content-Type", "model/gltf-binary");
+        xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+        xhr.onerror = reject;
+        xhr.send(file);
+      });
+      await updateProject.mutateAsync({ id: projectId, data: { roomGlbUrl: objectPath } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+      toast({ title: "Room uploaded", description: "Your room GLB is ready." });
+    } catch {
+      toast({ title: "Upload failed", description: "Could not upload the room file.", variant: "destructive" });
+    } finally {
+      setIsRoomGlbUploading(false);
+      if (roomGlbInputRef.current) roomGlbInputRef.current.value = "";
+    }
   };
 
   const handleToggleScalable = async (checked: boolean) => {
@@ -1190,7 +1226,33 @@ export default function Editor() {
               ))}
             </div>
 
-            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch" || project.environment === "duplex-room" || project.environment === "room-map-1") && (
+            {project.environment === "custom-room" && (
+              <div className="mt-3 p-3 border border-border rounded-sm space-y-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Upload your room GLB file. Name the product platform <span className="font-mono bg-muted px-1 rounded text-[10px]">ar-platform</span> in your 3D tool for auto-placement.
+                </p>
+                <input
+                  ref={roomGlbInputRef}
+                  type="file"
+                  accept=".glb,.gltf"
+                  className="hidden"
+                  onChange={handleRoomGlbFileChange}
+                />
+                <button
+                  onClick={() => roomGlbInputRef.current?.click()}
+                  disabled={isRoomGlbUploading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs border border-border rounded-sm hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  <Upload className="w-3 h-3" />
+                  {isRoomGlbUploading ? `Uploading... ${roomGlbProgress}%` : project.roomGlbUrl ? "Replace Room GLB" : "Upload Room GLB"}
+                </button>
+                {project.roomGlbUrl && !isRoomGlbUploading && (
+                  <p className="text-[10px] text-green-600 text-center">Room loaded ✓</p>
+                )}
+              </div>
+            )}
+
+            {(project.environment === "warm-minimal" || project.environment === "studio-grey" || project.environment === "natural-arch" || project.environment === "duplex-room" || project.environment === "room-map-1" || project.environment === "custom-room") && (
               <div className="mt-4 pt-4 border-t border-border space-y-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Pedestal</p>
 

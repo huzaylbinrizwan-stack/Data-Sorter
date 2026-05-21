@@ -26,6 +26,7 @@ const ENV_STYLES: Record<string, React.CSSProperties> = {
   "natural-arch": { background: "#c8b898" },
   "duplex-room": { background: "#b0a898" },
   "room-map-1": { background: "#c8c0b4" },
+  "custom-room": { background: "#c0b8b0" },
 };
 
 const ENV_TEXT: Record<string, string> = {
@@ -39,6 +40,7 @@ const ENV_TEXT: Record<string, string> = {
   "natural-arch": "text-gray-800",
   "duplex-room": "text-gray-800",
   "room-map-1": "text-gray-800",
+  "custom-room": "text-gray-800",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -753,7 +755,7 @@ export default function Studio() {
         opacity: 1,
         transition: "opacity 0.3s ease",
       };
-  const isThreeTheme = !!meta && (meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch" || meta.environment === "duplex-room" || meta.environment === "room-map-1");
+  const isThreeTheme = !!meta && (meta.environment === "warm-minimal" || meta.environment === "studio-grey" || meta.environment === "natural-arch" || meta.environment === "duplex-room" || meta.environment === "room-map-1" || meta.environment === "custom-room");
   const textClass = meta ? (ENV_TEXT[meta.environment] ?? "text-white") : "text-white";
   const isLightBg = !hasBgPhoto && !!meta && (meta.environment === "white" || meta.environment === "walls-plants" || meta.environment === "warm-minimal" || meta.environment === "duplex-room");
   const accentColor = meta?.studioAccentColor ?? "#C9A84C";
@@ -822,10 +824,11 @@ export default function Studio() {
                 <Suspense fallback={null}>
                   <ThreeStudioViewer
                     modelUrl={pendingSrc}
-                    theme={meta!.environment as "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1"}
+                    theme={meta!.environment as "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1" | "custom-room"}
                     pedestalColor={meta!.pedestalColor}
                     pedestalHeight={meta!.pedestalHeight}
                     modelRotationY={meta!.modelRotationY}
+                    roomGlbUrl={meta!.roomGlbUrl}
                     onLoad={() => {
                       setLoadProgress(100);
                     }}

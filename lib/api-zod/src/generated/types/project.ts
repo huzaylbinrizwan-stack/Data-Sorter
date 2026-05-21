@@ -65,6 +65,8 @@ export interface Project {
   /** @nullable */
   modelRotationY?: number | null;
   /** @nullable */
+  roomGlbUrl?: string | null;
+  /** @nullable */
   folderId: number | null;
   publicSlug: string;
   createdAt: Date;

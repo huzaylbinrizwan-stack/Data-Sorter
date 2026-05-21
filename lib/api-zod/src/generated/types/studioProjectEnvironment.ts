@@ -20,4 +20,5 @@ export const StudioProjectEnvironment = {
   "natural-arch": "natural-arch",
   "duplex-room": "duplex-room",
   "room-map-1": "room-map-1",
+  "custom-room": "custom-room",
 } as const;

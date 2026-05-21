@@ -98,6 +98,7 @@ export const ListProjectsResponseItem = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -138,6 +139,7 @@ export const ListProjectsResponseItem = zod.object({
     .max(listProjectsResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -165,6 +167,7 @@ export const CreateProjectBody = zod.object({
       "natural-arch",
       "duplex-room",
       "room-map-1",
+      "custom-room",
     ])
     .optional(),
   hotspotX: zod.number().optional(),
@@ -217,6 +220,7 @@ export const GetProjectResponse = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -257,6 +261,7 @@ export const GetProjectResponse = zod.object({
     .max(getProjectResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -296,6 +301,7 @@ export const UpdateProjectBody = zod.object({
       "natural-arch",
       "duplex-room",
       "room-map-1",
+      "custom-room",
     ])
     .optional(),
   hotspotX: zod.number().optional(),
@@ -334,6 +340,7 @@ export const UpdateProjectBody = zod.object({
     .max(updateProjectBodyPedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -366,6 +373,7 @@ export const UpdateProjectResponse = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -406,6 +414,7 @@ export const UpdateProjectResponse = zod.object({
     .max(updateProjectResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -456,6 +465,7 @@ export const PublishProjectResponse = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -496,6 +506,7 @@ export const PublishProjectResponse = zod.object({
     .max(publishProjectResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -539,6 +550,7 @@ export const UnpublishProjectResponse = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -579,6 +591,7 @@ export const UnpublishProjectResponse = zod.object({
     .max(unpublishProjectResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
@@ -621,6 +634,7 @@ export const GetStudioProjectMetaResponse = zod
       "natural-arch",
       "duplex-room",
       "room-map-1",
+      "custom-room",
     ]),
     hotspotX: zod.number(),
     hotspotY: zod.number(),
@@ -662,6 +676,7 @@ export const GetStudioProjectMetaResponse = zod
       .max(getStudioProjectMetaResponsePedestalHeightMax)
       .nullish(),
     modelRotationY: zod.number().nullish(),
+    roomGlbUrl: zod.string().nullish(),
   })
   .describe(
     "Minimal studio project data for initial page render (no materials or variants)",
@@ -702,6 +717,7 @@ export const GetStudioProjectResponse = zod.object({
     "natural-arch",
     "duplex-room",
     "room-map-1",
+    "custom-room",
   ]),
   hotspotX: zod.number(),
   hotspotY: zod.number(),
@@ -742,6 +758,7 @@ export const GetStudioProjectResponse = zod.object({
     .max(getStudioProjectResponsePedestalHeightMax)
     .nullish(),
   modelRotationY: zod.number().nullish(),
+  roomGlbUrl: zod.string().nullish(),
   publicSlug: zod.string(),
   materials: zod
     .array(
@@ -893,6 +910,7 @@ export const GetDashboardStatsResponse = zod.object({
         "natural-arch",
         "duplex-room",
         "room-map-1",
+        "custom-room",
       ]),
       hotspotX: zod.number(),
       hotspotY: zod.number(),
@@ -939,6 +957,7 @@ export const GetDashboardStatsResponse = zod.object({
         .max(getDashboardStatsResponseRecentProjectsItemPedestalHeightMax)
         .nullish(),
       modelRotationY: zod.number().nullish(),
+      roomGlbUrl: zod.string().nullish(),
       folderId: zod.number().nullable(),
       publicSlug: zod.string(),
       createdAt: zod.coerce.date(),

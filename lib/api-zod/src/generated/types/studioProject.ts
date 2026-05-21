@@ -63,6 +63,8 @@ export interface StudioProject {
   pedestalHeight?: number | null;
   /** @nullable */
   modelRotationY?: number | null;
+  /** @nullable */
+  roomGlbUrl?: string | null;
   publicSlug: string;
   /** Base model materials (variantId is null) */
   materials: ProjectMaterial[];
