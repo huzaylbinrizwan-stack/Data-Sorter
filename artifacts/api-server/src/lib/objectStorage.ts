@@ -145,6 +145,57 @@ export class ObjectStorageService {
     return objectFile;
   }
 
+  /**
+   * Generate a short-lived signed GET URL for a private object entity.
+   * The caller has already performed ACL checks; this just signs the URL.
+   * Using a redirect instead of proxying eliminates the API-server bottleneck
+   * and lets the browser fetch directly from GCS at full speed.
+   */
+  async getObjectEntityDownloadURL(objectPath: string): Promise<string> {
+    if (!objectPath.startsWith("/objects/")) {
+      throw new ObjectNotFoundError();
+    }
+
+    const parts = objectPath.slice(1).split("/");
+    if (parts.length < 2) {
+      throw new ObjectNotFoundError();
+    }
+
+    const entityId = parts.slice(1).join("/");
+    let entityDir = this.getPrivateObjectDir();
+    if (!entityDir.endsWith("/")) {
+      entityDir = `${entityDir}/`;
+    }
+    const objectEntityPath = `${entityDir}${entityId}`;
+    const { bucketName, objectName } = parseObjectPath(objectEntityPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const objectFile = bucket.file(objectName);
+    const [exists] = await objectFile.exists();
+    if (!exists) {
+      throw new ObjectNotFoundError();
+    }
+
+    return signObjectURL({ bucketName, objectName, method: "GET", ttlSec: 300 });
+  }
+
+  /**
+   * Generate a short-lived signed GET URL for a public object.
+   * Returns null if no matching file is found in any search path.
+   */
+  async getPublicObjectDownloadURL(filePath: string): Promise<string | null> {
+    for (const searchPath of this.getPublicObjectSearchPaths()) {
+      const fullPath = `${searchPath}/${filePath}`;
+      const { bucketName, objectName } = parseObjectPath(fullPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+      if (exists) {
+        return signObjectURL({ bucketName, objectName, method: "GET", ttlSec: 300 });
+      }
+    }
+    return null;
+  }
+
   normalizeObjectEntityPath(rawPath: string): string {
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
       return rawPath;
