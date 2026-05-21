@@ -1425,7 +1425,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
         <Canvas
           shadows={tier !== "low"}
           dpr={dpr}
-          camera={{ fov: 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
+          camera={{ fov: tier === "low" ? 60 : 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
           gl={{
             antialias: tier === "high",
             outputColorSpace: THREE.SRGBColorSpace,
