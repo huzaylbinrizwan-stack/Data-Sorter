@@ -1,4 +1,4 @@
-import { Suspense, useRef, useEffect, useState, useMemo } from "react";
+import { Suspense, useRef, useEffect, useState, useMemo, Component } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -7,6 +7,81 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+
+// ---------------------------------------------------------------------------
+// Device tier detection
+// "low"  = mobile (phone/tablet) or WebGL-limited device → no antialias, no shadows, dpr capped at 1
+// "mid"  = mid-range laptop/desktop                     → no antialias, smaller shadows, dpr ≤ 1.5
+// "high" = powerful desktop / high-DPI laptop           → full quality
+// ---------------------------------------------------------------------------
+type DeviceTier = "high" | "mid" | "low";
+
+function getDeviceTier(): DeviceTier {
+  // Mobile check — userAgent + touch points
+  const isMobile =
+    /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) || navigator.maxTouchPoints > 1;
+  if (isMobile) return "low";
+
+  // Probe WebGL for max texture size as a proxy for GPU capability
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = (canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl")) as WebGLRenderingContext | null;
+    if (!gl) return "low";
+    const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+    // < 8 192 → older integrated GPU → mid tier
+    if (maxTex < 8192) return "mid";
+  } catch {
+    return "low";
+  }
+  return "high";
+}
+
+// ---------------------------------------------------------------------------
+// Error boundary — catches WebGL context-lost / plugin errors and shows a
+// friendly fallback instead of a blank or crashed canvas.
+// On mobile this is the most common source of the "plugin error" the user sees.
+// ---------------------------------------------------------------------------
+class WebGLErrorBoundary extends Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    // Log for debugging without crashing the page
+    console.warn("[AR Studio] 3D viewer error caught:", error.message);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ShadowConfig — runs inside the Canvas and downgrades shadow map sizes for
+// mid/low tiers after the scene is initialised, without touching individual
+// scene components.
+// ---------------------------------------------------------------------------
+function ShadowConfig({ tier }: { tier: DeviceTier }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    if (tier === "low") {
+      gl.shadowMap.enabled = false;
+    } else if (tier === "mid") {
+      // PCFShadowMap is cheaper than the default PCFSoftShadowMap
+      gl.shadowMap.type = THREE.PCFShadowMap;
+    }
+  }, [gl, tier]);
+  return null;
+}
 
 type Theme = "warm-minimal" | "studio-grey" | "natural-arch" | "duplex-room" | "room-map-1" | "custom-room";
 
@@ -1187,6 +1262,12 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
   const [platformTarget, setPlatformTarget] = useState<[number, number, number]>([0, 0.4, 0]);
   const [roomMaxDist, setRoomMaxDist] = useState(3.0);
 
+  // Computed once per mount — stays stable across re-renders
+  const tier = useMemo(() => getDeviceTier(), []);
+  const dpr = tier === "high" ? Math.min(window.devicePixelRatio, 2)
+    : tier === "mid" ? Math.min(window.devicePixelRatio, 1.5)
+    : 1;
+
   useGLTF.preload(modelUrl);
   if (theme === "duplex-room") {
     useGLTF.preload(`${import.meta.env.BASE_URL}models/duplex.glb`);
@@ -1213,108 +1294,150 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     setRoomMaxDist(info.maxDist);
   };
 
+  const bgColor = theme === "warm-minimal" ? "#a8c4d2"
+    : theme === "duplex-room" ? "#b0a898"
+    : theme === "room-map-1" ? "#c8c0b4"
+    : theme === "custom-room" ? "#c0b8b0"
+    : "transparent";
+
+  const glErrorFallback = (
+    <div style={{
+      position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", background: bgColor || "#1a1a1a",
+      color: "#888", fontSize: 13, gap: 8, padding: 24, textAlign: "center",
+    }}>
+      <span style={{ fontSize: 28 }}>⚠️</span>
+      <span>3D preview isn't supported on this device.</span>
+      <span style={{ fontSize: 11, opacity: 0.6 }}>You can still use AR mode to view the product.</span>
+    </div>
+  );
+
   return (
     <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
-      <Canvas
-        shadows
-        camera={{ fov: 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
-        gl={{
-          antialias: true,
-          outputColorSpace: THREE.SRGBColorSpace,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.35,
-        }}
-        style={{
-          background: theme === "warm-minimal" ? "#a8c4d2"
-            : theme === "duplex-room" ? "#b0a898"
-            : theme === "room-map-1" ? "#c8c0b4"
-            : theme === "custom-room" ? "#c0b8b0"
-            : "transparent"
-        }}
-      >
-        {modelReady && (
-          <CameraIntro
-            key={modelUrl}
-            onDone={() => setIntroDone(true)}
-            radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : theme === "custom-room" ? roomMaxDist * 0.75 : 3.2}
-            lookTarget={
-              theme === "duplex-room" ? [0, 0.4, -2.5]
-              : (theme === "room-map-1" || theme === "custom-room") ? platformTarget
-              : [0, 0.4, 0]
-            }
-          />
-        )}
-        {(theme === "duplex-room" || theme === "room-map-1") ? (
-          <OrbitControls
-            enabled={introDone}
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={0.6}
-            maxDistance={theme === "duplex-room" ? 5.0 : 3.5}
-            minPolarAngle={Math.PI * 0.08}
-            maxPolarAngle={Math.PI * 0.48}
-            target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
-          />
-        ) : theme === "custom-room" ? (
-          <OrbitControls
-            enabled={introDone}
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={0.6}
-            maxDistance={roomMaxDist}
-            minPolarAngle={Math.PI * 0.04}
-            maxPolarAngle={Math.PI * 0.45}
-            target={platformTarget}
-          />
-        ) : (
-          <OrbitControls
-            enabled={introDone}
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={1}
-            maxDistance={8}
-            minPolarAngle={Math.PI * 0.08}
-            maxPolarAngle={Math.PI / 2 - 0.05}
-            minAzimuthAngle={-Math.PI * 0.65}
-            maxAzimuthAngle={Math.PI * 0.65}
-            target={[0, 0.4, 0]}
-          />
-        )}
+      {/* Loading overlay — visible until the scene reports it has finished loading */}
+      {!modelReady && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 1,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: bgColor || "rgba(20,20,20,0.85)",
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: "50%",
+            border: "2.5px solid rgba(255,255,255,0.15)",
+            borderTopColor: "rgba(255,255,255,0.7)",
+            animation: "spin 0.8s linear infinite",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
 
-        {theme === "warm-minimal" && (
-          <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
-        )}
-        {theme === "studio-grey" && (
-          <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
-        )}
-        {theme === "natural-arch" && (
-          <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
-        )}
-        {theme === "duplex-room" && (
-          <DuplexRoomScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
-        )}
-        {theme === "room-map-1" && (
-          <RoomMap1Scene
-            modelUrl={modelUrl}
-            pedestalColor={pedestalColor}
-            pedestalHeight={pedestalHeight}
-            modelRotationY={modelRotationY}
-            onLoad={handleModelLoad}
-            onPlatformDetected={handlePlatformDetected}
-          />
-        )}
-        {theme === "custom-room" && (
-          <CustomRoomScene
-            modelUrl={modelUrl}
-            roomGlbUrl={roomGlbUrl}
-            pedestalColor={pedestalColor}
-            pedestalHeight={pedestalHeight}
-            modelRotationY={modelRotationY}
-            onLoad={handleModelLoad}
-            onRoomLoaded={handleRoomLoaded}
-          />
-        )}
-      </Canvas>
+      <WebGLErrorBoundary fallback={glErrorFallback}>
+        <Canvas
+          shadows={tier !== "low"}
+          dpr={dpr}
+          camera={{ fov: 45, near: 0.1, far: 50, position: [-2.51, 1.97, 0.22] }}
+          gl={{
+            antialias: tier === "high",
+            outputColorSpace: THREE.SRGBColorSpace,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: tier === "low" ? 1.2 : 1.35,
+            // These two flags are critical on mobile:
+            // failIfMajorPerformanceCaveat:false prevents the "plugin error" crash
+            // when the browser would otherwise refuse to create a full WebGL context.
+            // powerPreference:"default" avoids forcing high-performance GPU mode which
+            // can cause context loss on integrated-GPU mobile devices.
+            failIfMajorPerformanceCaveat: false,
+            powerPreference: "default",
+          }}
+          style={{ background: bgColor }}
+        >
+          <ShadowConfig tier={tier} />
+
+          {modelReady && (
+            <CameraIntro
+              key={modelUrl}
+              onDone={() => setIntroDone(true)}
+              radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : theme === "custom-room" ? roomMaxDist * 0.75 : 3.2}
+              lookTarget={
+                theme === "duplex-room" ? [0, 0.4, -2.5]
+                : (theme === "room-map-1" || theme === "custom-room") ? platformTarget
+                : [0, 0.4, 0]
+              }
+            />
+          )}
+          {(theme === "duplex-room" || theme === "room-map-1") ? (
+            <OrbitControls
+              enabled={introDone}
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={0.6}
+              maxDistance={theme === "duplex-room" ? 5.0 : 3.5}
+              minPolarAngle={Math.PI * 0.08}
+              maxPolarAngle={Math.PI * 0.48}
+              target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
+            />
+          ) : theme === "custom-room" ? (
+            <OrbitControls
+              enabled={introDone}
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={0.6}
+              maxDistance={roomMaxDist}
+              minPolarAngle={Math.PI * 0.04}
+              maxPolarAngle={Math.PI * 0.45}
+              target={platformTarget}
+            />
+          ) : (
+            <OrbitControls
+              enabled={introDone}
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={1}
+              maxDistance={8}
+              minPolarAngle={Math.PI * 0.08}
+              maxPolarAngle={Math.PI / 2 - 0.05}
+              minAzimuthAngle={-Math.PI * 0.65}
+              maxAzimuthAngle={Math.PI * 0.65}
+              target={[0, 0.4, 0]}
+            />
+          )}
+
+          {theme === "warm-minimal" && (
+            <WarmMinimalScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+          )}
+          {theme === "studio-grey" && (
+            <GreyStudioScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+          )}
+          {theme === "natural-arch" && (
+            <NaturalArchScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+          )}
+          {theme === "duplex-room" && (
+            <DuplexRoomScene modelUrl={modelUrl} pedestalColor={pedestalColor} pedestalHeight={pedestalHeight} modelRotationY={modelRotationY} onLoad={handleModelLoad} />
+          )}
+          {theme === "room-map-1" && (
+            <RoomMap1Scene
+              modelUrl={modelUrl}
+              pedestalColor={pedestalColor}
+              pedestalHeight={pedestalHeight}
+              modelRotationY={modelRotationY}
+              onLoad={handleModelLoad}
+              onPlatformDetected={handlePlatformDetected}
+            />
+          )}
+          {theme === "custom-room" && (
+            <CustomRoomScene
+              modelUrl={modelUrl}
+              roomGlbUrl={roomGlbUrl}
+              pedestalColor={pedestalColor}
+              pedestalHeight={pedestalHeight}
+              modelRotationY={modelRotationY}
+              onLoad={handleModelLoad}
+              onRoomLoaded={handleRoomLoaded}
+            />
+          )}
+        </Canvas>
+      </WebGLErrorBoundary>
     </div>
   );
 }
