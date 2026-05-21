@@ -1147,8 +1147,10 @@ function CustomRoomModel({
   }, [scene]);
 
   const pColor = pedestalColor ?? "#d4cfc8";
-  const pHeight = pedestalHeight ?? 0.05;
-  // pedestalHeight === 0 (or very close) means "no pedestal" — model sits flush on ar-platform
+  // For custom-room: null means "no pedestal" — default is OFF.
+  // Using ?? 0 (not 0.05) ensures null/undefined → showPedestal=false,
+  // matching the editor toggle which also uses (pedestalHeight ?? 0) > 0.001.
+  const pHeight = pedestalHeight ?? 0;
   const showPedestal = pHeight > 0.001;
   const baseY = platPos ? platPos.y : 0;
   const pedestalTopY = showPedestal ? baseY + 0.28 + pHeight : baseY;
