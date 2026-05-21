@@ -128,6 +128,7 @@ interface ThreeStudioViewerProps {
   modelRotationY?: number | null;
   roomGlbUrl?: string | null;
   onLoad?: () => void;
+  threeIntroEnabled?: boolean;
 }
 
 function lerp(a: number, b: number, t: number) {
@@ -138,13 +139,15 @@ function CameraIntro({
   onDone,
   radius = 3.2,
   lookTarget = [0, 0.4, 0] as [number, number, number],
+  skip = false,
 }: {
   onDone: () => void;
   radius?: number;
   lookTarget?: [number, number, number];
+  skip?: boolean;
 }) {
   const { camera } = useThree();
-  const progressRef = useRef(0);
+  const progressRef = useRef(skip ? 1 : 0);
   const doneRef = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
@@ -155,6 +158,16 @@ function CameraIntro({
   const endElevation = (15 * Math.PI) / 180;
 
   useEffect(() => {
+    if (skip) {
+      camera.position.set(
+        radius * Math.cos(endElevation) * Math.sin(endAzimuth),
+        radius * Math.sin(endElevation),
+        radius * Math.cos(endElevation) * Math.cos(endAzimuth)
+      );
+      camera.lookAt(...lookTarget);
+      onDoneRef.current();
+      return;
+    }
     camera.position.set(
       radius * Math.cos(startElevation) * Math.sin(startAzimuth),
       radius * Math.sin(startElevation),
@@ -164,7 +177,7 @@ function CameraIntro({
   }, []);
 
   useFrame((_state, delta) => {
-    if (doneRef.current) return;
+    if (doneRef.current || skip) return;
     progressRef.current = Math.min(progressRef.current + delta / 4.0, 1);
     const t = 1 - Math.pow(1 - progressRef.current, 5);
 
@@ -1297,7 +1310,7 @@ function CustomRoomScene({
   );
 }
 
-export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, roomGlbUrl, onLoad }: ThreeStudioViewerProps) {
+export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, roomGlbUrl, onLoad, threeIntroEnabled = true }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   // roomReady = Canvas has painted its first frame → hide the blocking overlay
   // modelReady = product model has fully loaded → start camera intro
@@ -1435,7 +1448,13 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
             <CameraIntro
               key={modelUrl}
               onDone={() => setIntroDone(true)}
-              radius={theme === "duplex-room" ? 5.0 : theme === "room-map-1" ? 3.5 : theme === "custom-room" ? roomMaxDist * 0.75 : 3.2}
+              skip={!threeIntroEnabled}
+              radius={
+                theme === "duplex-room" ? (tier === "low" ? 6.5 : 5.0)
+                : theme === "room-map-1" ? (tier === "low" ? 4.8 : 3.5)
+                : theme === "custom-room" ? roomMaxDist * (tier === "low" ? 0.9 : 0.75)
+                : (tier === "low" ? 4.5 : 3.2)
+              }
               lookTarget={
                 theme === "duplex-room" ? [0, 0.4, -2.5]
                 : (theme === "room-map-1" || theme === "custom-room") ? platformTarget
@@ -1449,7 +1468,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
               enableDamping
               dampingFactor={0.08}
               minDistance={0.6}
-              maxDistance={theme === "duplex-room" ? 5.0 : 3.5}
+              maxDistance={theme === "duplex-room" ? (tier === "low" ? 6.5 : 5.0) : (tier === "low" ? 4.8 : 3.5)}
               minPolarAngle={Math.PI * 0.08}
               maxPolarAngle={Math.PI * 0.48}
               target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}

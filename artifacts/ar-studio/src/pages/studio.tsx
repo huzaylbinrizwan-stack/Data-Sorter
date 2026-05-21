@@ -829,6 +829,7 @@ export default function Studio() {
                     pedestalHeight={meta!.pedestalHeight}
                     modelRotationY={meta!.modelRotationY}
                     roomGlbUrl={meta!.roomGlbUrl}
+                    threeIntroEnabled={meta!.threeIntroEnabled}
                     onLoad={() => {
                       setLoadProgress(100);
                     }}

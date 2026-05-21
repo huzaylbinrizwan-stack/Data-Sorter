@@ -108,6 +108,7 @@ export const ListProjectsResponseItem = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  threeIntroEnabled: zod.boolean(),
   defaultModelName: zod.string(),
   defaultColorName: zod.string(),
   studioSidebarColor: zod
@@ -230,6 +231,7 @@ export const GetProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  threeIntroEnabled: zod.boolean(),
   defaultModelName: zod.string(),
   defaultColorName: zod.string(),
   studioSidebarColor: zod
@@ -312,6 +314,7 @@ export const UpdateProjectBody = zod.object({
   isScalable: zod.boolean().optional(),
   enableMaterials: zod.boolean().optional(),
   enableVariants: zod.boolean().optional(),
+  threeIntroEnabled: zod.boolean().optional(),
   defaultModelName: zod.string().optional(),
   defaultColorName: zod.string().optional(),
   folderId: zod.number().nullish(),
@@ -383,6 +386,7 @@ export const UpdateProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  threeIntroEnabled: zod.boolean(),
   defaultModelName: zod.string(),
   defaultColorName: zod.string(),
   studioSidebarColor: zod
@@ -644,6 +648,7 @@ export const GetStudioProjectMetaResponse = zod
     isScalable: zod.boolean(),
     enableMaterials: zod.boolean(),
     enableVariants: zod.boolean(),
+    threeIntroEnabled: zod.boolean(),
     defaultModelName: zod.string(),
     defaultColorName: zod.string(),
     publicSlug: zod.string(),
@@ -727,6 +732,7 @@ export const GetStudioProjectResponse = zod.object({
   isScalable: zod.boolean(),
   enableMaterials: zod.boolean(),
   enableVariants: zod.boolean(),
+  threeIntroEnabled: zod.boolean(),
   defaultModelName: zod.string(),
   defaultColorName: zod.string(),
   studioSidebarColor: zod

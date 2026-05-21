@@ -70,6 +70,7 @@ export interface Project {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  threeIntroEnabled: boolean;
   defaultModelName: string;
   defaultColorName: string;
   studioSidebarColor: string;
@@ -158,6 +159,7 @@ export interface CreateProjectBody {
   isScalable?: boolean;
   enableMaterials?: boolean;
   enableVariants?: boolean;
+  threeIntroEnabled?: boolean;
   defaultModelName?: string;
   defaultColorName?: string;
   /** @nullable */
@@ -205,6 +207,7 @@ export interface UpdateProjectBody {
   isScalable?: boolean;
   enableMaterials?: boolean;
   enableVariants?: boolean;
+  threeIntroEnabled?: boolean;
   defaultModelName?: string;
   defaultColorName?: string;
   /** @nullable */
@@ -292,6 +295,7 @@ export interface StudioProjectMeta {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  threeIntroEnabled: boolean;
   defaultModelName: string;
   defaultColorName: string;
   publicSlug: string;
@@ -402,6 +406,7 @@ export interface StudioProject {
   isScalable: boolean;
   enableMaterials: boolean;
   enableVariants: boolean;
+  threeIntroEnabled: boolean;
   defaultModelName: string;
   defaultColorName: string;
   studioSidebarColor: string;

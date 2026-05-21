@@ -1512,6 +1512,17 @@ export default function Editor() {
                 />
               </div>
 
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Intro Animation</Label>
+                <Switch
+                  checked={project.threeIntroEnabled}
+                  onCheckedChange={async (checked) => {
+                    await updateProject.mutateAsync({ id: projectId, data: { threeIntroEnabled: checked } });
+                  }}
+                  data-testid="switch-intro-animation"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Type</Label>
                 <Select value={project.type} onValueChange={handleTypeChange}>

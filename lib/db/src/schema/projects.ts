@@ -18,6 +18,7 @@ export const projectsTable = pgTable("projects", {
   isScalable: boolean("is_scalable").notNull().default(false),
   enableMaterials: boolean("enable_materials").notNull().default(true),
   enableVariants: boolean("enable_variants").notNull().default(false),
+  threeIntroEnabled: boolean("three_intro_enabled").notNull().default(true),
   defaultModelName: text("default_model_name").notNull().default("Original"),
   defaultColorName: text("default_color_name").notNull().default("Original Color"),
   studioSidebarColor: text("studio_sidebar_color").notNull().default("#000000"),
