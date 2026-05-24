@@ -83,7 +83,7 @@ function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectNam
     <div
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
       style={{
-        background: "linear-gradient(135deg, #1a0f08 0%, #0f0804 50%, #1a0f08 100%)",
+        background: "linear-gradient(135deg, #f4ede0 0%, #ede5d4 50%, #f4ede0 100%)",
         opacity,
         transition: "opacity 0.6s ease",
         pointerEvents: opacity === 0 ? "none" : "auto",
@@ -117,7 +117,7 @@ function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectNam
           </p>
         )}
         <p
-          className="text-white/80 text-sm font-light tracking-wide"
+          className="text-stone-600 text-sm font-light tracking-wide"
           style={{
             opacity: msgVisible ? 1 : 0,
             transition: "opacity 0.2s ease",

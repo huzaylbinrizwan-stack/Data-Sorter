@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Box, LayoutDashboard, FolderOpen, LogOut } from "lucide-react";
+import { Box, LayoutDashboard, FolderOpen, LogOut, Users } from "lucide-react";
 import { useClerk } from "@clerk/react";
 
 interface LayoutProps {
@@ -27,6 +27,10 @@ export default function Layout({ children }: LayoutProps) {
           <Link href="/explore" className={`flex items-center gap-3 px-4 py-3 rounded-sm transition-colors ${location.startsWith('/explore') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
             <FolderOpen className="w-5 h-5" />
             <span className="font-medium">Explore</span>
+          </Link>
+          <Link href="/clients" className={`flex items-center gap-3 px-4 py-3 rounded-sm transition-colors ${location.startsWith('/clients') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
+            <Users className="w-5 h-5" />
+            <span className="font-medium">Clients</span>
           </Link>
         </nav>
         

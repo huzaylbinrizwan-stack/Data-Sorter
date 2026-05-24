@@ -9,6 +9,9 @@ import Dashboard from "./pages/dashboard";
 import Explore from "./pages/explore";
 import Editor from "./pages/editor";
 import Studio from "./pages/studio";
+import ClientDashboard from "./pages/client-dashboard";
+import ClientProject from "./pages/client-project";
+import ClientsAdmin from "./pages/clients-admin";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
@@ -81,13 +84,20 @@ function SignInRedirect() {
 function AdminCheck({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "allowed" | "denied">("loading");
   const [myUserId, setMyUserId] = useState<string>("");
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     fetch("/api/me", { credentials: "include" })
       .then((r) => r.json())
-      .then((d: { userId: string; isAdmin: boolean }) => {
+      .then((d: { userId: string; isAdmin: boolean; isClient: boolean }) => {
         setMyUserId(d.userId);
-        setStatus(d.isAdmin ? "allowed" : "denied");
+        if (d.isAdmin) {
+          setStatus("allowed");
+        } else if (d.isClient) {
+          setLocation("/client");
+        } else {
+          setStatus("denied");
+        }
       })
       .catch(() => setStatus("allowed"));
   }, []);
@@ -113,18 +123,53 @@ function AdminCheck({ children }: { children: React.ReactNode }) {
         <div className="text-center space-y-2">
           <h1 className="text-xl font-semibold text-foreground">Access Restricted</h1>
           <p className="text-sm text-muted-foreground max-w-sm">
-            This dashboard is limited to approved accounts only.
+            This dashboard is limited to approved accounts only. Contact your admin to get access.
           </p>
         </div>
         {myUserId && (
           <div className="bg-muted rounded-lg p-4 max-w-sm w-full space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your User ID</p>
             <code className="text-xs font-mono text-foreground break-all block">{myUserId}</code>
-            <p className="text-xs text-muted-foreground/70">
-              Add this to the <code className="font-mono text-xs">ADMIN_USER_IDS</code> secret in Replit → Secrets panel to gain access.
-            </p>
           </div>
         )}
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function ClientCheck({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<"loading" | "allowed" | "denied">("loading");
+
+  useEffect(() => {
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: { isAdmin: boolean; isClient: boolean }) => {
+        setStatus(d.isAdmin || d.isClient ? "allowed" : "denied");
+      })
+      .catch(() => setStatus("allowed"));
+  }, []);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%)" }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: "50%",
+          border: "2.5px solid rgba(180,130,60,0.2)",
+          borderTopColor: "rgb(180,130,60)",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (status === "denied") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8" style={{ background: "linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%)" }}>
+        <div className="text-4xl">🔒</div>
+        <p className="text-stone-600 text-sm">You don't have access to this area.</p>
       </div>
     );
   }
@@ -179,6 +224,23 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/editor/:id">
             {() => <ProtectedRoute component={Editor} />}
+          </Route>
+          <Route path="/clients">
+            {() => <ProtectedRoute component={ClientsAdmin} />}
+          </Route>
+          <Route path="/client/project/:id">
+            {() => (
+              <Show when="signed-in">
+                <ClientCheck><ClientProject /></ClientCheck>
+              </Show>
+            )}
+          </Route>
+          <Route path="/client">
+            {() => (
+              <Show when="signed-in">
+                <ClientCheck><ClientDashboard /></ClientCheck>
+              </Show>
+            )}
           </Route>
           <Route path="/studio/:slug" component={Studio} />
           <Route component={NotFound} />
