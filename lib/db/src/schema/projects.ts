@@ -37,6 +37,7 @@ export const projectsTable = pgTable("projects", {
   modelRotationY: real("model_rotation_y"),
   roomGlbUrl: text("room_glb_url"),
   folderId: integer("folder_id"),
+  customDomain: text("custom_domain").unique(),
   publicSlug: text("public_slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

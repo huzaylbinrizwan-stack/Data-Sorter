@@ -7,7 +7,9 @@ import { storageAdminRouter, storagePublicRouter } from "./storage";
 import materialsRouter from "./materials";
 import variantsRouter from "./variants";
 import measurementsRouter from "./measurements";
+import meRouter from "./me";
 import { requireClerkAuth } from "../middlewares/requireClerkAuth";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
 
@@ -16,12 +18,13 @@ router.use(healthRouter);
 router.use(studioRouter);
 router.use(storagePublicRouter);
 
-router.use(requireClerkAuth, foldersRouter);
-router.use(requireClerkAuth, statsRouter);
-router.use(requireClerkAuth, storageAdminRouter);
-router.use(requireClerkAuth, projectsRouter);
-router.use(requireClerkAuth, materialsRouter);
-router.use(requireClerkAuth, variantsRouter);
-router.use(requireClerkAuth, measurementsRouter);
+router.use(requireClerkAuth, meRouter);
+router.use(requireAdmin, foldersRouter);
+router.use(requireAdmin, statsRouter);
+router.use(requireAdmin, storageAdminRouter);
+router.use(requireAdmin, projectsRouter);
+router.use(requireAdmin, materialsRouter);
+router.use(requireAdmin, variantsRouter);
+router.use(requireAdmin, measurementsRouter);
 
 export default router;

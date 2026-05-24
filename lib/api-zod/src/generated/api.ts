@@ -142,6 +142,7 @@ export const ListProjectsResponseItem = zod.object({
   modelRotationY: zod.number().nullish(),
   roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
+  customDomain: zod.string().nullish(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
@@ -265,6 +266,7 @@ export const GetProjectResponse = zod.object({
   modelRotationY: zod.number().nullish(),
   roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
+  customDomain: zod.string().nullish(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
@@ -344,6 +346,7 @@ export const UpdateProjectBody = zod.object({
     .nullish(),
   modelRotationY: zod.number().nullish(),
   roomGlbUrl: zod.string().nullish(),
+  customDomain: zod.string().nullish(),
 });
 
 export const updateProjectResponseStudioSidebarColorDefault = `#000000`;
@@ -420,6 +423,7 @@ export const UpdateProjectResponse = zod.object({
   modelRotationY: zod.number().nullish(),
   roomGlbUrl: zod.string().nullish(),
   folderId: zod.number().nullable(),
+  customDomain: zod.string().nullish(),
   publicSlug: zod.string(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),

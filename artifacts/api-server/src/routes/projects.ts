@@ -93,7 +93,20 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     pedestalHeight: project.pedestalHeight ?? null,
     modelRotationY: project.modelRotationY ?? null,
     roomGlbUrl: project.roomGlbUrl ?? null,
+    customDomain: project.customDomain ?? null,
   }));
+});
+
+studioRouter.get("/studio/by-domain/:domain", async (req, res): Promise<void> => {
+  const domain = req.params.domain?.toLowerCase().trim();
+  if (!domain) { res.status(400).json({ error: "Missing domain" }); return; }
+  const [project] = await db
+    .select({ publicSlug: projectsTable.publicSlug, isLive: projectsTable.isLive })
+    .from(projectsTable)
+    .where(eq(projectsTable.customDomain, domain));
+  if (!project) { res.status(404).json({ error: "No project found for this domain" }); return; }
+  if (!project.isLive) { res.status(404).json({ error: "AR experience not available" }); return; }
+  res.json({ publicSlug: project.publicSlug });
 });
 
 studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
@@ -169,6 +182,7 @@ studioRouter.get("/studio/:slug", async (req, res): Promise<void> => {
     pedestalHeight: project.pedestalHeight ?? null,
     modelRotationY: project.modelRotationY ?? null,
     roomGlbUrl: project.roomGlbUrl ?? null,
+    customDomain: project.customDomain ?? null,
     materials: baseMaterials,
     variants,
   }));

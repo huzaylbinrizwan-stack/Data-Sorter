@@ -59,6 +59,9 @@ import {
   Ruler,
   ImageIcon,
   X,
+  Copy,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -684,6 +687,9 @@ export default function Editor() {
   const [bgFocalY, setBgFocalY] = useState<number>(50);
   const [newMeasurementLabel, setNewMeasurementLabel] = useState("");
   const [newMeasurementValue, setNewMeasurementValue] = useState("");
+  const [customDomainVal, setCustomDomainVal] = useState(project?.customDomain ?? "");
+  const [customDomainTab, setCustomDomainTab] = useState<"dns" | "iframe">("iframe");
+  const [customDomainCopied, setCustomDomainCopied] = useState(false);
 
   const { data: measurements = [] } = useListMeasurements(projectId, {
     query: { enabled: !!projectId, queryKey: getListMeasurementsQueryKey(projectId) },
@@ -694,6 +700,7 @@ export default function Editor() {
 
   useEffect(() => {
     if (project) {
+      setCustomDomainVal(project.customDomain ?? "");
       setDefaultModelNameVal(project.defaultModelName);
       setDefaultColorNameVal(project.defaultColorName);
       setSidebarColorVal(project.studioSidebarColor ?? "#000000");
@@ -939,6 +946,20 @@ export default function Editor() {
     await updateProject.mutateAsync({ id: projectId, data: { defaultColorName: defaultColorNameVal.trim() } });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     toast({ title: "Default color name saved" });
+  };
+
+  const handleSaveCustomDomain = async () => {
+    const trimmed = customDomainVal.trim().toLowerCase().replace(/^https?:\/\//, "");
+    await updateProject.mutateAsync({ id: projectId, data: { customDomain: trimmed || null } });
+    queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    toast({ title: trimmed ? "Custom domain saved" : "Custom domain cleared" });
+  };
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCustomDomainCopied(true);
+      setTimeout(() => setCustomDomainCopied(false), 1500);
+    });
   };
 
   const handleSidebarColorChange = (color: string) => {
@@ -1662,6 +1683,159 @@ export default function Editor() {
                       : "Applied to variant names, material labels, and navigation arrows"}
                   </p>
                 </div>
+              </div>
+
+              {/* Custom Domain */}
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-3 h-3 text-primary" />
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                    Custom Domain
+                  </Label>
+                </div>
+
+                {/* Domain input */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Client's domain</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={customDomainVal}
+                      onChange={(e) => setCustomDomainVal(e.target.value)}
+                      onBlur={handleSaveCustomDomain}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveCustomDomain(); }}
+                      className="h-8 text-xs border-border flex-1 font-mono"
+                      placeholder="ar.clientdomain.com"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground/60">
+                    Subdomain or domain the client will use for their AR link.
+                  </p>
+                </div>
+
+                {/* Tab toggle */}
+                <div className="flex rounded-md overflow-hidden border border-border">
+                  <button
+                    onClick={() => setCustomDomainTab("iframe")}
+                    className={`flex-1 text-[10px] py-1.5 transition-colors ${
+                      customDomainTab === "iframe"
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Embed (Easiest)
+                  </button>
+                  <button
+                    onClick={() => setCustomDomainTab("dns")}
+                    className={`flex-1 text-[10px] py-1.5 transition-colors border-l border-border ${
+                      customDomainTab === "dns"
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Subdomain (DNS)
+                  </button>
+                </div>
+
+                {customDomainTab === "iframe" ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground/80">
+                      Paste this on any page of the client's website. No DNS changes needed.
+                    </p>
+                    <div className="relative">
+                      <pre className="text-[9px] font-mono bg-muted rounded p-2.5 overflow-x-auto whitespace-pre-wrap break-all text-muted-foreground leading-relaxed border border-border">
+{`<iframe
+  src="${window.location.origin}/studio/${project.publicSlug}"
+  width="100%"
+  height="680"
+  style="border:none;border-radius:12px;"
+  allow="camera; xr-spatial-tracking;
+    accelerometer; gyroscope"
+></iframe>`}
+                      </pre>
+                      <button
+                        onClick={() => handleCopyText(
+                          `<iframe\n  src="${window.location.origin}/studio/${project.publicSlug}"\n  width="100%"\n  height="680"\n  style="border:none;border-radius:12px;"\n  allow="camera; xr-spatial-tracking; accelerometer; gyroscope"\n></iframe>`
+                        )}
+                        className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy"
+                      >
+                        {customDomainCopied ? (
+                          <Check className="w-3.5 h-3.5 text-primary" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground/70">
+                      <p className="font-medium text-muted-foreground">Client steps:</p>
+                      <p>1. Open the page editor on their website</p>
+                      <p>2. Add an HTML block or custom code widget</p>
+                      <p>3. Paste the snippet above</p>
+                      <p>4. Resize the iframe height to fit their layout</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground/80">
+                      Client adds one DNS record so their subdomain loads the AR experience directly.
+                    </p>
+
+                    {/* CNAME record */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">DNS record to add:</p>
+                      <div className="bg-muted rounded border border-border p-2.5 space-y-1.5">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground w-12 shrink-0">Type</span>
+                          <code className="text-[10px] font-mono text-foreground flex-1">CNAME</code>
+                        </div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground w-12 shrink-0">Name</span>
+                          <code className="text-[10px] font-mono text-foreground flex-1 break-all">
+                            {customDomainVal
+                              ? customDomainVal.split(".")[0]
+                              : "ar"}
+                          </code>
+                        </div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground w-12 shrink-0">Value</span>
+                          <code className="text-[10px] font-mono text-foreground flex-1 break-all">
+                            {window.location.host}
+                          </code>
+                          <button
+                            onClick={() => handleCopyText(window.location.host)}
+                            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            title="Copy"
+                          >
+                            {customDomainCopied ? (
+                              <Check className="w-3 h-3 text-primary" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground w-12 shrink-0">TTL</span>
+                          <code className="text-[10px] font-mono text-foreground flex-1">3600</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-xs text-muted-foreground/70">
+                      <p className="font-medium text-muted-foreground">Client steps:</p>
+                      <p>1. Log in to their domain registrar (GoDaddy, Namecheap, Cloudflare, etc.)</p>
+                      <p>2. Go to DNS settings for their domain</p>
+                      <p>3. Add the CNAME record above</p>
+                      <p>4. Wait up to 24h for DNS to propagate</p>
+                      <p>5. Share the URL: <code className="font-mono">{customDomainVal ? `https://${customDomainVal}/studio/${project.publicSlug}` : `https://ar.clientdomain.com/studio/${project.publicSlug}`}</code></p>
+                    </div>
+
+                    <div className="rounded border border-primary/20 bg-primary/5 p-2.5">
+                      <p className="text-[10px] text-primary/80 leading-relaxed">
+                        <span className="font-medium">Note:</span> After DNS propagates, save the domain in the field above. Visitors accessing the subdomain will see this AR experience.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient, QueryClient } from "@tanstack/react-query";
@@ -78,11 +78,67 @@ function SignInRedirect() {
   return null;
 }
 
+function AdminCheck({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<"loading" | "allowed" | "denied">("loading");
+  const [myUserId, setMyUserId] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: { userId: string; isAdmin: boolean }) => {
+        setMyUserId(d.userId);
+        setStatus(d.isAdmin ? "allowed" : "denied");
+      })
+      .catch(() => setStatus("allowed"));
+  }, []);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div style={{
+          width: 28, height: 28, borderRadius: "50%",
+          border: "2.5px solid rgba(255,255,255,0.15)",
+          borderTopColor: "rgba(255,255,255,0.7)",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (status === "denied") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 p-8">
+        <div className="text-4xl">🔒</div>
+        <div className="text-center space-y-2">
+          <h1 className="text-xl font-semibold text-foreground">Access Restricted</h1>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            This dashboard is limited to approved accounts only.
+          </p>
+        </div>
+        {myUserId && (
+          <div className="bg-muted rounded-lg p-4 max-w-sm w-full space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your User ID</p>
+            <code className="text-xs font-mono text-foreground break-all block">{myUserId}</code>
+            <p className="text-xs text-muted-foreground/70">
+              Add this to the <code className="font-mono text-xs">ADMIN_USER_IDS</code> secret in Replit → Secrets panel to gain access.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   return (
     <>
       <Show when="signed-in">
-        <Component />
+        <AdminCheck>
+          <Component />
+        </AdminCheck>
       </Show>
       <Show when="signed-out">
         <SignInRedirect />

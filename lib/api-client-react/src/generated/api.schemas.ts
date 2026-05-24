@@ -113,6 +113,8 @@ export interface Project {
   roomGlbUrl?: string | null;
   /** @nullable */
   folderId: number | null;
+  /** @nullable */
+  customDomain?: string | null;
   publicSlug: string;
   createdAt: string;
   updatedAt: string;
@@ -250,6 +252,8 @@ export interface UpdateProjectBody {
   modelRotationY?: number | null;
   /** @nullable */
   roomGlbUrl?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
 }
 
 export type StudioProjectMetaEnvironment =
