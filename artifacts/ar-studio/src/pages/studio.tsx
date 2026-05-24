@@ -50,19 +50,46 @@ function hexToRgb(hex: string): [number, number, number] {
     : [0, 0, 0];
 }
 
+const LOADING_MSGS = [
+  "Preparing your space",
+  "Setting up the lighting",
+  "Placing the model",
+  "Finishing the details",
+  "Almost ready",
+];
+
 function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectName?: string; opacity: number; accentColor: string }) {
   const [ar, ag, ab] = hexToRgb(accentColor);
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [msgVisible, setMsgVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMsgVisible(false);
+      setTimeout(() => {
+        setMsgIdx(i => (i + 1) % LOADING_MSGS.length);
+        setMsgVisible(true);
+      }, 200);
+    }, 1800);
+    return () => clearInterval(timer);
+  }, []);
+
+  const rawMsg = LOADING_MSGS[msgIdx];
+  const displayMsg = rawMsg === "Placing the model" && projectName
+    ? `Placing the ${projectName}`
+    : rawMsg;
+
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center z-50"
       style={{
         background: "linear-gradient(135deg, #1a0f08 0%, #0f0804 50%, #1a0f08 100%)",
         opacity,
-        transition: "opacity 0.5s ease",
+        transition: "opacity 0.6s ease",
         pointerEvents: opacity === 0 ? "none" : "auto",
       }}
     >
-      <div className="relative w-20 h-20 mb-8">
+      <div className="relative w-20 h-20 mb-10">
         <div
           className="absolute inset-0 rounded-full animate-spin"
           style={{
@@ -80,29 +107,45 @@ function LuxuryLoadingScreen({ projectName, opacity, accentColor }: { projectNam
         </div>
       </div>
 
-      <div className="text-center px-8 max-w-xs">
-        {projectName ? (
-          <>
-            <p
-              className="text-sm font-light tracking-widest uppercase mb-2"
-              style={{ color: accentColor }}
-            >
-              {projectName}
-            </p>
-            <p className="text-white/50 text-xs font-light leading-relaxed tracking-wide">
-              We are arranging your AR experience,<br />please be patient.
-            </p>
-          </>
-        ) : (
-          <p className="text-white/50 text-xs font-light leading-relaxed tracking-wide">
-            We are arranging the AR Studio for you,<br />please be patient.
+      <div className="text-center px-8 max-w-xs space-y-3">
+        {projectName && (
+          <p
+            className="text-xs font-light tracking-[0.3em] uppercase"
+            style={{ color: `rgba(${ar},${ag},${ab},0.6)` }}
+          >
+            {projectName}
           </p>
         )}
+        <p
+          className="text-white/80 text-sm font-light tracking-wide"
+          style={{
+            opacity: msgVisible ? 1 : 0,
+            transition: "opacity 0.2s ease",
+            minHeight: "1.5rem",
+          }}
+        >
+          {displayMsg}
+        </p>
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          {LOADING_MSGS.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-500"
+              style={{
+                width: i === msgIdx ? 16 : 4,
+                height: 4,
+                background: i === msgIdx
+                  ? accentColor
+                  : `rgba(${ar},${ag},${ab},0.2)`,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <div
         className="absolute bottom-6 flex items-center gap-1.5 text-xs font-light tracking-widest"
-        style={{ color: `rgba(${ar},${ag},${ab},0.4)` }}
+        style={{ color: `rgba(${ar},${ag},${ab},0.35)` }}
       >
         <Box className="w-3 h-3" />
         <span>AR STUDIO</span>

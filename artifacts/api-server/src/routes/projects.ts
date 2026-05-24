@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, and, inArray } from "drizzle-orm";
 import { db, projectsTable, projectMaterialsTable, projectVariantsTable, projectMeasurementsTable } from "@workspace/db";
 import {
   CreateProjectBody,
@@ -95,6 +95,51 @@ studioRouter.get("/studio/:slug/meta", async (req, res): Promise<void> => {
     roomGlbUrl: project.roomGlbUrl ?? null,
     customDomain: project.customDomain ?? null,
   }));
+});
+
+studioRouter.get("/preload/:folderId", async (req, res): Promise<void> => {
+  const folderId = parseInt(req.params.folderId, 10);
+  if (isNaN(folderId)) { res.status(400).json({ error: "Invalid folderId" }); return; }
+
+  const projects = await db
+    .select({ id: projectsTable.id, modelUrl: projectsTable.modelUrl, roomGlbUrl: projectsTable.roomGlbUrl })
+    .from(projectsTable)
+    .where(and(eq(projectsTable.folderId, folderId), eq(projectsTable.isLive, true)));
+
+  const allUrls = new Set<string>();
+  if (projects.length > 0) {
+    const ids = projects.map(p => p.id);
+    const [variants, materials] = await Promise.all([
+      db.select({ modelUrl: projectVariantsTable.modelUrl }).from(projectVariantsTable).where(inArray(projectVariantsTable.projectId, ids)),
+      db.select({ modelUrl: projectMaterialsTable.modelUrl }).from(projectMaterialsTable).where(inArray(projectMaterialsTable.projectId, ids)),
+    ]);
+    for (const p of projects) {
+      if (p.modelUrl) allUrls.add(p.modelUrl);
+      if (p.roomGlbUrl) allUrls.add(p.roomGlbUrl);
+    }
+    for (const v of variants) { if (v.modelUrl) allUrls.add(v.modelUrl); }
+    for (const m of materials) { if (m.modelUrl) allUrls.add(m.modelUrl); }
+  }
+
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Cache-Control", "public, max-age=300");
+  res.json({ assets: Array.from(allUrls) });
+});
+
+studioRouter.get("/preload.js", async (req, res): Promise<void> => {
+  const clientId = String(req.query.client ?? "");
+  if (!clientId || !/^\d+$/.test(clientId)) {
+    res.status(400).set("Content-Type", "application/javascript").send("// Invalid client ID");
+    return;
+  }
+  const proto = (req.headers["x-forwarded-proto"] as string) ?? req.protocol;
+  const host = (req.headers["x-forwarded-host"] as string) ?? req.get("host") ?? "";
+  const origin = `${proto}://${host}`;
+  const script = `(function(){var c="${clientId}",b="${origin}/api";fetch(b+"/preload/"+c).then(function(r){return r.json()}).then(function(d){if(!Array.isArray(d.assets))return;d.assets.forEach(function(u){try{fetch(u,{mode:"no-cors",cache:"force-cache"})}catch(e){}})}).catch(function(){})})();`;
+  res.set("Content-Type", "application/javascript");
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Cache-Control", "public, max-age=3600");
+  res.send(script);
 });
 
 studioRouter.get("/studio/by-domain/:domain", async (req, res): Promise<void> => {

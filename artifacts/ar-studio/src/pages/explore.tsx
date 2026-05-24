@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Layout from "@/components/layout";
 import { 
   useListFolders, 
@@ -22,7 +22,10 @@ import {
   Trash2, 
   ChevronRight,
   Search,
-  FileBox
+  FileBox,
+  Zap,
+  Copy,
+  Check
 } from "lucide-react";
 import { 
   Dialog, 
@@ -69,6 +72,15 @@ export default function Explore() {
   const [isRenameProjectDialogOpen, setIsRenameProjectDialogOpen] = useState(false);
   const [renamingProject, setRenamingProject] = useState<{ id: number; name: string } | null>(null);
   const [renameProjectName, setRenameProjectName] = useState("");
+
+  const [isSnippetOpen, setIsSnippetOpen] = useState(false);
+  const [snippetCopied, setSnippetCopied] = useState(false);
+
+  const handleCopySnippet = useCallback((text: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setSnippetCopied(true);
+    setTimeout(() => setSnippetCopied(false), 2000);
+  }, []);
 
   const currentFolder = useMemo(() => folders.find(f => f.id === currentFolderId), [folders, currentFolderId]);
   const visibleFolders = useMemo(() => folders.filter(f => f.parentId === currentFolderId && f.name.toLowerCase().includes(search.toLowerCase())), [folders, currentFolderId, search]);
@@ -172,6 +184,17 @@ export default function Explore() {
               />
             </div>
             
+            {currentFolderId !== null && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-sm border-border h-9"
+                onClick={() => setIsSnippetOpen(true)}
+              >
+                <Zap className="w-4 h-4 mr-2" /> Preloader Snippet
+              </Button>
+            )}
+
             <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-sm border-border h-9">
@@ -333,6 +356,84 @@ export default function Explore() {
           )}
         </div>
       </div>
+
+      {/* Preloader Snippet Dialog */}
+      {currentFolderId !== null && (
+        <Dialog open={isSnippetOpen} onOpenChange={setIsSnippetOpen}>
+          <DialogContent className="bg-card border-border rounded-sm max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-serif flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Preloader Snippet
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2 space-y-4">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Add this one line to the <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">&lt;head&gt;</code> of{" "}
+                <strong>{currentFolder?.name ?? "this client's"}</strong> website.
+                It silently preloads all AR assets in the background — so when a visitor opens the AR experience, everything is already cached and loads instantly.
+              </p>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Paste in client's &lt;head&gt;</p>
+                <div className="relative">
+                  <pre className="text-[10px] font-mono bg-muted rounded border border-border p-3 overflow-x-auto whitespace-pre-wrap break-all text-muted-foreground leading-relaxed">
+{`<script src="${window.location.origin}/api/preload.js?client=${currentFolderId}" async></script>`}
+                  </pre>
+                  <button
+                    onClick={() => handleCopySnippet(`<script src="${window.location.origin}/api/preload.js?client=${currentFolderId}" async></script>`)}
+                    className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Copy"
+                  >
+                    {snippetCopied
+                      ? <Check className="w-4 h-4 text-primary" />
+                      : <Copy className="w-4 h-4" />
+                    }
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded border border-border bg-background p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">How it works</p>
+                <ol className="space-y-1.5 text-xs text-muted-foreground">
+                  <li className="flex gap-2">
+                    <span className="text-primary font-medium shrink-0">1.</span>
+                    Visitor lands on the client's homepage — the script runs invisibly in the background.
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary font-medium shrink-0">2.</span>
+                    All 3D models and room files for this folder are downloaded into the browser cache.
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary font-medium shrink-0">3.</span>
+                    When the visitor opens the AR experience, everything is already cached — loads in under 1 second.
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary font-medium shrink-0">4.</span>
+                    Zero impact on the client's website speed (runs in the background after page load).
+                  </li>
+                </ol>
+              </div>
+
+              <div className="rounded border border-primary/20 bg-primary/5 p-3">
+                <p className="text-xs text-primary/80 leading-relaxed">
+                  <span className="font-medium">Client steps:</span> Open their website CMS or code editor → find the <code className="font-mono">&lt;head&gt;</code> section → paste the script tag → save and publish.
+                  Works on any website: Shopify, Wix, Webflow, WordPress, or custom HTML.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsSnippetOpen(false)}>Close</Button>
+              <Button
+                onClick={() => handleCopySnippet(`<script src="${window.location.origin}/api/preload.js?client=${currentFolderId}" async></script>`)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm"
+              >
+                {snippetCopied ? <><Check className="w-4 h-4 mr-2" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Snippet</>}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Rename Project Dialog */}
       <Dialog open={isRenameProjectDialogOpen} onOpenChange={setIsRenameProjectDialogOpen}>
