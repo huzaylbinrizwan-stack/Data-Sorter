@@ -1366,6 +1366,17 @@ function CustomRoomScene({
   );
 }
 
+// Holds inside a Suspense boundary, resolving only when the GLB is fully downloaded.
+// Fires onReady once so the parent can switch from the placeholder scene to CustomRoomScene.
+function CustomRoomReadyWatcher({ roomGlbUrl, onReady }: { roomGlbUrl: string; onReady: () => void }) {
+  useGLTF(roomGlbUrl, DRACO_PATH); // suspends until the GLB is in cache
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (!firedRef.current) { firedRef.current = true; onReady(); }
+  }, []);
+  return null;
+}
+
 export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeight, modelRotationY, roomGlbUrl, onLoad, threeIntroEnabled = true }: ThreeStudioViewerProps) {
   const [introDone, setIntroDone] = useState(false);
   // roomReady = Canvas has painted its first frame → hide the blocking overlay
@@ -1374,6 +1385,8 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
   const [modelReady, setModelReady] = useState(false);
   const [platformTarget, setPlatformTarget] = useState<[number, number, number]>([0, 0.4, 0]);
   const [roomMaxDist, setRoomMaxDist] = useState(3.0);
+  // custom-room only: true once the uploaded room GLB is fully in cache
+  const [customRoomGlbReady, setCustomRoomGlbReady] = useState(false);
 
   // Computed once per mount — stays stable across re-renders
   const tier = useMemo(() => getDeviceTier(), []);
@@ -1395,6 +1408,7 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     setRoomReady(false);
     setModelReady(false);
     setIntroDone(false);
+    setCustomRoomGlbReady(false);
     setPlatformTarget([0, 0.4, 0]);
     setRoomMaxDist(3.0);
   }, [modelUrl, theme, roomGlbUrl]);
@@ -1413,10 +1427,11 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
     setRoomMaxDist(info.maxDist);
   };
 
+  // custom-room Phase 1 uses warm-minimal sky so the overlay colour matches
   const bgColor = theme === "warm-minimal" ? "#a8c4d2"
     : theme === "duplex-room" ? "#b0a898"
     : theme === "room-map-1" ? "#c8c0b4"
-    : theme === "custom-room" ? "#c0b8b0"
+    : theme === "custom-room" ? (customRoomGlbReady ? "#c0b8b0" : "#a8c4d2")
     : "transparent";
 
   const glErrorFallback = (
@@ -1505,16 +1520,16 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
             <CameraIntro
               key={modelUrl}
               onDone={() => setIntroDone(true)}
-              skip={!threeIntroEnabled}
+              // custom-room: no drone sweep — snap to position immediately
+              skip={!threeIntroEnabled || theme === "custom-room"}
               radius={
                 theme === "duplex-room" ? (tier === "low" ? 9.0 : 5.0)
                 : theme === "room-map-1" ? (tier === "low" ? 6.5 : 3.5)
-                : theme === "custom-room" ? roomMaxDist * (tier === "low" ? 1.1 : 0.75)
                 : (tier === "low" ? 7.0 : 3.2)
               }
               lookTarget={
                 theme === "duplex-room" ? [0, 0.4, -2.5]
-                : (theme === "room-map-1" || theme === "custom-room") ? platformTarget
+                : theme === "room-map-1" ? platformTarget
                 : [0, 0.4, 0]
               }
             />
@@ -1530,7 +1545,8 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
               maxPolarAngle={Math.PI * 0.48}
               target={theme === "duplex-room" ? [0, 0.4, -2.5] : platformTarget}
             />
-          ) : theme === "custom-room" ? (
+          ) : theme === "custom-room" && customRoomGlbReady ? (
+            // Phase 2: room loaded — room-style orbit
             <OrbitControls
               enabled={introDone}
               enableDamping
@@ -1578,7 +1594,31 @@ export function ThreeStudioViewer({ modelUrl, theme, pedestalColor, pedestalHeig
               onPlatformDetected={handlePlatformDetected}
             />
           )}
-          {theme === "custom-room" && (
+          {/* custom-room Phase 1: show the warm-minimal scene (sofa + arch + plant)
+               while the uploaded room GLB downloads silently in the background.
+               CustomRoomReadyWatcher suspends until the GLB is fully in cache,
+               then sets customRoomGlbReady which flips us to Phase 2. */}
+          {theme === "custom-room" && !customRoomGlbReady && (
+            <>
+              <WarmMinimalScene
+                modelUrl={modelUrl}
+                pedestalColor={pedestalColor}
+                pedestalHeight={pedestalHeight}
+                modelRotationY={modelRotationY}
+                onLoad={handleModelLoad}
+              />
+              {roomGlbUrl && (
+                <Suspense fallback={null}>
+                  <CustomRoomReadyWatcher
+                    roomGlbUrl={roomGlbUrl}
+                    onReady={() => setCustomRoomGlbReady(true)}
+                  />
+                </Suspense>
+              )}
+            </>
+          )}
+          {/* custom-room Phase 2: room GLB is in cache, CustomRoomScene loads instantly */}
+          {theme === "custom-room" && customRoomGlbReady && (
             <CustomRoomScene
               modelUrl={modelUrl}
               roomGlbUrl={roomGlbUrl}
