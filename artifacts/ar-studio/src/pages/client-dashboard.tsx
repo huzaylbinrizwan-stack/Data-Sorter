@@ -58,7 +58,7 @@ export default function ClientDashboard() {
     fetch("/api/client/stats", { credentials: "include" })
       .then(r => r.json()).then(setStats).catch(() => {});
     fetch("/api/client/projects", { credentials: "include" })
-      .then(r => r.json()).then(setProjects).catch(() => {});
+      .then(r => r.json()).then(d => setProjects(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
   const firstFolderId = me?.folderIds?.[0] ?? null;
