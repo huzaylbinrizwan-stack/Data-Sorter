@@ -1132,138 +1132,107 @@ function RoomBoundsGuard({ bounds }: {
   return null;
 }
 
-function CustomRoomModel({
+// Loads the custom room GLB, fades it in from transparent, fires onReady with platform info.
+// Wrapped in Suspense by the parent so it doesn't block anything else from rendering.
+function CustomRoomGlb({
   roomGlbUrl,
-  modelUrl,
-  pedestalColor,
-  pedestalHeight,
-  modelRotationY,
-  onLoad,
-  onRoomLoaded,
+  onReady,
 }: {
   roomGlbUrl: string;
-  modelUrl: string;
-  pedestalColor?: string | null;
-  pedestalHeight?: number | null;
-  modelRotationY?: number | null;
-  onLoad?: () => void;
-  onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
+  onReady?: (info: {
+    platX: number; platY: number; platZ: number; maxDist: number;
+    bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number };
+  }) => void;
 }) {
   const { scene } = useGLTF(roomGlbUrl, DRACO_PATH);
-  const [pedestalRadius, setPedestalRadius] = useState(0.5);
-  const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
-  const [roomBoundsInfo, setRoomBoundsInfo] = useState<{
-    minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number;
-  } | null>(null);
+  const opacityRef = useRef(0);
+  const doneRef = useRef(false);
+  const readyFiredRef = useRef(false);
 
-  useEffect(() => {
-    if (!scene) return;
-    scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
+  // Clone the scene so we can make all materials transparent for the fade-in
+  // without mutating the cached GLTF that other components may share.
+  const cloned = useMemo(() => {
+    const c = scene.clone(true);
+    c.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      const applyTransparent = (mat: THREE.Material) => {
+        const copy = mat.clone() as THREE.MeshStandardMaterial;
+        copy.transparent = true;
+        copy.opacity = 0;
+        return copy;
+      };
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(applyTransparent)
+        : applyTransparent(mesh.material as THREE.Material);
     });
+    return c;
+  }, [scene]);
 
-    scene.updateWorldMatrix(true, true);
-    const roomBox = new THREE.Box3().setFromObject(scene);
+  // Fire onReady once with platform position + room bounds
+  useEffect(() => {
+    if (readyFiredRef.current) return;
+    readyFiredRef.current = true;
+
+    cloned.updateWorldMatrix(true, true);
+    const roomBox = new THREE.Box3().setFromObject(cloned);
     const roomSize = roomBox.getSize(new THREE.Vector3());
     const roomCenter = roomBox.getCenter(new THREE.Vector3());
     const maxDist = Math.max(Math.min(roomSize.x, roomSize.z) / 2 - 0.8, 1.5);
 
-    setRoomBoundsInfo({
-      minX: roomBox.min.x + 0.3,
-      maxX: roomBox.max.x - 0.3,
-      minY: roomBox.min.y + 0.05,
-      maxY: roomBox.max.y - 0.3,
-      minZ: roomBox.min.z + 0.3,
-      maxZ: roomBox.max.z - 0.3,
-    });
-
-    const platform = scene.getObjectByName("ar-platform") ?? scene.getObjectByName("ar-platfc");
     let platX = roomCenter.x;
     let platY = roomBox.min.y;
     let platZ = roomCenter.z;
 
+    const platform = cloned.getObjectByName("ar-platform") ?? cloned.getObjectByName("ar-platfc");
     if (platform) {
       platform.updateWorldMatrix(true, true);
       const box = new THREE.Box3().setFromObject(platform);
-      const center = new THREE.Vector3();
-      const size = new THREE.Vector3();
-      box.getCenter(center);
-      box.getSize(size);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
       platX = center.x;
       platY = center.y + size.y / 2;
       platZ = center.z;
-      setPedestalRadius(Math.max(Math.max(size.x, size.z) / 2 * 0.85, 0.25));
     }
 
-    setPlatPos({ x: platX, y: platY, z: platZ });
-    onRoomLoaded?.({ platformTarget: [platX, platY + 0.4, platZ], maxDist });
-  }, [scene]);
+    onReady?.({
+      platX, platY, platZ, maxDist,
+      bounds: {
+        minX: roomBox.min.x + 0.3, maxX: roomBox.max.x - 0.3,
+        minY: roomBox.min.y + 0.05, maxY: roomBox.max.y - 0.3,
+        minZ: roomBox.min.z + 0.3, maxZ: roomBox.max.z - 0.3,
+      },
+    });
+  }, [cloned]);
 
-  const pColor = pedestalColor ?? "#d4cfc8";
-  // For custom-room: null means "no pedestal" — default is OFF.
-  // Using ?? 0 (not 0.05) ensures null/undefined → showPedestal=false,
-  // matching the editor toggle which also uses (pedestalHeight ?? 0) > 0.001.
-  const pHeight = pedestalHeight ?? 0;
-  const showPedestal = pHeight > 0.001;
-  const baseY = platPos ? platPos.y : 0;
-  const pedestalTopY = showPedestal ? baseY + 0.28 + pHeight : baseY;
-  const platX = platPos?.x ?? 0;
-  const platZ = platPos?.z ?? 0;
+  // Animate opacity 0 → 1 over ~0.8 s, then restore to non-transparent for perf
+  useFrame((_, delta) => {
+    if (doneRef.current) return;
+    opacityRef.current = Math.min(opacityRef.current + delta * 1.25, 1);
+    cloned.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const set = (mat: THREE.Material) => { (mat as THREE.MeshStandardMaterial).opacity = opacityRef.current; };
+      Array.isArray(mesh.material) ? mesh.material.forEach(set) : set(mesh.material as THREE.Material);
+    });
+    if (opacityRef.current >= 1) {
+      doneRef.current = true;
+      cloned.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const restore = (mat: THREE.Material) => {
+          const m = mat as THREE.MeshStandardMaterial;
+          m.transparent = false;
+          m.opacity = 1;
+        };
+        Array.isArray(mesh.material) ? mesh.material.forEach(restore) : restore(mesh.material as THREE.Material);
+      });
+    }
+  });
 
-  const pedestalMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6, metalness: 0.05 }),
-    [pColor]
-  );
-
-  return (
-    <>
-      <primitive object={scene} />
-      {roomBoundsInfo && <RoomBoundsGuard bounds={roomBoundsInfo} />}
-      <hemisphereLight args={["#c8dff0", "#d4c8a8", 0.9]} />
-      <ambientLight intensity={0.55} color="#fff8f0" />
-      <directionalLight
-        position={[platX - 6, 8, platZ - 2]}
-        intensity={3.5}
-        color="#fff5e0"
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0003}
-        shadow-camera-left={-8}
-        shadow-camera-right={8}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
-        shadow-camera-near={0.1}
-        shadow-camera-far={30}
-      />
-      <directionalLight position={[platX + 5, 6, platZ + 3]} intensity={1.2} color="#e8f4ff" />
-      {showPedestal && (
-        <>
-          <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
-            <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
-            <primitive object={pedestalMat} attach="material" />
-          </mesh>
-          <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
-            <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
-            <primitive object={pedestalMat} attach="material" />
-          </mesh>
-        </>
-      )}
-      <Suspense fallback={null}>
-        <group position={[platX, 0, platZ]}>
-          <ModelOnPedestal
-            url={modelUrl}
-            pedestalTopY={pedestalTopY}
-            setPedestalRadius={setPedestalRadius}
-            rotationY={modelRotationY}
-            onLoad={onLoad}
-          />
-        </group>
-      </Suspense>
-    </>
-  );
+  return <primitive object={cloned} />;
 }
 
 function CustomRoomScene({
@@ -1283,6 +1252,26 @@ function CustomRoomScene({
   onLoad?: () => void;
   onRoomLoaded?: (info: { platformTarget: [number, number, number]; maxDist: number }) => void;
 }) {
+  const [platPos, setPlatPos] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [roomLoaded, setRoomLoaded] = useState(false);
+  const [roomBoundsInfo, setRoomBoundsInfo] = useState<{
+    minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number;
+  } | null>(null);
+  const [pedestalRadius, setPedestalRadius] = useState(0.5);
+
+  const pColor = pedestalColor ?? "#d4cfc8";
+  const pHeight = pedestalHeight ?? 0;
+  const showPedestal = pHeight > 0.001;
+  const platX = platPos?.x ?? 0;
+  const platZ = platPos?.z ?? 0;
+  const baseY = platPos?.y ?? 0;
+  const pedestalTopY = showPedestal ? baseY + 0.28 + pHeight : baseY;
+
+  const pedestalMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: pColor, roughness: 0.6, metalness: 0.05 }),
+    [pColor]
+  );
+
   if (!roomGlbUrl) {
     return (
       <>
@@ -1306,17 +1295,74 @@ function CustomRoomScene({
   }
 
   return (
-    <Suspense fallback={null}>
-      <CustomRoomModel
-        roomGlbUrl={roomGlbUrl}
-        modelUrl={modelUrl}
-        pedestalColor={pedestalColor}
-        pedestalHeight={pedestalHeight}
-        modelRotationY={modelRotationY}
-        onLoad={onLoad}
-        onRoomLoaded={onRoomLoaded}
+    <>
+      {/* Lights — always present */}
+      <hemisphereLight args={["#c8dff0", "#d4c8a8", 0.9]} />
+      <ambientLight intensity={0.55} color="#fff8f0" />
+      <directionalLight
+        position={[platX - 6, 8, platZ - 2]}
+        intensity={3.5} color="#fff5e0" castShadow
+        shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003}
+        shadow-camera-left={-8} shadow-camera-right={8}
+        shadow-camera-top={8} shadow-camera-bottom={-8}
+        shadow-camera-near={0.1} shadow-camera-far={30}
       />
-    </Suspense>
+      <directionalLight position={[platX + 5, 6, platZ + 3]} intensity={1.2} color="#e8f4ff" />
+
+      {/* Plain beige floor — visible immediately while room GLB downloads */}
+      {!roomLoaded && (
+        <mesh position={[0, -0.005, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[30, 30]} />
+          <meshStandardMaterial color="#c0b8b0" roughness={0.9} />
+        </mesh>
+      )}
+
+      {/* Camera bounds once room is loaded */}
+      {roomLoaded && roomBoundsInfo && <RoomBoundsGuard bounds={roomBoundsInfo} />}
+
+      {/* Room GLB — loads async in background, fades in when ready */}
+      <Suspense fallback={null}>
+        <CustomRoomGlb
+          roomGlbUrl={roomGlbUrl}
+          onReady={(info) => {
+            setPlatPos({ x: info.platX, y: info.platY, z: info.platZ });
+            setRoomBoundsInfo(info.bounds);
+            setRoomLoaded(true);
+            onRoomLoaded?.({
+              platformTarget: [info.platX, info.platY + 0.4, info.platZ],
+              maxDist: info.maxDist,
+            });
+          }}
+        />
+      </Suspense>
+
+      {/* Pedestal cylinders */}
+      {showPedestal && (
+        <>
+          <mesh position={[platX, baseY + 0.14, platZ]} castShadow receiveShadow>
+            <cylinderGeometry args={[pedestalRadius, pedestalRadius * 1.05, 0.28, 48]} />
+            <primitive object={pedestalMat} attach="material" />
+          </mesh>
+          <mesh position={[platX, baseY + 0.28 + pHeight / 2, platZ]} castShadow receiveShadow>
+            <cylinderGeometry args={[pedestalRadius * 0.9, pedestalRadius, Math.max(pHeight, 0.001), 48]} />
+            <primitive object={pedestalMat} attach="material" />
+          </mesh>
+        </>
+      )}
+
+      {/* Model — renders immediately on the plain floor, repositions when room loads */}
+      <Suspense fallback={null}>
+        <group position={[platX, 0, platZ]}>
+          <ModelOnPedestal
+            url={modelUrl}
+            pedestalTopY={pedestalTopY}
+            setPedestalRadius={setPedestalRadius}
+            rotationY={modelRotationY}
+            onLoad={onLoad}
+          />
+        </group>
+      </Suspense>
+    </>
   );
 }
 
