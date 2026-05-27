@@ -3,8 +3,6 @@ import cors from "cors";
 
 import pinoHttpModule from "pino-http";
 
-const pinoHttp = (pinoHttpModule as any).default || pinoHttpModule;
-
 import { clerkMiddleware } from "@clerk/express";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
@@ -16,14 +14,14 @@ app.use(
   pinoHttp({
     logger,
     serializers: {
-      req(req: any) {
+      req(req) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split("?")[0],
         };
       },
-      res(res: any) {
+      res(res) {
         return {
           statusCode: res.statusCode,
         };
