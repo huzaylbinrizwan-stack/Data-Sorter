@@ -1,7 +1,10 @@
 import express, { type Express } from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
+
+import pinoHttpModule from "pino-http";
+
 const pinoHttp = (pinoHttpModule as any).default || pinoHttpModule;
+
 import { clerkMiddleware } from "@clerk/express";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
